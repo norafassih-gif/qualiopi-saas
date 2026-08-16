@@ -105,8 +105,13 @@ export default async function DashboardPage() {
             ? "Étape suivante : choisir les thématiques de votre formation pour construire automatiquement votre programme."
             : !session
             ? "Étape suivante : renseigner votre première session (bénéficiaire, dates, formateur)."
-            : "Prochaine étape : génération des documents (programme, convention, émargement…) — à construire ensuite."}
+            : "Votre programme de formation peut être généré automatiquement à partir de vos réponses."}
         </p>
+        {training && (!themeQuestions.length || themesAnswered) && session && (
+          <a href="/onboarding/programme" className="mt-2 inline-block text-sm text-blue-900 underline">
+            Voir mon programme de formation →
+          </a>
+        )}
       </div>
     </div>
   );
