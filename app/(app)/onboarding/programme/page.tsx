@@ -100,9 +100,25 @@ export default async function OnboardingProgrammePage() {
             </ul>
           </div>
 
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+            <p className="mb-2 text-sm text-blue-900">
+              Le programme ci-dessus peut être téléchargé en PDF, prêt à intégrer à votre
+              dossier Qualiopi.
+            </p>
+            {/* Lien de téléchargement de fichier (pas une page interne) : <a> natif est
+                volontaire ici, pas next/link. */}
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+            <a
+              href="/api/documents/programme_formation"
+              className="inline-block rounded-md bg-blue-900 px-4 py-2 text-sm text-white"
+            >
+              📄 Télécharger le programme (PDF)
+            </a>
+          </div>
+
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-            Prochaine étape : générer les documents PDF (programme, convention,
-            émargement…) à partir de ce programme — en construction.
+            D&apos;autres documents (convention, émargement, attestation…) suivront le même
+            principe — en construction.
           </div>
 
           <a href="/dashboard" className="text-sm text-blue-900 underline">
