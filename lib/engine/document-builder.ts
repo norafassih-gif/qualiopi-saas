@@ -13,6 +13,11 @@ type TemplateSection = {
   content_type: "rich_text" | "variable_block" | "table" | "content_block_list" | "checklist" | "signature_block";
   html_template: string | null;
   source_content_block_type: string | null;
+  // "training" (défaut) : blocs réellement retenus pour cette formation via
+  // le moteur de règles (ex. programme). "global" : tous les blocs actifs de
+  // ce type dans la banque de contenu, sans lien avec une formation précise
+  // (ex. fiches de poste, sources de veille) — cf. migration 0009.
+  content_block_scope: "training" | "global";
 };
 
 export type BuildDocumentResult = { html: string; templateLabel: string } | { error: string };
@@ -56,7 +61,7 @@ export async function buildDocumentHtml(documentTemplateId: string): Promise<Bui
     supabase.from("document_templates").select("id, label").eq("id", documentTemplateId).maybeSingle(),
     supabase
       .from("document_template_sections")
-      .select("code, title, sort_order, content_type, html_template, source_content_block_type")
+      .select("code, title, sort_order, content_type, html_template, source_content_block_type, content_block_scope")
       .eq("document_template_id", documentTemplateId)
       .order("sort_order"),
   ]);
@@ -87,7 +92,7 @@ export async function buildDocumentHtml(documentTemplateId: string): Promise<Bui
 
   const vars = resolveDocumentVariables({ org, training, session, beneficiaryName, beneficiaryCompany });
 
-  const [blocksResponse, modulesResponse] = await Promise.all([
+  const [blocksResponse, modulesResponse, globalBlocksResponse] = await Promise.all([
     supabase
       .from("training_content_blocks")
       .select("content_blocks(type, text)")
@@ -97,6 +102,11 @@ export async function buildDocumentHtml(documentTemplateId: string): Promise<Bui
       .select("sort_order, duration_hours, modules(title)")
       .eq("training_id", training.id)
       .order("sort_order"),
+    // Blocs "globaux" (cf. content_block_scope) : indépendants de toute
+    // formation, utilisés par les documents transverses (fiches de poste,
+    // sources de veille, exemples...). Table de taille modeste (quelques
+    // centaines de lignes) : un seul fetch, filtré ensuite en mémoire par type.
+    supabase.from("content_blocks").select("type, code, text").eq("is_active", true).order("code"),
   ]);
 
   type BlockRow = { content_blocks: { type: string; text: string } | { type: string; text: string }[] | null };
@@ -113,8 +123,15 @@ export async function buildDocumentHtml(documentTemplateId: string): Promise<Bui
   type ModuleRow = { duration_hours: number | null; modules: { title: string } | { title: string }[] | null };
   const moduleRows = (modulesResponse.data ?? []) as unknown as ModuleRow[];
 
+  const globalBlocksByType = new Map<string, string[]>();
+  for (const block of globalBlocksResponse.data ?? []) {
+    const list = globalBlocksByType.get(block.type) ?? [];
+    list.push(block.text);
+    globalBlocksByType.set(block.type, list);
+  }
+
   const sectionsHtml = sections
-    .map((section) => renderSection(section, vars, blocksByType, moduleRows))
+    .map((section) => renderSection(section, vars, blocksByType, globalBlocksByType, moduleRows))
     .join("\n");
 
   const html = wrapDocument({ org, templateLabel: templateResponse.data.label, sectionsHtml, vars });
@@ -126,6 +143,7 @@ function renderSection(
   section: TemplateSection,
   vars: Record<string, string>,
   blocksByType: Map<string, string[]>,
+  globalBlocksByType: Map<string, string[]>,
   moduleRows: { duration_hours: number | null; modules: { title: string } | { title: string }[] | null }[]
 ): string {
   let body: string;
@@ -137,10 +155,11 @@ function renderSection(
       break;
 
     case "content_block_list": {
-      const items = blocksByType.get(section.source_content_block_type ?? "") ?? [];
+      const source = section.content_block_scope === "global" ? globalBlocksByType : blocksByType;
+      const items = source.get(section.source_content_block_type ?? "") ?? [];
       body =
         items.length > 0
-          ? `<ul>${items.map((t) => `<li>${escapeHtml(t)}</li>`).join("")}</ul>`
+          ? `<ul>${items.map((t) => `<li>${interpolate(escapeHtml(t), vars)}</li>`).join("")}</ul>`
           : `<p class="empty">Non applicable pour cette formation.</p>`;
       break;
     }

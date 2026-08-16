@@ -113,6 +113,17 @@ export default async function DashboardPage() {
           </a>
         )}
       </div>
+
+      {training && session && (
+        <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          <a href="/documents" className="text-blue-900 underline">
+            📄 Mes documents →
+          </a>
+          <a href="/parametres/qualite" className="text-blue-900 underline">
+            ⚙️ Mes informations qualité →
+          </a>
+        </div>
+      )}
     </div>
   );
 }

@@ -117,8 +117,12 @@ export default async function OnboardingProgrammePage() {
           </div>
 
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-            D&apos;autres documents (convention, émargement, attestation…) suivront le même
-            principe — en construction.
+            15 documents de fonctionnement de votre organisme (procédures,
+            veille, réclamations, amélioration continue…) sont aussi
+            disponibles.{" "}
+            <a href="/documents" className="text-blue-900 underline">
+              Voir tous mes documents →
+            </a>
           </div>
 
           <a href="/dashboard" className="text-sm text-blue-900 underline">

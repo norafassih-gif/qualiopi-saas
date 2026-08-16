@@ -15,6 +15,15 @@ function formatDate(value: string | null): string {
   return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
 }
 
+// Pour les champs personnels (référents, contacts) qui n'ont pas de valeur
+// par défaut sûre : plutôt que d'inventer une donnée ou de laisser un vide
+// silencieux, on affiche un repère visible dans le document généré, pour que
+// l'utilisateur sache qu'il doit compléter ce champ dans "Mon entreprise"
+// avant de présenter le document à l'audit.
+function required(value: string | null | undefined, label: string): string {
+  return value && value.trim().length > 0 ? value : `[${label} à compléter]`;
+}
+
 /**
  * Construit le contexte de variables "champs de fusion" ({{company_name}},
  * {{training_name}}, etc. — cf. point "SYSTÈME DE VARIABLES" de la
@@ -36,12 +45,69 @@ export function resolveDocumentVariables(input: {
     commercial_name: org.commercial_name ?? org.company_name ?? "",
     siret: org.siret ?? "",
     address: org.address ?? "",
+    organization_city: required(org.organization_city, "Ville du siège"),
+    region: required(org.region, "Région"),
+    jurisdiction: org.jurisdiction ?? "Tribunal de Commerce du lieu du siège social",
     phone: org.phone ?? "",
     email: org.email ?? "",
+    company_website: org.website ?? "",
     manager_name: org.manager_name ?? "",
+    director_name: required(org.manager_name, "Nom du dirigeant"),
     pedagogical_referent: org.pedagogical_referent ?? "",
+    pedagogical_referent_name: required(org.pedagogical_referent, "Référent pédagogique"),
+    pedagogical_referent_email: required(org.pedagogical_referent_email, "Email référent pédagogique"),
+    pedagogical_referent_phone: required(org.pedagogical_referent_phone, "Téléphone référent pédagogique"),
     quality_referent: org.quality_referent ?? "",
+    quality_referent_name: required(org.quality_referent, "Référent qualité"),
+    administrative_referent_name: required(org.administrative_referent, "Référent administratif"),
+    administrative_referent_email: required(org.administrative_referent_email, "Email référent administratif"),
+    administrative_referent_phone: required(org.administrative_referent_phone, "Téléphone référent administratif"),
     disability_referent: org.disability_referent ?? "non désigné à ce jour",
+    disability_referent_name: required(org.disability_referent, "Référent handicap"),
+    disability_referent_email: required(org.disability_referent_email, "Email référent handicap"),
+    disability_referent_phone: required(org.disability_referent_phone, "Téléphone référent handicap"),
+    disability_contact_email: org.email ?? "",
+    dpo_contact_email: org.dpo_contact_email ?? org.email ?? "",
+    complaints_email: org.complaints_email ?? org.email ?? "",
+
+    is_sole_practitioner: org.is_sole_practitioner ? "true" : "false",
+    sole_practitioner_note: org.is_sole_practitioner
+      ? `${required(org.manager_name, "Nom du dirigeant")} assure seul(e) l'ensemble des fonctions ci-dessus — Prestataire indépendant.`
+      : "",
+
+    external_trainer_discipline: org.external_trainer_discipline ?? "",
+    external_trainer_name: org.external_trainer_name ?? "",
+    external_trainer_contract_type: org.external_trainer_contract_type ?? "",
+    technical_provider_name: org.technical_provider_name ?? "",
+    technical_provider_company: org.technical_provider_company ?? "",
+
+    procedure_version: org.procedure_version ?? "1.0",
+    archiving_duration: org.archiving_duration ?? "5 ans",
+    archiving_duration_trainer_docs: org.archiving_duration_trainer_docs ?? "5 ans après la fin de la collaboration",
+    watch_collect_frequency: org.watch_collect_frequency ?? "mensuelle",
+    watch_review_frequency: org.watch_review_frequency ?? "semestrielle",
+    insertion_survey_delay: org.insertion_survey_delay ?? "6 mois après la fin de la formation",
+    training_budget_percent_payroll: org.training_budget_percent_payroll ?? "2 %",
+    plan_period: org.plan_period ?? "2026-2027",
+    satisfaction_rate_target: org.satisfaction_rate_target ?? "90 %",
+    trainer_satisfaction_rate_target: org.trainer_satisfaction_rate_target ?? "90 %",
+    partner_satisfaction_rate_target: org.partner_satisfaction_rate_target ?? "85 %",
+    success_rate_target: org.success_rate_target ?? "80 %",
+    insertion_rate_target_6months: org.insertion_rate_target_6months ?? "60 %",
+    absence_relance_delay_1: org.absence_relance_delay_1 ?? "H+30",
+    absence_relance_delay_2: org.absence_relance_delay_2 ?? "H+90",
+    absence_relance_delay_3: org.absence_relance_delay_3 ?? "J+1",
+
+    // Champs calculés du tableau de bord qualité (indicateur 32) : pas encore
+    // de calcul automatique réel (nécessiterait d'agréger les réponses aux
+    // questionnaires de satisfaction, non encore collectées) — affichés comme
+    // "à renseigner" plutôt que d'inventer un chiffre.
+    computed_learner_satisfaction: "à renseigner",
+    computed_trainer_satisfaction: "à renseigner",
+    computed_partner_satisfaction: "à renseigner",
+    computed_complaints_resolved_ratio: "à renseigner",
+    computed_success_rate: "à renseigner",
+    computed_insertion_rate: "à renseigner",
 
     training_name: training.name ?? "",
     training_duration: training.duration_hours != null ? String(training.duration_hours) : "",
