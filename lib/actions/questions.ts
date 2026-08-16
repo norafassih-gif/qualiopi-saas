@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMyOrganization } from "@/lib/actions/organization";
 import { getMyFirstTraining, type Training } from "@/lib/actions/training";
+import { buildProgramForMyTraining } from "@/lib/engine/program-builder";
 
 export type AnswerOption = {
   id: string;
@@ -190,6 +191,15 @@ export async function saveTrainingAnswers(
 
   if (error) {
     return { error: "Une erreur est survenue : " + error.message };
+  }
+
+  // Recalcule immédiatement le programme (et synchronise la durée déclarée
+  // de la formation dessus) dès que les thématiques sont enregistrées — pas
+  // besoin d'attendre que l'utilisateur visite l'écran "Mon programme" pour
+  // que tout soit à jour.
+  const built = await buildProgramForMyTraining();
+  if ("error" in built) {
+    console.error("saveTrainingAnswers -> buildProgramForMyTraining", built.error);
   }
 
   redirect("/dashboard");

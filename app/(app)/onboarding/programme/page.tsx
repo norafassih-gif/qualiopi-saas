@@ -47,7 +47,7 @@ export default async function OnboardingProgrammePage() {
       ) : (
         <div className="flex flex-col gap-6">
           <div className="rounded-lg border border-gray-200 p-4">
-            <p className="text-xs font-medium uppercase text-gray-500">Durée totale estimée</p>
+            <p className="text-xs font-medium uppercase text-gray-500">Durée totale du programme généré</p>
             <p className="mt-1 text-lg font-semibold">{result.totalDurationHours} heures</p>
             <p className="mt-1 text-xs text-gray-500">
               {result.firedRuleCount} règle(s) appliquée(s) · {result.modules.length} module(s) ·{" "}
@@ -55,6 +55,12 @@ export default async function OnboardingProgrammePage() {
               de contenu
             </p>
           </div>
+
+          <p className="text-xs text-gray-500">
+            La durée déclarée de votre formation est automatiquement mise à jour pour
+            correspondre à ce programme — chaque thématique cochée ajoute son propre
+            temps, visible en direct sur l&apos;écran précédent.
+          </p>
 
           <div>
             <h2 className="mb-2 text-sm font-semibold">Modules du programme</h2>
