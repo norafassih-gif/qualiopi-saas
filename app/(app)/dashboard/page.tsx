@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getMyOrganization } from "@/lib/actions/organization";
 import { getMyFirstTraining } from "@/lib/actions/training";
 import { getMyFirstSession } from "@/lib/actions/session";
+import { listCategoryQuestions, getMyAnswers } from "@/lib/actions/questions";
 import { signOut } from "@/lib/actions/auth";
 
 export default async function DashboardPage() {
@@ -14,6 +15,16 @@ export default async function DashboardPage() {
 
   const training = await getMyFirstTraining();
   const session = training ? await getMyFirstSession() : null;
+
+  // Thématiques pédagogiques : seulement pour les catégories dont la banque
+  // de contenu a été importée (Community Management pour l'instant) — les
+  // autres n'ont simplement aucune question ici, donc rien à afficher.
+  const themeQuestions = training
+    ? await listCategoryQuestions(training.category_id, "activite")
+    : [];
+  const themeAnswers = training && themeQuestions.length > 0 ? await getMyAnswers(training.id) : {};
+  const themesAnswered =
+    themeQuestions.length > 0 && themeQuestions.every((q) => themeAnswers[q.id] !== undefined);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
@@ -42,6 +53,17 @@ export default async function DashboardPage() {
             <>
               <p className="mt-1 font-medium">{training.name}</p>
               <p className="text-sm text-green-700">✅ Créée</p>
+              {themeQuestions.length > 0 && (
+                <p className="mt-1 text-sm">
+                  {themesAnswered ? (
+                    <span className="text-green-700">✅ Thématiques choisies</span>
+                  ) : (
+                    <a href="/onboarding/themes" className="text-blue-900 underline">
+                      ⚠️ Choisir mes thématiques →
+                    </a>
+                  )}
+                </p>
+              )}
             </>
           ) : (
             <>
@@ -79,6 +101,8 @@ export default async function DashboardPage() {
         <p className="text-sm text-gray-600">
           {!training
             ? "Étape suivante : choisir votre domaine de formation puis créer votre première formation."
+            : themeQuestions.length > 0 && !themesAnswered
+            ? "Étape suivante : choisir les thématiques de votre formation pour construire automatiquement votre programme."
             : !session
             ? "Étape suivante : renseigner votre première session (bénéficiaire, dates, formateur)."
             : "Prochaine étape : génération des documents (programme, convention, émargement…) — à construire ensuite."}

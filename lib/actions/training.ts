@@ -123,5 +123,23 @@ export async function createTraining(
     return { error: "Une erreur est survenue : " + error.message };
   }
 
+  // Certaines catégories ont une banque de contenu importée (questions
+  // pédagogiques conditionnelles, ex. thématiques Community Management) —
+  // on y envoie directement l'utilisateur si c'est le cas, sinon on passe
+  // directement au tableau de bord (cf. arbre de questions conditionnelles,
+  // point 9 de la conception). Requête directe ici (plutôt qu'un import
+  // depuis lib/actions/questions.ts) pour éviter une dépendance circulaire
+  // entre les deux modules.
+  const { count } = await supabase
+    .from("questions")
+    .select("id", { count: "exact", head: true })
+    .eq("category_id", category_id)
+    .eq("step", "activite")
+    .eq("is_active", true);
+
+  if ((count ?? 0) > 0) {
+    redirect("/onboarding/themes");
+  }
+
   redirect("/dashboard");
 }
