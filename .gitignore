@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# scratch tooling used to generate/validate seed migrations (not app code)
+/.content-import/
