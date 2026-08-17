@@ -32,6 +32,62 @@ function Field({
   );
 }
 
+// Délais de relance en cas d'absence — présentés en choix multiple plutôt
+// qu'en texte libre : la plupart des entrepreneurs qui créent leur organisme
+// ne savent pas quel délai indiquer (Nora l'a signalé explicitement), donc on
+// leur propose une liste de valeurs usuelles plutôt qu'une page blanche.
+const RELANCE_DELAY_OPTIONS = [
+  { value: "Immédiat (jour même)", label: "Immédiat (jour même)" },
+  { value: "H+24", label: "H+24 (dans les 24h)" },
+  { value: "H+30", label: "H+30 (dans les 30h)" },
+  { value: "H+48", label: "H+48 (dans les 48h)" },
+  { value: "H+72", label: "H+72 (dans les 72h)" },
+  { value: "H+90", label: "H+90 (dans les 90h)" },
+  { value: "J+1", label: "J+1 (le lendemain)" },
+  { value: "J+2", label: "J+2 (2 jours ouvrés)" },
+  { value: "J+3", label: "J+3 (3 jours ouvrés)" },
+  { value: "J+5", label: "J+5 (5 jours ouvrés)" },
+  { value: "J+7", label: "J+7 (1 semaine)" },
+  { value: "J+15", label: "J+15" },
+  { value: "J+30", label: "J+30 (1 mois)" },
+  { value: "J+90", label: "J+90 (3 mois)" },
+];
+
+function Select({
+  label,
+  name,
+  defaultValue,
+  options,
+  help,
+}: {
+  label: string;
+  name: string;
+  defaultValue?: string | null;
+  options: { value: string; label: string }[];
+  help?: string;
+}) {
+  return (
+    <label className="flex flex-col gap-1 text-sm">
+      {label}
+      <select
+        name={name}
+        defaultValue={defaultValue ?? ""}
+        className="rounded-md border border-gray-300 bg-white px-3 py-2"
+      >
+        <option value="" disabled>
+          Choisir un délai...
+        </option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      {help && <span className="text-xs text-gray-500">{help}</span>}
+    </label>
+  );
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <fieldset className="flex flex-col gap-3 border-t border-gray-200 pt-4">
@@ -103,9 +159,29 @@ export function QualiteSettingsForm({ org }: { org: Organization }) {
       </Section>
 
       <Section title="Délais de relance en cas d'absence">
-        <Field label="1ère relance" name="absence_relance_delay_1" defaultValue={org.absence_relance_delay_1} help="Ex. H+30" />
-        <Field label="2ème relance" name="absence_relance_delay_2" defaultValue={org.absence_relance_delay_2} help="Ex. H+90" />
-        <Field label="3ème relance" name="absence_relance_delay_3" defaultValue={org.absence_relance_delay_3} help="Ex. J+1" />
+        <p className="text-xs text-gray-500">
+          En cas d&apos;absence non justifiée d&apos;un stagiaire, à quel moment le relancez-vous ?
+          Ces 3 délais, du plus rapide au plus tardif, apparaissent dans votre procédure
+          anti-abandon (indicateur 12).
+        </p>
+        <Select
+          label="1ère relance"
+          name="absence_relance_delay_1"
+          defaultValue={org.absence_relance_delay_1}
+          options={RELANCE_DELAY_OPTIONS}
+        />
+        <Select
+          label="2ème relance"
+          name="absence_relance_delay_2"
+          defaultValue={org.absence_relance_delay_2}
+          options={RELANCE_DELAY_OPTIONS}
+        />
+        <Select
+          label="3ème relance"
+          name="absence_relance_delay_3"
+          defaultValue={org.absence_relance_delay_3}
+          options={RELANCE_DELAY_OPTIONS}
+        />
       </Section>
 
       {state.error && (

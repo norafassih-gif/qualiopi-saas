@@ -115,19 +115,36 @@ export async function createOrganization(
     return { error: "Le nom de l'entreprise est requis." };
   }
 
+  const manager_name = String(formData.get("manager_name") || "") || null;
+  const is_sole_practitioner = formData.get("is_sole_practitioner") === "on";
+
+  // Organisme individuel (auto-entrepreneur, indépendant...) : la même
+  // personne assure la direction, la pédagogie, la qualité et le handicap.
+  // Plutôt que de faire saisir 4 fois le même nom, on propage automatiquement
+  // le dirigeant sur les 3 référents quand ils sont laissés vides — Nora l'a
+  // demandé explicitement pour que les entrepreneurs solo n'aient rien à
+  // deviner ("il faut dire qu'on est seul·e et que ce soit nous qui faisons
+  // tout, partout"). Reste modifiable ensuite sur /parametres/qualite.
+  const pedagogical_referent_raw = String(formData.get("pedagogical_referent") || "");
+  const quality_referent_raw = String(formData.get("quality_referent") || "");
+  const disability_referent_raw = String(formData.get("disability_referent") || "");
+
   const payload = {
     owner_user_id: user.id,
     company_name,
     commercial_name: String(formData.get("commercial_name") || "") || null,
-    manager_name: String(formData.get("manager_name") || "") || null,
+    manager_name,
     siret: String(formData.get("siret") || "") || null,
     address: String(formData.get("address") || "") || null,
     phone: String(formData.get("phone") || "") || null,
     email: String(formData.get("email") || "") || null,
     website: String(formData.get("website") || "") || null,
-    pedagogical_referent: String(formData.get("pedagogical_referent") || "") || null,
-    quality_referent: String(formData.get("quality_referent") || "") || null,
-    disability_referent: String(formData.get("disability_referent") || "") || null,
+    pedagogical_referent:
+      pedagogical_referent_raw || (is_sole_practitioner ? manager_name : null),
+    quality_referent: quality_referent_raw || (is_sole_practitioner ? manager_name : null),
+    disability_referent:
+      disability_referent_raw || (is_sole_practitioner ? manager_name : null),
+    is_sole_practitioner,
   };
 
   const { error } = await supabase.from("organizations").insert(payload);

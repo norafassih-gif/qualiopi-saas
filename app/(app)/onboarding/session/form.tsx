@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { createSession, type SessionFormState } from "@/lib/actions/session";
 
 const initialState: SessionFormState = { error: null };
@@ -60,6 +60,7 @@ function Select({
 
 export function OnboardingSessionForm() {
   const [state, formAction, pending] = useActionState(createSession, initialState);
+  const [isFree, setIsFree] = useState(false);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -84,20 +85,45 @@ export function OnboardingSessionForm() {
         Tarif et financement — utilisés pour générer le devis et la convention /
         le contrat de formation. Vous pourrez affiner ces informations plus tard.
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Tarif (montant en €)" name="price_amount" type="number" />
-        <Select
-          label="Le tarif s'entend..."
-          name="price_unit"
-          defaultValue="total_ttc"
-          options={[
-            { value: "total_ttc", label: "Total TTC" },
-            { value: "total_ht", label: "Total HT" },
-            { value: "per_participant_ht", label: "Par participant, HT" },
-            { value: "per_hour_ht", label: "Par heure, HT" },
-          ]}
-        />
-      </div>
+      <fieldset className="flex flex-col gap-2 text-sm">
+        <legend className="mb-1">Cette formation est-elle...</legend>
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name="price_mode"
+            checked={!isFree}
+            onChange={() => setIsFree(false)}
+          />
+          Payante
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name="price_mode"
+            checked={isFree}
+            onChange={() => setIsFree(true)}
+          />
+          Gratuite (financée intégralement par ailleurs, action de sensibilisation...)
+        </label>
+      </fieldset>
+      {isFree ? (
+        <input type="hidden" name="price_unit" value="gratuit" />
+      ) : (
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Tarif (montant en €)" name="price_amount" type="number" />
+          <Select
+            label="Le tarif s'entend..."
+            name="price_unit"
+            defaultValue="total_ttc"
+            options={[
+              { value: "total_ttc", label: "Total TTC" },
+              { value: "total_ht", label: "Total HT" },
+              { value: "per_participant_ht", label: "Par participant, HT" },
+              { value: "per_hour_ht", label: "Par heure, HT" },
+            ]}
+          />
+        </div>
+      )}
       <Select
         label="Mode de financement"
         name="funding_type"

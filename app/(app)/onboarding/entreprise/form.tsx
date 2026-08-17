@@ -43,9 +43,25 @@ export function OnboardingEntrepriseForm() {
       <Field label="Email" name="email" type="email" />
       <Field label="Site web (optionnel)" name="website" />
 
+      <div className="mt-2 rounded-md border border-blue-100 bg-blue-50 p-3 text-sm text-blue-900">
+        <label className="flex items-start gap-2">
+          <input type="checkbox" name="is_sole_practitioner" className="mt-0.5" />
+          <span>
+            <strong>Je suis seul(e) à diriger mon organisme</strong> (auto-entrepreneur,
+            indépendant·e...). Si vous cochez cette case, nous inscrirons automatiquement
+            votre nom comme référent pédagogique, qualité et handicap ci-dessous — vous
+            n&apos;aurez rien à retaper, et vos documents (organigramme, fiches de poste...)
+            indiqueront clairement que vous assurez seul(e) toutes les fonctions. C&apos;est la
+            situation la plus fréquente pour un premier organisme : ne vous inquiétez pas si
+            c&apos;est votre cas.
+          </span>
+        </label>
+      </div>
+
       <div className="mt-2 rounded-md bg-gray-50 p-3 text-sm text-gray-600">
-        Ces trois référents sont exigés par les indicateurs Qualiopi 1 et 26 —
-        vous pourrez les modifier plus tard.
+        Ces trois référents sont exigés par les indicateurs Qualiopi 1 et 26. Si vous avez
+        coché la case ci-dessus, vous pouvez laisser ces champs vides : votre nom de
+        dirigeant sera repris automatiquement. Vous pourrez les modifier plus tard.
       </div>
       <Field label="Référent pédagogique" name="pedagogical_referent" />
       <Field label="Référent qualité" name="quality_referent" />

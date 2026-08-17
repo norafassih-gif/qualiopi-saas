@@ -13,7 +13,7 @@ export type TrainingSession = {
   location: string | null;
   status: "planned" | "in_progress" | "done" | "cancelled";
   price_amount: number | null;
-  price_unit: "total_ttc" | "total_ht" | "per_participant_ht" | "per_hour_ht";
+  price_unit: "gratuit" | "total_ttc" | "total_ht" | "per_participant_ht" | "per_hour_ht";
   funding_type: "autofinancement" | "opco" | "pole_emploi" | "entreprise" | "region" | "cpf" | "autre" | null;
   funding_details: string | null;
   payment_terms: string | null;
@@ -78,9 +78,11 @@ export async function createSession(
   const beneficiary_company = String(formData.get("beneficiary_company") || "").trim();
   const beneficiary_email = String(formData.get("beneficiary_email") || "").trim();
 
-  const price_amount_raw = String(formData.get("price_amount") || "").trim();
-  const price_amount = price_amount_raw ? Number(price_amount_raw.replace(",", ".")) : null;
   const price_unit = String(formData.get("price_unit") || "total_ttc").trim();
+  const price_amount_raw = String(formData.get("price_amount") || "").trim();
+  // Une formation "gratuite" n'a pas de montant à saisir — on ignore le champ
+  // montant dans ce cas plutôt que d'exiger un 0 explicite.
+  const price_amount = price_unit === "gratuit" || !price_amount_raw ? null : Number(price_amount_raw.replace(",", "."));
   const funding_type = String(formData.get("funding_type") || "").trim();
   const funding_details = String(formData.get("funding_details") || "").trim();
   const payment_terms = String(formData.get("payment_terms") || "").trim();
@@ -94,7 +96,7 @@ export async function createSession(
   if (!beneficiary_name) {
     return { error: "Le nom du bénéficiaire est requis." };
   }
-  if (price_amount_raw && Number.isNaN(price_amount)) {
+  if (price_unit !== "gratuit" && price_amount_raw && Number.isNaN(price_amount)) {
     return { error: "Le tarif doit être un nombre." };
   }
 

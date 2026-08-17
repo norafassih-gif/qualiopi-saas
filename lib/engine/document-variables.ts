@@ -9,6 +9,7 @@ const MODALITY_LABELS: Record<string, string> = {
 };
 
 const PRICE_UNIT_LABELS: Record<string, string> = {
+  gratuit: "Formation gratuite",
   total_ttc: "Prix total TTC",
   total_ht: "Prix total HT (TVA non applicable, art. 293 B du CGI, le cas échéant)",
   per_participant_ht: "Prix HT par participant",
@@ -25,7 +26,8 @@ const FUNDING_TYPE_LABELS: Record<string, string> = {
   autre: "Autre financeur",
 };
 
-function formatCurrency(amount: number | null): string {
+function formatCurrency(amount: number | null, priceUnit: string | undefined): string {
+  if (priceUnit === "gratuit") return "Gratuit";
   if (amount == null) return "[Tarif à compléter]";
   return amount.toLocaleString("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 2 });
 }
@@ -152,7 +154,7 @@ export function resolveDocumentVariables(input: {
     // Tarif / financement (cf. migration 0012) — utilisés par le devis, la
     // convention et le contrat de formation. Un placeholder visible plutôt
     // qu'un vide silencieux si la session n'a pas encore ces informations.
-    price_amount_formatted: formatCurrency(session?.price_amount ?? null),
+    price_amount_formatted: formatCurrency(session?.price_amount ?? null, session?.price_unit),
     price_unit_label: PRICE_UNIT_LABELS[session?.price_unit ?? "total_ttc"] ?? "Prix total TTC",
     funding_type_label: session?.funding_type
       ? FUNDING_TYPE_LABELS[session.funding_type] ?? "Autre financeur"
