@@ -77,6 +77,7 @@ export async function createSession(
   const beneficiary_name = String(formData.get("beneficiary_name") || "").trim();
   const beneficiary_company = String(formData.get("beneficiary_company") || "").trim();
   const beneficiary_email = String(formData.get("beneficiary_email") || "").trim();
+  const beneficiary_role = String(formData.get("beneficiary_role") || "").trim();
 
   const price_unit = String(formData.get("price_unit") || "total_ttc").trim();
   const price_amount_raw = String(formData.get("price_amount") || "").trim();
@@ -129,6 +130,7 @@ export async function createSession(
     full_name: beneficiary_name,
     company: beneficiary_company || null,
     email: beneficiary_email || null,
+    role: beneficiary_role || null,
   });
 
   if (beneficiaryError) {

@@ -80,6 +80,10 @@ export function OnboardingSessionForm() {
       <Field label="Nom complet du bénéficiaire" name="beneficiary_name" required />
       <Field label="Entreprise du bénéficiaire (optionnel)" name="beneficiary_company" />
       <Field label="Email du bénéficiaire (optionnel)" name="beneficiary_email" type="email" />
+      <Field
+        label="Poste occupé / statut actuel du bénéficiaire (optionnel)"
+        name="beneficiary_role"
+      />
 
       <div className="mt-2 rounded-md bg-gray-50 p-3 text-sm text-gray-600">
         Tarif et financement — utilisés pour générer le devis et la convention /
