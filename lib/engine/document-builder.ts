@@ -236,14 +236,12 @@ function wrapDocument({
   th, td { text-align: left; padding: 6pt 8pt; border-bottom: 1px solid #e5e7eb; }
   th { color: ${secondary}; font-weight: 600; font-size: 9pt; text-transform: uppercase; }
   .signature-line { margin-top: 24pt; border-top: 1px solid #1f2937; width: 60mm; padding-top: 4pt; }
-  .footer-note { margin-top: 24pt; font-size: 8pt; color: #9ca3af; }
 </style>
 </head>
 <body>
   <h1>${escapeHtml(templateLabel)}</h1>
-  <p class="subtitle">${escapeHtml(vars.company_name ?? "")} — généré le ${escapeHtml(vars.generated_date ?? "")}</p>
+  <p class="subtitle">${escapeHtml(vars.company_name ?? "")} — ${escapeHtml(vars.generated_date ?? "")}</p>
   ${sectionsHtml}
-  <p class="footer-note">Document généré automatiquement par le logiciel Qualiopi de ${escapeHtml(org.company_name ?? "")} — aucune intelligence artificielle n'a été utilisée pour sa génération.</p>
 </body>
 </html>`;
 }
