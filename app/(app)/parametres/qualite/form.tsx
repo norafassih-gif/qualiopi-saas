@@ -129,6 +129,28 @@ export function QualiteSettingsForm({ org }: { org: Organization }) {
         <Field label="Tribunal compétent en cas de litige" name="jurisdiction" defaultValue={org.jurisdiction} />
         <Field label="Email dédié aux réclamations" name="complaints_email" type="email" defaultValue={org.complaints_email} />
         <Field label="Email du DPO (protection des données)" name="dpo_contact_email" type="email" defaultValue={org.dpo_contact_email} />
+        <Select
+          label="Délai d'accusé de réception d'une réclamation"
+          name="complaint_ack_delay"
+          defaultValue={org.complaint_ack_delay}
+          options={[
+            { value: "24h ouvrées", label: "24h ouvrées" },
+            { value: "48h ouvrées", label: "48h ouvrées" },
+            { value: "72h ouvrées", label: "72h ouvrées" },
+            { value: "5 jours ouvrés", label: "5 jours ouvrés" },
+          ]}
+        />
+        <Select
+          label="Délai de réponse motivée à une réclamation"
+          name="complaint_response_delay"
+          defaultValue={org.complaint_response_delay}
+          options={[
+            { value: "8 jours", label: "8 jours" },
+            { value: "15 jours", label: "15 jours" },
+            { value: "21 jours", label: "21 jours" },
+            { value: "30 jours", label: "30 jours" },
+          ]}
+        />
       </Section>
 
       <Section title="Intervenant externe / prestataire technique (si applicable)">

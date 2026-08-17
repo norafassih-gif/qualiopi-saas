@@ -94,6 +94,8 @@ export function resolveDocumentVariables(input: {
     disability_contact_email: org.email ?? "",
     dpo_contact_email: org.dpo_contact_email ?? org.email ?? "",
     complaints_email: org.complaints_email ?? org.email ?? "",
+    complaint_ack_delay: org.complaint_ack_delay ?? "48h ouvrées",
+    complaint_response_delay: org.complaint_response_delay ?? "15 jours",
 
     is_sole_practitioner: org.is_sole_practitioner ? "true" : "false",
     sole_practitioner_note: org.is_sole_practitioner

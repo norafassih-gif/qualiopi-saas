@@ -35,6 +35,8 @@ export type Organization = {
   is_sole_practitioner: boolean;
   jurisdiction: string;
   complaints_email: string | null;
+  complaint_ack_delay: string;
+  complaint_response_delay: string;
   dpo_contact_email: string | null;
   procedure_version: string;
   archiving_duration: string;
@@ -213,6 +215,8 @@ const DEFAULTED_TEXT_FIELDS = [
   "absence_relance_delay_1",
   "absence_relance_delay_2",
   "absence_relance_delay_3",
+  "complaint_ack_delay",
+  "complaint_response_delay",
 ] as const;
 
 /**
