@@ -61,9 +61,20 @@ export function resolveDocumentVariables(input: {
   session: TrainingSession | null;
   beneficiaryName: string | null;
   beneficiaryCompany: string | null;
+  beneficiaryEmail?: string | null;
+  beneficiaryRole?: string | null;
   beneficiaryCount?: number;
 }): Record<string, string> {
-  const { org, training, session, beneficiaryName, beneficiaryCompany, beneficiaryCount = 0 } = input;
+  const {
+    org,
+    training,
+    session,
+    beneficiaryName,
+    beneficiaryCompany,
+    beneficiaryEmail = null,
+    beneficiaryRole = null,
+    beneficiaryCount = 0,
+  } = input;
 
   return {
     company_name: org.company_name ?? "",
@@ -151,6 +162,8 @@ export function resolveDocumentVariables(input: {
 
     student_name: beneficiaryName ?? "",
     student_company: beneficiaryCompany ?? "",
+    student_email: beneficiaryEmail ?? "",
+    student_role: beneficiaryRole ?? "",
     participant_count: beneficiaryCount > 0 ? String(beneficiaryCount) : "1",
 
     // Tarif / financement (cf. migration 0012) — utilisés par le devis, la
