@@ -12,6 +12,13 @@ export type TrainingSession = {
   end_date: string | null;
   location: string | null;
   status: "planned" | "in_progress" | "done" | "cancelled";
+  price_amount: number | null;
+  price_unit: "total_ttc" | "total_ht" | "per_participant_ht" | "per_hour_ht";
+  funding_type: "autofinancement" | "opco" | "pole_emploi" | "entreprise" | "region" | "cpf" | "autre" | null;
+  funding_details: string | null;
+  payment_terms: string | null;
+  quote_reference: string | null;
+  convention_reference: string | null;
 };
 
 export type Beneficiary = {
@@ -71,6 +78,13 @@ export async function createSession(
   const beneficiary_company = String(formData.get("beneficiary_company") || "").trim();
   const beneficiary_email = String(formData.get("beneficiary_email") || "").trim();
 
+  const price_amount_raw = String(formData.get("price_amount") || "").trim();
+  const price_amount = price_amount_raw ? Number(price_amount_raw.replace(",", ".")) : null;
+  const price_unit = String(formData.get("price_unit") || "total_ttc").trim();
+  const funding_type = String(formData.get("funding_type") || "").trim();
+  const funding_details = String(formData.get("funding_details") || "").trim();
+  const payment_terms = String(formData.get("payment_terms") || "").trim();
+
   if (!trainer_name) {
     return { error: "Le nom du formateur est requis." };
   }
@@ -79,6 +93,9 @@ export async function createSession(
   }
   if (!beneficiary_name) {
     return { error: "Le nom du bénéficiaire est requis." };
+  }
+  if (price_amount_raw && Number.isNaN(price_amount)) {
+    return { error: "Le tarif doit être un nombre." };
   }
 
   const supabase = await createClient();
@@ -92,6 +109,11 @@ export async function createSession(
       end_date,
       location: location || null,
       status: "planned",
+      price_amount,
+      price_unit,
+      funding_type: funding_type || null,
+      funding_details: funding_details || null,
+      payment_terms: payment_terms || null,
     })
     .select("id")
     .single();

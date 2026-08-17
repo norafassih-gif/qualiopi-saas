@@ -77,20 +77,20 @@ export async function buildDocumentHtml(documentTemplateId: string): Promise<Bui
 
   let beneficiaryName: string | null = null;
   let beneficiaryCompany: string | null = null;
+  let beneficiaryCount = 0;
   if (session) {
-    const { data: beneficiaries } = await supabase
-      .from("beneficiaries")
-      .select("full_name, company")
-      .eq("session_id", session.id)
-      .order("id")
-      .limit(1);
+    const [{ data: beneficiaries }, { count }] = await Promise.all([
+      supabase.from("beneficiaries").select("full_name, company").eq("session_id", session.id).order("id").limit(1),
+      supabase.from("beneficiaries").select("id", { count: "exact", head: true }).eq("session_id", session.id),
+    ]);
     if (beneficiaries && beneficiaries.length > 0) {
       beneficiaryName = beneficiaries[0].full_name;
       beneficiaryCompany = beneficiaries[0].company;
     }
+    beneficiaryCount = count ?? 0;
   }
 
-  const vars = resolveDocumentVariables({ org, training, session, beneficiaryName, beneficiaryCompany });
+  const vars = resolveDocumentVariables({ org, training, session, beneficiaryName, beneficiaryCompany, beneficiaryCount });
 
   const [blocksResponse, modulesResponse, globalBlocksResponse] = await Promise.all([
     supabase

@@ -8,6 +8,28 @@ const MODALITY_LABELS: Record<string, string> = {
   hybride: "hybride (présentiel et distanciel)",
 };
 
+const PRICE_UNIT_LABELS: Record<string, string> = {
+  total_ttc: "Prix total TTC",
+  total_ht: "Prix total HT (TVA non applicable, art. 293 B du CGI, le cas échéant)",
+  per_participant_ht: "Prix HT par participant",
+  per_hour_ht: "Prix HT par heure de formation",
+};
+
+const FUNDING_TYPE_LABELS: Record<string, string> = {
+  autofinancement: "Autofinancement (paiement direct par le bénéficiaire)",
+  entreprise: "Prise en charge par l'entreprise",
+  opco: "Financement OPCO",
+  pole_emploi: "Financement France Travail (ex-Pôle Emploi)",
+  cpf: "Financement CPF (Compte Personnel de Formation)",
+  region: "Financement Conseil régional",
+  autre: "Autre financeur",
+};
+
+function formatCurrency(amount: number | null): string {
+  if (amount == null) return "[Tarif à compléter]";
+  return amount.toLocaleString("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 2 });
+}
+
 function formatDate(value: string | null): string {
   if (!value) return "";
   const d = new Date(value);
@@ -37,8 +59,9 @@ export function resolveDocumentVariables(input: {
   session: TrainingSession | null;
   beneficiaryName: string | null;
   beneficiaryCompany: string | null;
+  beneficiaryCount?: number;
 }): Record<string, string> {
-  const { org, training, session, beneficiaryName, beneficiaryCompany } = input;
+  const { org, training, session, beneficiaryName, beneficiaryCompany, beneficiaryCount = 0 } = input;
 
   return {
     company_name: org.company_name ?? "",
@@ -124,6 +147,21 @@ export function resolveDocumentVariables(input: {
 
     student_name: beneficiaryName ?? "",
     student_company: beneficiaryCompany ?? "",
+    participant_count: beneficiaryCount > 0 ? String(beneficiaryCount) : "1",
+
+    // Tarif / financement (cf. migration 0012) — utilisés par le devis, la
+    // convention et le contrat de formation. Un placeholder visible plutôt
+    // qu'un vide silencieux si la session n'a pas encore ces informations.
+    price_amount_formatted: formatCurrency(session?.price_amount ?? null),
+    price_unit_label: PRICE_UNIT_LABELS[session?.price_unit ?? "total_ttc"] ?? "Prix total TTC",
+    funding_type_label: session?.funding_type
+      ? FUNDING_TYPE_LABELS[session.funding_type] ?? "Autre financeur"
+      : "[Mode de financement à compléter]",
+    funding_details: session?.funding_details ?? "",
+    payment_terms: session?.payment_terms || "Paiement à réception de facture, sauf accord contraire précisé ci-dessus.",
+    quote_reference: session?.quote_reference || `DEV-${(session?.id ?? "").slice(0, 8).toUpperCase() || "XXXXXXXX"}`,
+    convention_reference:
+      session?.convention_reference || `CONV-${(session?.id ?? "").slice(0, 8).toUpperCase() || "XXXXXXXX"}`,
 
     generated_date: formatDate(new Date().toISOString()),
   };

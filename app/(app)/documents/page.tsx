@@ -5,12 +5,21 @@ import { listDocumentTemplatesWithStatus } from "@/lib/actions/documents";
 
 const FOLDER_LABELS: Record<string, string> = {
   "03_Avant_formation": "Avant la formation",
+  "04_Pendant_formation": "Pendant la formation",
+  "05_Apres_formation": "Après la formation",
   "06_Procedures": "Procédures de fonctionnement",
   "07_Veille": "Veille",
   "08_Amelioration": "Amélioration continue",
 };
 
-const FOLDER_ORDER = ["03_Avant_formation", "06_Procedures", "07_Veille", "08_Amelioration"];
+const FOLDER_ORDER = [
+  "03_Avant_formation",
+  "04_Pendant_formation",
+  "05_Apres_formation",
+  "06_Procedures",
+  "07_Veille",
+  "08_Amelioration",
+];
 
 export default async function DocumentsPage() {
   const org = await getMyOrganization();
