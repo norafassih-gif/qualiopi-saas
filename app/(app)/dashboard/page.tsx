@@ -83,6 +83,9 @@ export default async function DashboardPage() {
                 {session.start_date} → {session.end_date}
               </p>
               <p className="text-sm text-green-700">✅ Créée</p>
+              <a href="/parametres/session" className="mt-1 inline-block text-sm text-blue-900 underline">
+                Modifier →
+              </a>
             </>
           ) : training ? (
             <>
