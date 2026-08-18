@@ -211,5 +211,20 @@ export function resolveDocumentVariables(input: {
         : "Non acquis (< 70 %) — à retravailler"
       : "[Aucune évaluation complétée pour l'instant]",
     evaluation_completed_date: evaluationResult ? formatDate(evaluationResult.completed_at) : "[à compléter]",
+
+    // Cachet et signature électronique de l'organisme (cf. migration
+    // 0029_cachet_signature.sql) : des extraits HTML <img> prêts à l'emploi
+    // plutôt que de simples URLs, pour pouvoir être insérés directement dans
+    // un html_template rich_text (ex. un futur bloc de signature à deux
+    // colonnes) sans logique supplémentaire côté moteur. Chaîne vide si
+    // l'organisme n'a pas encore renseigné l'un ou l'autre — le
+    // renderSection "signature_block" (lib/engine/document-builder.ts) gère
+    // aussi ce cas et ne les injecte automatiquement que lorsqu'ils existent.
+    org_stamp_image: org.stamp_url
+      ? `<img src="${org.stamp_url}" alt="Cachet de l'organisme" style="max-height:28mm; max-width:28mm;" />`
+      : "",
+    org_signature_image: org.signature_url
+      ? `<img src="${org.signature_url}" alt="Signature" style="max-height:18mm; max-width:50mm;" />`
+      : "",
   };
 }

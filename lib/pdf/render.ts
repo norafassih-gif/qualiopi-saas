@@ -10,6 +10,13 @@ export async function renderHtmlToPdf(html: string): Promise<Buffer> {
   try {
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "load" });
+    // Attend explicitement que les polices (notamment les Google Fonts
+    // chargées via <link>, cf. lib/engine/branding-fonts.ts) aient fini de
+    // se charger avant l'impression — l'évènement "load" ne garantit pas à
+    // lui seul que les glyphes des polices web sont prêts, ce qui peut
+    // produire un PDF rendu avec la police de repli. Résout immédiatement
+    // si aucune police externe n'est utilisée.
+    await page.evaluate(() => document.fonts.ready);
     const pdf = await page.pdf({
       format: "A4",
       printBackground: true,

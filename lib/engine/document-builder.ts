@@ -6,6 +6,7 @@ import { getMyFirstTraining } from "@/lib/actions/training";
 import { getMyFirstSession } from "@/lib/actions/session";
 import { resolveDocumentVariables } from "./document-variables";
 import { EVALUATION_PHASE_DOCUMENT_TEMPLATE, type EvaluationPhase } from "./evaluation-phases";
+import { getFontOption } from "./branding-fonts";
 
 // Inverse de EVALUATION_PHASE_DOCUMENT_TEMPLATE — pour ces 3 modèles de
 // document (résultat de positionnement / en cours / finale, migration
@@ -252,9 +253,19 @@ function renderSection(
         : "";
       break;
 
-    case "signature_block":
-      body = `<div class="signature"><div>${vars.company_name ?? ""}</div><div class="signature-line">Signature</div></div>`;
+    case "signature_block": {
+      // Cachet + signature électronique de l'organisme (cf. migration
+      // 0029_cachet_signature.sql), injectés automatiquement dès qu'ils sont
+      // renseignés sur /parametres/identite-visuelle — sans ça, une simple
+      // ligne "Signature" à remplir à la main, comme avant cette phase.
+      const visuals = (vars.org_signature_image ?? "") + (vars.org_stamp_image ?? "");
+      body = `<div class="signature">
+        <div>${vars.company_name ?? ""}</div>
+        ${visuals ? `<div class="signature-visuals">${visuals}</div>` : ""}
+        <div class="signature-line">Signature</div>
+      </div>`;
       break;
+    }
 
     default:
       body = "";
@@ -276,14 +287,28 @@ function wrapDocument({
 }): string {
   const primary = org.brand_color_primary || "#1e3a8a";
   const secondary = org.brand_color_secondary || "#64748b";
+  // Identité visuelle (logo + police) — cf. migration 0028_identite_visuelle.sql
+  // et claude/roadmap-produit-et-tarifs.md (socle technique de l'offre
+  // "personnalisée"). Liste de polices fermée (lib/engine/branding-fonts.ts) :
+  // les polices Google Fonts sont chargées via un <link>, uniquement quand
+  // choisies, pour ne pas alourdir inutilement les documents restés en police
+  // par défaut.
+  const font = getFontOption(org.font_family);
+  const fontLinkTag = font.googleFontHref
+    ? `<link rel="stylesheet" href="${escapeHtml(font.googleFontHref)}" />`
+    : "";
+  const logoTag = org.logo_url
+    ? `<img src="${escapeHtml(org.logo_url)}" alt="${escapeHtml(vars.company_name ?? "Logo")}" style="max-height:20mm; max-width:60mm; margin-bottom:8pt;" />`
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
+${fontLinkTag}
 <style>
   @page { margin: 24mm 18mm; }
-  body { font-family: "Helvetica Neue", Arial, sans-serif; color: #1f2937; font-size: 11pt; line-height: 1.5; }
+  body { font-family: ${font.cssFontFamily}; color: #1f2937; font-size: 11pt; line-height: 1.5; }
   h1 { color: ${primary}; font-size: 18pt; margin-bottom: 4pt; }
   .subtitle { color: ${secondary}; font-size: 10pt; margin-bottom: 20pt; }
   section { margin-bottom: 16pt; }
@@ -296,9 +321,11 @@ function wrapDocument({
   th, td { text-align: left; padding: 6pt 8pt; border-bottom: 1px solid #e5e7eb; }
   th { color: ${secondary}; font-weight: 600; font-size: 9pt; text-transform: uppercase; }
   .signature-line { margin-top: 24pt; border-top: 1px solid #1f2937; width: 60mm; padding-top: 4pt; }
+  .signature-visuals { display: flex; align-items: flex-end; gap: 12pt; margin-top: 10pt; }
 </style>
 </head>
 <body>
+  ${logoTag}
   <h1>${escapeHtml(templateLabel)}</h1>
   <p class="subtitle">${escapeHtml(vars.company_name ?? "")} — ${escapeHtml(vars.generated_date ?? "")}</p>
   ${sectionsHtml}

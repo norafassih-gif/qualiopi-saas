@@ -17,6 +17,9 @@ export type Organization = {
   logo_url: string | null;
   brand_color_primary: string;
   brand_color_secondary: string;
+  font_family: string;
+  stamp_url: string | null;
+  signature_url: string | null;
   pedagogical_referent: string | null;
   quality_referent: string | null;
   disability_referent: string | null;
