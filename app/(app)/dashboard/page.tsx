@@ -11,7 +11,6 @@ import {
   ClipboardList,
   Settings,
   ShieldCheck,
-  LogOut,
 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getMyOrganization } from "@/lib/actions/organization";
@@ -19,7 +18,6 @@ import { getMyFirstTraining } from "@/lib/actions/training";
 import { getMyFirstSession } from "@/lib/actions/session";
 import { listCategoryQuestions, getMyAnswers } from "@/lib/actions/questions";
 import { listDocumentTemplatesWithStatus } from "@/lib/actions/documents";
-import { signOut } from "@/lib/actions/auth";
 import { isPlatformAdmin } from "@/lib/actions/admin";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -73,20 +71,11 @@ export default async function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Bonjour</h1>
-          <p className="text-gray-600">{org.company_name}</p>
-        </div>
-        <form action={signOut}>
-          <button
-            type="submit"
-            className="inline-flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900"
-          >
-            <LogOut className="h-4 w-4" aria-hidden="true" />
-            Se déconnecter
-          </button>
-        </form>
+      <div className="mb-8">
+        <h1 className="text-2xl text-gray-900">
+          <span className="font-extrabold">Bonjour</span>{" "}
+          <span className="font-light text-gray-500">— {org.company_name}</span>
+        </h1>
       </div>
 
       {/* Progression d'ensemble */}

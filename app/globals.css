@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* Police auto-hébergée (aucune requête vers Google Fonts au chargement —
+   fichiers servis directement par notre propre serveur). Variable font :
+   tous les poids (100 à 900) rendus nativement, sans "faux gras" — c'est ce
+   qui permet de vraiment jouer avec les graisses (extra-light / extra-bold)
+   plutôt que le navigateur qui approxime. */
+@import "@fontsource-variable/inter/wght.css";
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -8,8 +15,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,7 +29,6 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
 
 /* Utilisé uniquement par la page d'accueil publique (dégradé animé sur les
