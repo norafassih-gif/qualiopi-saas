@@ -43,11 +43,21 @@ export async function GET(
   }
 
   // Bookkeeping non bloquant : si l'écriture échoue, le PDF est quand même
-  // renvoyé à l'utilisateur.
+  // renvoyé à l'utilisateur. En plus de la ligne de statut, on conserve
+  // désormais aussi une copie du PDF dans Supabase Storage (bucket privé
+  // "generated-documents", cf. migration 0031) — sert de cache pour le pack
+  // documentaire ZIP (lib/documents/zip.ts) sans avoir à régénérer chaque
+  // document au moment du téléchargement du dossier complet. La colonne
+  // pdf_url (existante depuis 0001_init.sql, jamais utilisée jusqu'ici)
+  // stocke le CHEMIN dans le bucket privé, pas une URL publique.
   try {
     const training = await getMyFirstTraining();
     const session = await getMyFirstSession();
     const supabase = await createClient();
+    const storagePath = `${org.id}/${templateId}.pdf`;
+    await supabase.storage
+      .from("generated-documents")
+      .upload(storagePath, pdfBuffer, { upsert: true, contentType: "application/pdf" });
     await supabase.from("documents").upsert(
       {
         organization_id: org.id,
@@ -55,12 +65,13 @@ export async function GET(
         session_id: session?.id ?? null,
         document_template_id: templateId,
         status: "generated",
+        pdf_url: storagePath,
         generated_at: new Date().toISOString(),
       },
       { onConflict: "organization_id,training_id,document_template_id" }
     );
   } catch (e) {
-    console.error("documents upsert failed (non bloquant)", e);
+    console.error("documents upsert/storage failed (non bloquant)", e);
   }
 
   return new NextResponse(new Uint8Array(pdfBuffer), {

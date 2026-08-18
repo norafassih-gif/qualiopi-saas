@@ -36,11 +36,22 @@ export default async function DocumentsPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <h1 className="mb-1 text-2xl font-bold">Mes documents</h1>
-      <p className="mb-6 text-sm text-gray-600">
+      <p className="mb-4 text-sm text-gray-600">
         Tous les documents que le logiciel peut générer pour votre dossier Qualiopi,
         sans intelligence artificielle — uniquement notre banque de contenus, vos
         informations d&apos;organisme et notre moteur de règles.
       </p>
+
+      {!("error" in templates) && templates.some((t) => t.generated) && (
+        // Lien de téléchargement de fichier (pas une page interne) : <a> natif est volontaire ici, pas next/link.
+        // eslint-disable-next-line @next/next/no-html-link-for-pages
+        <a
+          href="/api/documents/zip"
+          className="mb-6 inline-block rounded-md bg-blue-900 px-4 py-2 text-sm text-white"
+        >
+          Télécharger mon dossier (ZIP)
+        </a>
+      )}
 
       {"error" in templates ? (
         <p className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">{templates.error}</p>
