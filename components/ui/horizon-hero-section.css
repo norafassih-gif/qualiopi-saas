@@ -1,0 +1,153 @@
+/* Styles du Hero animé (components/ui/horizon-hero-section.tsx).
+   La galerie 21st.dev ne fournit que les noms de classes dans le composant
+   copié — ce fichier construit la mise en page correspondante : le canvas
+   Three.js reste fixe en arrière-plan pendant que le contenu défile
+   normalement par-dessus (HORIZON, puis COSMOS, puis INFINITY). */
+
+.hero-container {
+  position: relative;
+  width: 100%;
+  background: #000000;
+  color: #ffffff;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+.hero-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  display: block;
+}
+
+/* Menu latéral (chrome fixe) */
+.side-menu {
+  position: fixed;
+  left: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.menu-icon {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.menu-icon span {
+  width: 22px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.85);
+  display: block;
+}
+
+.vertical-text {
+  writing-mode: vertical-rl;
+  letter-spacing: 0.3em;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+}
+
+/* Sections de contenu (défilement normal, canvas fixe derrière) */
+.hero-content,
+.content-section {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  pointer-events: none;
+}
+
+.hero-title {
+  font-size: clamp(3rem, 10vw, 8rem);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  margin: 0 0 1.5rem;
+  text-transform: uppercase;
+}
+
+.title-char {
+  display: inline-block;
+}
+
+.hero-subtitle {
+  max-width: 32rem;
+}
+
+.subtitle-line {
+  margin: 0;
+  font-size: clamp(0.95rem, 1.6vw, 1.15rem);
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.hero-cta {
+  margin-top: 2.5rem;
+  pointer-events: auto;
+}
+
+.scroll-sections {
+  position: relative;
+  z-index: 1;
+}
+
+/* Indicateur de défilement (chrome fixe) */
+.scroll-progress {
+  position: fixed;
+  right: 2rem;
+  bottom: 2rem;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.scroll-text {
+  font-size: 0.65rem;
+  letter-spacing: 0.3em;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.progress-track {
+  width: 6rem;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.progress-fill {
+  height: 100%;
+  background: #ffffff;
+  transition: width 0.1s linear;
+}
+
+.section-counter {
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+@media (max-width: 640px) {
+  .side-menu {
+    left: 1rem;
+  }
+
+  .scroll-progress {
+    right: 1rem;
+    bottom: 1rem;
+  }
+}
