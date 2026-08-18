@@ -7,8 +7,11 @@
 .hero-container {
   position: relative;
   width: 100%;
-  background: #000000;
-  color: #ffffff;
+  /* !important : la page racine applique "bg-white text-gray-900" sur <body>
+     (Tailwind) — on force le fond noir et le texte blanc du Hero pour ne
+     jamais dépendre de l'ordre de chargement des feuilles de style. */
+  background: #000000 !important;
+  color: #ffffff !important;
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 

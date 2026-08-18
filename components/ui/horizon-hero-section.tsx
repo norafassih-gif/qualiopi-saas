@@ -550,23 +550,27 @@ export const HorizonHeroSection: React.FC<{ children?: React.ReactNode }> = ({
     ));
 
   const titles: Record<number, string> = {
-    1: "COSMOS",
-    2: "INFINITY",
+    1: "SANS PRISE DE TÊTE",
+    2: "PRÊT POUR L'AUDIT",
   };
 
   const subtitles: Record<number, SubtitleLines> = {
     1: {
-      line1: "Beyond the boundaries of imagination,",
-      line2: "lies the universe of possibilities",
+      line1: "Répondez à des questions simples,",
+      line2: "le logiciel s'occupe du reste.",
     },
     2: {
-      line1: "In the space between thought and creation,",
-      line2: "we find the essence of true innovation",
+      line1: "Vos documents Qualiopi générés automatiquement,",
+      line2: "conformes et prêts à télécharger.",
     },
   };
 
   return (
-    <div ref={containerRef} className="hero-container cosmos-style">
+    <div
+      ref={containerRef}
+      className="hero-container cosmos-style"
+      style={{ backgroundColor: "#000000", color: "#ffffff" }}
+    >
       <canvas ref={canvasRef} className="hero-canvas" />
 
       <div ref={menuRef} className="side-menu" style={{ visibility: "hidden" }}>
@@ -575,17 +579,17 @@ export const HorizonHeroSection: React.FC<{ children?: React.ReactNode }> = ({
           <span></span>
           <span></span>
         </div>
-        <div className="vertical-text">SPACE</div>
+        <div className="vertical-text">QUALIOPI PILOTE</div>
       </div>
 
       <div className="hero-content cosmos-content">
         <h1 ref={titleRef} className="hero-title">
-          {splitTitle("HORIZON")}
+          {splitTitle("QUALIOPI PILOTE")}
         </h1>
 
         <div ref={subtitleRef} className="hero-subtitle cosmos-subtitle">
-          <p className="subtitle-line">Where vision meets reality,</p>
-          <p className="subtitle-line">we shape the future of tomorrow</p>
+          <p className="subtitle-line">Créez votre organisme de formation</p>
+          <p className="subtitle-line">et obtenez votre certification Qualiopi, sans prise de tête.</p>
         </div>
 
         {children && <div className="hero-cta">{children}</div>}
