@@ -24,3 +24,15 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Utilisé uniquement par la page d'accueil publique (dégradé animé sur les
+   titres, style "SaaS sérieux" inspiré d'un template open-source Cruip). */
+@theme {
+  --animate-gradient: gradient 6s linear infinite;
+
+  @keyframes gradient {
+    to {
+      background-position: 200% center;
+    }
+  }
+}

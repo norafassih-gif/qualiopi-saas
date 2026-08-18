@@ -1,7 +1,12 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { HorizonHeroSection } from "@/components/ui/horizon-hero-section";
+import { MarketingHeader } from "@/components/marketing/header";
+import { MarketingFooter } from "@/components/marketing/footer";
+import { PageIllustration } from "@/components/marketing/page-illustration";
+import { MarketingHero } from "@/components/marketing/hero";
+import { HowItWorks } from "@/components/marketing/how-it-works";
+import { Features } from "@/components/marketing/features";
+import { MarketingCta } from "@/components/marketing/cta";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -14,21 +19,19 @@ export default async function Home() {
   }
 
   return (
-    <HorizonHeroSection>
-      <div className="flex flex-wrap items-center justify-center gap-4">
-        <Link
-          href="/signup"
-          className="rounded-md bg-white px-6 py-3 text-sm font-semibold text-black transition hover:bg-white/90"
-        >
-          Créer mon compte
-        </Link>
-        <Link
-          href="/login"
-          className="rounded-md border border-white/40 px-6 py-3 text-sm font-semibold text-white transition hover:border-white"
-        >
-          Se connecter
-        </Link>
-      </div>
-    </HorizonHeroSection>
+    <div
+      className="relative flex min-h-screen flex-col overflow-hidden"
+      style={{ backgroundColor: "#030712", color: "#e5e7eb" }}
+    >
+      <MarketingHeader />
+      <main className="relative grow">
+        <PageIllustration multiple />
+        <MarketingHero />
+        <HowItWorks />
+        <Features />
+        <MarketingCta />
+      </main>
+      <MarketingFooter />
+    </div>
   );
 }
