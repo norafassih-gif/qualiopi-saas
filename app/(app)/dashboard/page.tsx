@@ -4,6 +4,7 @@ import { getMyFirstTraining } from "@/lib/actions/training";
 import { getMyFirstSession } from "@/lib/actions/session";
 import { listCategoryQuestions, getMyAnswers } from "@/lib/actions/questions";
 import { signOut } from "@/lib/actions/auth";
+import { isPlatformAdmin } from "@/lib/actions/admin";
 
 export default async function DashboardPage() {
   const org = await getMyOrganization();
@@ -25,6 +26,11 @@ export default async function DashboardPage() {
   const themeAnswers = training && themeQuestions.length > 0 ? await getMyAnswers(training.id) : {};
   const themesAnswered =
     themeQuestions.length > 0 && themeQuestions.every((q) => themeAnswers[q.id] !== undefined);
+
+  // Lien back-office (cf. migration 0034) — visible uniquement pour les
+  // comptes ayant le statut "administrateur plateforme", pas pour les
+  // futurs clients du SaaS.
+  const isAdmin = await isPlatformAdmin();
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
@@ -130,6 +136,14 @@ export default async function DashboardPage() {
           </a>
           <a href="/parametres/identite-visuelle" className="text-blue-900 underline">
             🎨 Identité visuelle →
+          </a>
+        </div>
+      )}
+
+      {isAdmin && (
+        <div className="mt-6 border-t border-gray-200 pt-4 text-sm">
+          <a href="/admin" className="text-blue-900 underline">
+            ⚙️ Back-office admin →
           </a>
         </div>
       )}
