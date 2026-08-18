@@ -5,7 +5,7 @@
    tous les poids (100 à 900) rendus nativement, sans "faux gras" — c'est ce
    qui permet de vraiment jouer avec les graisses (extra-light / extra-bold)
    plutôt que le navigateur qui approxime. */
-@import "@fontsource-variable/inter/wght.css";
+@import "@fontsource-variable/montserrat/wght.css";
 
 :root {
   --background: #ffffff;
@@ -15,7 +15,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Montserrat Variable", ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, monospace;
 }
 
@@ -31,13 +31,18 @@ body {
   color: var(--foreground);
 }
 
-/* Utilisé uniquement par la page d'accueil publique (dégradé animé sur les
-   titres, flottement discret des formes en arrière-plan — pour que la page
-   ne soit jamais totalement immobile). */
+/* Utilisé par la page d'accueil publique : dégradé animé sur les titres,
+   flottement des formes en arrière-plan, halo coloré qui pulse doucement
+   derrière le titre, et une entrée en scène (fondu + flou + léger zoom)
+   beaucoup plus visible que du simple fondu — pour que la page se sente
+   vivante dès le chargement, pas seulement au défilement. */
 @theme {
   --animate-gradient: gradient 6s linear infinite;
-  --animate-float: float 8s ease-in-out infinite;
-  --animate-float-delayed: float 8s ease-in-out 2s infinite;
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-float-delayed: float 7s ease-in-out 2s infinite;
+  --animate-glow-pulse: glow-pulse 5s ease-in-out infinite;
+  --animate-appear: appear 0.8s ease-out forwards;
+  --animate-appear-zoom: appear-zoom 0.9s ease-out forwards;
 
   @keyframes gradient {
     to {
@@ -48,10 +53,49 @@ body {
   @keyframes float {
     0%,
     100% {
-      transform: translateY(0) scale(1);
+      transform: translateY(0) scale(1) rotate(0deg);
     }
     50% {
-      transform: translateY(-18px) scale(1.03);
+      transform: translateY(-30px) scale(1.06) rotate(2deg);
+    }
+  }
+
+  @keyframes glow-pulse {
+    0%,
+    100% {
+      opacity: 0.35;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+      opacity: 0.7;
+      transform: translate(-50%, -50%) scale(1.25);
+    }
+  }
+
+  @keyframes appear {
+    0% {
+      opacity: 0;
+      transform: translateY(1.5rem);
+      filter: blur(10px);
+    }
+    60% {
+      filter: blur(0);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
+    }
+  }
+
+  @keyframes appear-zoom {
+    0% {
+      opacity: 0;
+      transform: scale(0.7);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
     }
   }
 }

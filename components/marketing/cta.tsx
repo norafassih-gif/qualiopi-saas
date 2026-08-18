@@ -15,7 +15,7 @@ export function MarketingCta() {
               <div>
                 <Link
                   href="/signup"
-                  className="mb-4 flex w-full items-center justify-center rounded-lg bg-indigo-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-indigo-400 sm:mb-0 sm:w-auto"
+                  className="mb-4 flex w-full items-center justify-center rounded-lg bg-indigo-500 px-6 py-3 text-sm font-semibold text-white transition duration-300 hover:scale-105 hover:bg-indigo-400 sm:mb-0 sm:w-auto"
                 >
                   Créer mon compte
                 </Link>
@@ -23,7 +23,7 @@ export function MarketingCta() {
               <div>
                 <Link
                   href="/login"
-                  className="flex w-full items-center justify-center rounded-lg border border-gray-700 px-6 py-3 text-sm font-semibold text-gray-300 transition hover:border-gray-500 hover:text-white sm:ml-4 sm:w-auto"
+                  className="flex w-full items-center justify-center rounded-lg border border-gray-700 px-6 py-3 text-sm font-semibold text-gray-300 transition duration-300 hover:scale-105 hover:border-gray-500 hover:text-white sm:ml-4 sm:w-auto"
                 >
                   Se connecter
                 </Link>
