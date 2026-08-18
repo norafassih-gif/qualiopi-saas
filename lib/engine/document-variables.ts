@@ -1,6 +1,7 @@
 import type { Organization } from "@/lib/actions/organization";
 import type { Training } from "@/lib/actions/training";
 import type { TrainingSession } from "@/lib/actions/session";
+import type { Partner } from "@/lib/actions/partners";
 
 const MODALITY_LABELS: Record<string, string> = {
   presentiel: "présentiel",
@@ -77,6 +78,7 @@ export function resolveDocumentVariables(input: {
   beneficiaryRole?: string | null;
   beneficiaryCount?: number;
   evaluationResult?: EvaluationResultForVariables;
+  partner?: Partner | null;
 }): Record<string, string> {
   const {
     org,
@@ -88,6 +90,7 @@ export function resolveDocumentVariables(input: {
     beneficiaryRole = null,
     beneficiaryCount = 0,
     evaluationResult = null,
+    partner = null,
   } = input;
 
   return {
@@ -226,5 +229,33 @@ export function resolveDocumentVariables(input: {
     org_signature_image: org.signature_url
       ? `<img src="${org.signature_url}" alt="Signature" style="max-height:18mm; max-width:50mm;" />`
       : "",
+
+    // Sous-traitant / partenaire entreprise (cf. migration 0032, table
+    // partners) : alimente le Contrat de sous-traitance et la Convention de
+    // partenariat (cf. migration 0033), qui ne laissent plus ces champs en
+    // blancs à remplir à la main. Placeholders visibles tant que rien n'a
+    // été renseigné sur /parametres/sous-traitant ou /parametres/partenaire,
+    // même logique que les référents de l'organisme ci-dessus.
+    partner_full_name: required(
+      partner?.full_name,
+      "Nom du sous-traitant ou de l'entreprise partenaire — à renseigner dans Mes paramètres"
+    ),
+    partner_siret: partner?.siret ?? "[SIRET à compléter]",
+    partner_address: partner?.address ?? "[Adresse à compléter]",
+    partner_contact_email: partner?.contact_email ?? "",
+    partner_contact_phone: partner?.contact_phone ?? "",
+    partner_legal_representative_name: required(partner?.legal_representative_name, "Nom du représentant légal"),
+    partner_legal_representative_role: partner?.legal_representative_role ?? "",
+    partner_tutor_name: required(partner?.tutor_name, "Nom du tuteur référent"),
+    partner_tutor_role: partner?.tutor_role ?? "",
+    partner_tutor_email: partner?.tutor_email ?? "",
+    partner_tutor_phone: partner?.tutor_phone ?? "",
+    partner_hourly_rate_formatted:
+      partner?.hourly_rate != null
+        ? `${partner.hourly_rate.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} € HT/heure`
+        : "[Taux horaire à compléter] € HT/heure",
+    partner_mission_start_date: partner?.mission_start_date ? formatDate(partner.mission_start_date) : "……………",
+    partner_mission_end_date: partner?.mission_end_date ? formatDate(partner.mission_end_date) : "……………",
+    partner_mission_details: partner?.mission_details ?? "……………………………………………………",
   };
 }

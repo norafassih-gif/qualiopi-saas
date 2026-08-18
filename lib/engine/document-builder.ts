@@ -4,9 +4,18 @@ import { createClient } from "@/lib/supabase/server";
 import { getMyOrganization, type Organization } from "@/lib/actions/organization";
 import { getMyFirstTraining } from "@/lib/actions/training";
 import { getMyFirstSession } from "@/lib/actions/session";
+import { getMyFirstPartner, type PartnerType } from "@/lib/actions/partners";
 import { resolveDocumentVariables } from "./document-variables";
 import { EVALUATION_PHASE_DOCUMENT_TEMPLATE, type EvaluationPhase } from "./evaluation-phases";
 import { getFontOption } from "./branding-fonts";
+
+// Quels modèles de document utilisent les variables {{partner_*}} (cf.
+// migrations 0032/0033) et pour quel type de tiers — évite de faire un
+// aller-retour base de données inutile pour tous les autres documents.
+const PARTNER_TYPE_BY_TEMPLATE: Record<string, PartnerType> = {
+  contrat_sous_traitance: "sous_traitant",
+  convention_partenariat: "partenaire",
+};
 
 // Inverse de EVALUATION_PHASE_DOCUMENT_TEMPLATE — pour ces 3 modèles de
 // document (résultat de positionnement / en cours / finale, migration
@@ -132,6 +141,9 @@ export async function buildDocumentHtml(documentTemplateId: string): Promise<Bui
     .limit(1)
     .maybeSingle();
 
+  const partnerType = PARTNER_TYPE_BY_TEMPLATE[documentTemplateId];
+  const partner = partnerType ? await getMyFirstPartner(partnerType) : null;
+
   const vars = resolveDocumentVariables({
     org,
     training,
@@ -141,6 +153,7 @@ export async function buildDocumentHtml(documentTemplateId: string): Promise<Bui
     beneficiaryEmail,
     beneficiaryRole,
     beneficiaryCount,
+    partner,
     evaluationResult:
       latestAttempt && latestAttempt.score_raw != null && latestAttempt.score_max != null
         ? {

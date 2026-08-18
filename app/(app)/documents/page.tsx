@@ -79,6 +79,19 @@ export default async function DocumentsPage() {
                             {doc.linked_indicator_numbers.join(", ")}
                           </p>
                         )}
+                        {/* Ces deux documents ont des champs auto-complétés depuis une
+                            fiche dédiée (cf. migration 0032/0033) plutôt que des blancs à
+                            remplir à la main — lien discret vers cette fiche. */}
+                        {doc.id === "contrat_sous_traitance" && (
+                          <a href="/parametres/sous-traitant" className="text-xs text-blue-900 underline">
+                            Renseigner le sous-traitant →
+                          </a>
+                        )}
+                        {doc.id === "convention_partenariat" && (
+                          <a href="/parametres/partenaire" className="text-xs text-blue-900 underline">
+                            Renseigner le partenaire →
+                          </a>
+                        )}
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-xs text-gray-500">
