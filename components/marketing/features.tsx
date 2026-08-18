@@ -10,6 +10,7 @@ import {
 import BlurredShapeGray from "@/public/images/blurred-shape-gray.svg";
 import BlurredShape from "@/public/images/blurred-shape.svg";
 import { PLATFORM_NAME } from "./logo";
+import { Reveal } from "./reveal";
 
 const FEATURES = [
   {
@@ -57,39 +58,50 @@ export function Features() {
         className="pointer-events-none absolute left-1/2 top-0 -z-10 -mt-20 -translate-x-1/2"
         aria-hidden="true"
       >
-        <Image className="max-w-none" src={BlurredShapeGray} width={760} height={668} alt="" />
+        <div className="animate-float motion-reduce:animate-none">
+          <Image className="max-w-none" src={BlurredShapeGray} width={760} height={668} alt="" />
+        </div>
       </div>
       <div
         className="pointer-events-none absolute bottom-0 left-1/2 -z-10 -mb-80 -translate-x-[120%] opacity-50"
         aria-hidden="true"
       >
-        <Image className="max-w-none" src={BlurredShape} width={760} height={668} alt="" />
+        <div className="animate-float-delayed motion-reduce:animate-none">
+          <Image className="max-w-none" src={BlurredShape} width={760} height={668} alt="" />
+        </div>
       </div>
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="border-t border-gray-800 py-12 md:py-20">
-          <div className="mx-auto max-w-3xl pb-12 text-center md:pb-16">
-            <div className="inline-flex items-center gap-3 pb-3 before:h-px before:w-8 before:bg-linear-to-r before:from-transparent before:to-indigo-200/50 after:h-px after:w-8 after:bg-linear-to-l after:from-transparent after:to-indigo-200/50">
-              <span className="bg-linear-to-r from-indigo-500 to-indigo-200 bg-clip-text text-transparent">
-                Ce que fait {PLATFORM_NAME}
-              </span>
+          <Reveal>
+            <div className="mx-auto max-w-3xl pb-12 text-center md:pb-16">
+              <div className="inline-flex items-center gap-3 pb-3 before:h-px before:w-8 before:bg-linear-to-r before:from-transparent before:to-indigo-200/50 after:h-px after:w-8 after:bg-linear-to-l after:from-transparent after:to-indigo-200/50">
+                <span className="bg-linear-to-r from-indigo-500 to-indigo-200 bg-clip-text text-transparent">
+                  Ce que fait {PLATFORM_NAME}
+                </span>
+              </div>
+              <h2 className="pb-4 text-3xl text-gray-100 md:text-4xl">
+                <span className="font-extrabold">Tout ce qu&apos;il faut</span>{" "}
+                <span className="font-light text-gray-400">
+                  pour réussir votre certification
+                </span>
+              </h2>
+              <p className="text-lg text-indigo-200/65">
+                Pensé pour les personnes qui créent leur organisme de formation, pas pour les
+                experts qualité.
+              </p>
             </div>
-            <h2 className="pb-4 text-3xl font-semibold text-gray-100 md:text-4xl">
-              Tout ce qu&apos;il faut pour réussir votre certification
-            </h2>
-            <p className="text-lg text-indigo-200/65">
-              Pensé pour les personnes qui créent leur organisme de formation, pas pour les
-              experts qualité.
-            </p>
-          </div>
+          </Reveal>
 
           <div className="mx-auto grid max-w-sm gap-12 sm:max-w-none sm:grid-cols-2 md:gap-x-14 md:gap-y-16 lg:grid-cols-3">
-            {FEATURES.map((feature) => (
-              <article key={feature.title}>
-                <feature.icon className="mb-3 h-6 w-6 text-indigo-500" aria-hidden="true" />
-                <h3 className="mb-1 text-base font-semibold text-gray-100">{feature.title}</h3>
-                <p className="text-indigo-200/65">{feature.description}</p>
-              </article>
+            {FEATURES.map((feature, index) => (
+              <Reveal key={feature.title} delay={(index % 3) * 120}>
+                <article>
+                  <feature.icon className="mb-3 h-6 w-6 text-indigo-500" aria-hidden="true" />
+                  <h3 className="mb-1 text-base font-semibold text-gray-100">{feature.title}</h3>
+                  <p className="text-indigo-200/65">{feature.description}</p>
+                </article>
+              </Reveal>
             ))}
           </div>
         </div>

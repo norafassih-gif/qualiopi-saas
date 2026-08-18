@@ -1,13 +1,15 @@
 import Link from "next/link";
+import { Reveal } from "./reveal";
 
 export function MarketingCta() {
   return (
     <section className="relative overflow-hidden">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="bg-linear-to-r from-transparent via-gray-800/50 py-12 md:py-20">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="pb-8 text-3xl font-semibold text-gray-100 md:text-4xl">
-              Prêt à créer votre organisme de formation ?
+          <Reveal className="mx-auto max-w-2xl text-center">
+            <h2 className="pb-8 text-3xl text-gray-100 md:text-4xl">
+              <span className="font-extrabold">Prêt à créer</span>{" "}
+              <span className="font-light text-gray-400">votre organisme de formation ?</span>
             </h2>
             <div className="mx-auto max-w-xs sm:flex sm:max-w-none sm:justify-center">
               <div>
@@ -27,7 +29,7 @@ export function MarketingCta() {
                 </Link>
               </div>
             </div>
-          </div>
+          </Reveal>
         </div>
       </div>
     </section>

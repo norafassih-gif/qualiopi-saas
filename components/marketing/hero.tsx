@@ -1,20 +1,44 @@
 import Link from "next/link";
+import { Reveal } from "./reveal";
 
 export function MarketingHero() {
   return (
     <section>
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="py-12 md:py-20">
+        <div className="py-16 md:py-24">
           <div className="pb-12 text-center md:pb-16">
-            <h1 className="animate-gradient bg-[linear-gradient(to_right,var(--color-gray-200),var(--color-indigo-200),var(--color-gray-50),var(--color-indigo-300),var(--color-gray-200))] bg-[length:200%_auto] bg-clip-text pb-5 text-4xl font-semibold text-transparent md:text-5xl">
-              Votre organisme de formation, certifié Qualiopi sans prise de tête
-            </h1>
-            <div className="mx-auto max-w-2xl">
-              <p className="mb-8 text-lg text-indigo-200/65 md:text-xl">
-                Répondez à des questions simples : le logiciel construit automatiquement votre
-                programme de formation et génère tous les documents de votre dossier, prêts pour
-                l&apos;audit.
+            <Reveal>
+              <span className="inline-flex items-center gap-3 pb-5 text-sm text-indigo-200/65 before:h-px before:w-6 before:bg-linear-to-r before:from-transparent before:to-indigo-200/50 after:h-px after:w-6 after:bg-linear-to-l after:from-transparent after:to-indigo-200/50">
+                Sans IA, sans jargon Qualiopi
+              </span>
+            </Reveal>
+
+            <Reveal delay={120}>
+              <h1 className="pb-6 text-5xl leading-none tracking-tight md:text-7xl">
+                <span className="animate-gradient bg-[linear-gradient(to_right,var(--color-indigo-300),var(--color-gray-50),var(--color-indigo-400),var(--color-gray-50))] bg-[length:200%_auto] bg-clip-text font-extrabold text-transparent">
+                  Qualiopi
+                </span>{" "}
+                <span className="font-extralight text-gray-400">Pilote</span>
+              </h1>
+            </Reveal>
+
+            <Reveal delay={240}>
+              <p className="mx-auto max-w-2xl text-xl font-medium text-gray-200 md:text-2xl">
+                Votre organisme de formation, certifié Qualiopi sans prise de tête.
               </p>
+            </Reveal>
+
+            <Reveal delay={360}>
+              <div className="mx-auto max-w-2xl">
+                <p className="mb-8 mt-4 text-lg text-indigo-200/65">
+                  Répondez à des questions simples : le logiciel construit automatiquement votre
+                  programme de formation et génère tous les documents de votre dossier, prêts pour
+                  l&apos;audit.
+                </p>
+              </div>
+            </Reveal>
+
+            <Reveal delay={480}>
               <div className="mx-auto max-w-xs sm:flex sm:max-w-none sm:justify-center">
                 <div>
                   <Link
@@ -33,7 +57,7 @@ export function MarketingHero() {
                   </Link>
                 </div>
               </div>
-            </div>
+            </Reveal>
           </div>
         </div>
       </div>
