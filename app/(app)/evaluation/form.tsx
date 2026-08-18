@@ -6,6 +6,7 @@ import {
   type EvaluationAttemptFormState,
   type EvaluationBank,
 } from "@/lib/actions/evaluation";
+import type { EvaluationPhase } from "@/lib/engine/evaluation-phases";
 
 const initialState: EvaluationAttemptFormState = { error: null, result: null };
 
@@ -28,12 +29,16 @@ function groupByTopic(questions: EvaluationBank["questions"]) {
   return groups;
 }
 
-export function EvaluationForm({ bank }: { bank: EvaluationBank }) {
+export function EvaluationForm({ bank, phase }: { bank: EvaluationBank; phase: EvaluationPhase }) {
   const [state, formAction, pending] = useActionState(submitEvaluationForm, initialState);
   const groups = useMemo(() => groupByTopic(bank.questions), [bank.questions]);
 
   return (
     <form action={formAction} className="flex flex-col gap-8">
+      {/* Moment d'évaluation choisi sur l'écran précédent (positionnement /
+          en_cours / finale) — pas une réponse à une question, isolé côté
+          serveur dans submitEvaluationForm avant reconstruction des réponses. */}
+      <input type="hidden" name="phase" value={phase} />
       <p className="text-xs text-gray-500">
         {bank.questions.length} questions — {bank.categoryLabel}
       </p>

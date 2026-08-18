@@ -5,6 +5,16 @@ import { getMyOrganization, type Organization } from "@/lib/actions/organization
 import { getMyFirstTraining } from "@/lib/actions/training";
 import { getMyFirstSession } from "@/lib/actions/session";
 import { resolveDocumentVariables } from "./document-variables";
+import { EVALUATION_PHASE_DOCUMENT_TEMPLATE, type EvaluationPhase } from "./evaluation-phases";
+
+// Inverse de EVALUATION_PHASE_DOCUMENT_TEMPLATE — pour ces 3 modèles de
+// document (résultat de positionnement / en cours / finale, migration
+// 0027), on ne veut pas la dernière tentative toutes phases confondues mais
+// la dernière tentative DU MOMENT concerné, sinon le document "Positionnement"
+// afficherait par exemple le score de l'évaluation finale la plus récente.
+const EVALUATION_TEMPLATE_TO_PHASE: Record<string, EvaluationPhase> = Object.fromEntries(
+  Object.entries(EVALUATION_PHASE_DOCUMENT_TEMPLATE).map(([phase, templateId]) => [templateId, phase as EvaluationPhase])
+);
 
 type TemplateSection = {
   code: string;
@@ -101,13 +111,22 @@ export async function buildDocumentHtml(documentTemplateId: string): Promise<Bui
 
   // Dernière évaluation complétée pour cette formation (peu importe la
   // session/le bénéficiaire précis en MVP mono-session) — alimente les
-  // variables evaluation_* du document "Résultat d'évaluation" (migration
-  // 0025) sans coupler ce document générique au moteur d'évaluation lui-même.
-  const { data: latestAttempt } = await supabase
+  // variables evaluation_* des documents "Résultat de positionnement / en
+  // cours / finale" (migrations 0025 et 0027) sans coupler ce document
+  // générique au moteur d'évaluation lui-même. Pour ces 3 modèles précis, on
+  // filtre en plus sur le moment concerné (positionnement/en_cours/finale)
+  // pour ne pas afficher, par exemple, le score du positionnement sur le
+  // document d'évaluation finale.
+  const evaluationPhaseFilter = EVALUATION_TEMPLATE_TO_PHASE[documentTemplateId];
+  let evaluationAttemptQuery = supabase
     .from("evaluation_attempts")
     .select("score_raw, score_max, score_percent, passed, completed_at")
     .eq("training_id", training.id)
-    .not("completed_at", "is", null)
+    .not("completed_at", "is", null);
+  if (evaluationPhaseFilter) {
+    evaluationAttemptQuery = evaluationAttemptQuery.eq("phase", evaluationPhaseFilter);
+  }
+  const { data: latestAttempt } = await evaluationAttemptQuery
     .order("completed_at", { ascending: false })
     .limit(1)
     .maybeSingle();

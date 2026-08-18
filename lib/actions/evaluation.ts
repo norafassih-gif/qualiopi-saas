@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getMyOrganization } from "@/lib/actions/organization";
 import { getMyFirstTraining } from "@/lib/actions/training";
 import { getMyFirstSession } from "@/lib/actions/session";
+import { isEvaluationPhase, type EvaluationPhase } from "@/lib/engine/evaluation-phases";
 
 // Seuil de réussite du QCM — identique à ce qu'annonce déjà le contenu
 // existant (bloc CM_EVAL_001 : "seuil de réussite : 70 %").
@@ -103,6 +104,7 @@ export type EvaluationResultDetail = {
 
 export type EvaluationResult = {
   attemptId: string;
+  phase: EvaluationPhase;
   scoreRaw: number;
   scoreMax: number;
   scoreOn20: number;
@@ -115,9 +117,16 @@ export type EvaluationResult = {
  * Corrige et enregistre une tentative de QCM. Correction 100 % locale, par
  * comparaison directe des `id` d'option cochée à `is_correct` en base
  * (aucun appel IA — cf. contrainte du projet). `answers` associe chaque
- * question_id à l'id de l'option choisie par le bénéficiaire.
+ * question_id à l'id de l'option choisie par le bénéficiaire. `phase`
+ * distingue les 3 moments attendus par le référentiel Qualiopi
+ * (positionnement à l'entrée / en cours / finale — cf.
+ * lib/engine/evaluation-phases.ts) ; la même banque de questions est
+ * réutilisée pour les 3, seul le moment déclaré change.
  */
-export async function submitEvaluationAttempt(answers: Record<string, string>): Promise<EvaluationResult | { error: string }> {
+export async function submitEvaluationAttempt(
+  answers: Record<string, string>,
+  phase: EvaluationPhase = "finale"
+): Promise<EvaluationResult | { error: string }> {
   const org = await getMyOrganization();
   if (!org) return { error: "Organisme introuvable." };
 
@@ -203,6 +212,7 @@ export async function submitEvaluationAttempt(answers: Record<string, string>): 
       session_id: session?.id ?? null,
       beneficiary_id: beneficiaryId,
       category_id: training.category_id,
+      phase,
       completed_at: new Date().toISOString(),
       score_raw: scoreRaw,
       score_max: scoreMax,
@@ -230,6 +240,7 @@ export async function submitEvaluationAttempt(answers: Record<string, string>): 
 
   return {
     attemptId: attempt.id,
+    phase,
     scoreRaw,
     scoreMax,
     scoreOn20,
@@ -244,20 +255,27 @@ export type EvaluationAttemptFormState = { error: string | null; result: Evaluat
 /**
  * Wrapper `useActionState` autour de submitEvaluationAttempt : reconstruit
  * la map question -> option cochée à partir du FormData (des groupes de
- * radios nommés par l'id de question), puis délègue la correction.
+ * radios nommés par l'id de question), en isolant le champ caché `phase`
+ * (positionnement / en_cours / finale, choisi sur l'écran précédent) qui
+ * n'est pas une réponse à une question. Une valeur absente ou invalide
+ * retombe sur "finale" (comportement historique avant l'ajout des phases).
  */
 export async function submitEvaluationForm(
   _prevState: EvaluationAttemptFormState,
   formData: FormData
 ): Promise<EvaluationAttemptFormState> {
   const answers: Record<string, string> = {};
+  let phase: EvaluationPhase = "finale";
   for (const [key, value] of formData.entries()) {
-    if (typeof value === "string" && value) {
-      answers[key] = value;
+    if (typeof value !== "string" || !value) continue;
+    if (key === "phase") {
+      if (isEvaluationPhase(value)) phase = value;
+      continue;
     }
+    answers[key] = value;
   }
 
-  const result = await submitEvaluationAttempt(answers);
+  const result = await submitEvaluationAttempt(answers, phase);
   if ("error" in result) {
     return { error: result.error, result: null };
   }
@@ -274,13 +292,15 @@ export async function getEvaluationAttemptResult(attemptId: string): Promise<Eva
 
   const { data: attempt, error: attemptError } = await supabase
     .from("evaluation_attempts")
-    .select("id, score_raw, score_max, score_percent, passed")
+    .select("id, phase, score_raw, score_max, score_percent, passed")
     .eq("id", attemptId)
     .maybeSingle();
 
   if (attemptError || !attempt || attempt.score_raw == null || attempt.score_max == null) {
     return { error: "Résultat introuvable." };
   }
+
+  const phase: EvaluationPhase = isEvaluationPhase(attempt.phase) ? attempt.phase : "finale";
 
   const { data: answers, error: answersError } = await supabase
     .from("evaluation_attempt_answers")
@@ -318,6 +338,7 @@ export async function getEvaluationAttemptResult(attemptId: string): Promise<Eva
 
   return {
     attemptId: attempt.id,
+    phase,
     scoreRaw: attempt.score_raw,
     scoreMax: attempt.score_max,
     scoreOn20,

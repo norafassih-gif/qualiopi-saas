@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getEvaluationAttemptResult } from "@/lib/actions/evaluation";
+import { EVALUATION_PHASE_LABELS, EVALUATION_PHASE_DOCUMENT_TEMPLATE } from "@/lib/engine/evaluation-phases";
 
 export default async function EvaluationResultPage({
   params,
@@ -13,9 +14,11 @@ export default async function EvaluationResultPage({
     redirect("/evaluation");
   }
 
+  const documentTemplateId = EVALUATION_PHASE_DOCUMENT_TEMPLATE[result.phase];
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="mb-1 text-2xl font-bold">Résultat de l&apos;évaluation</h1>
+      <h1 className="mb-1 text-2xl font-bold">Résultat — {EVALUATION_PHASE_LABELS[result.phase]}</h1>
       <p className="mb-6 text-sm text-gray-600">Résultat immédiat, auto-correction — seuil de réussite : 70 %.</p>
 
       <div
@@ -54,10 +57,9 @@ export default async function EvaluationResultPage({
       </div>
 
       <div className="mt-8 flex flex-wrap gap-4">
-        {/* Lien de téléchargement de fichier (pas une page interne) : <a> natif est volontaire ici, pas next/link — même convention que app/(app)/documents/page.tsx. */}
-        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+        {/* Lien de téléchargement de fichier (pas une page interne) : <a> natif est volontaire ici, pas next/link — même convention que app/(app)/documents/page.tsx. Le modèle de document dépend du moment (positionnement/en_cours/finale, migration 0027) ; href dynamique, donc pas flagué par no-html-link-for-pages (même heuristique que documents/page.tsx). */}
         <a
-          href="/api/documents/resultat_evaluation"
+          href={`/api/documents/${documentTemplateId}`}
           className="rounded-md bg-blue-900 px-4 py-2 text-sm text-white"
         >
           Télécharger le résultat en PDF
