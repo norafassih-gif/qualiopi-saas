@@ -55,6 +55,18 @@ function required(value: string | null | undefined, label: string): string {
  * variable absente d'ici est remplacée par une chaîne vide dans le document
  * final plutôt que de faire échouer la génération.
  */
+// Dernière tentative d'évaluation complétée pour la formation (cf.
+// lib/actions/evaluation.ts) — optionnelle : tant qu'aucun QCM n'a été
+// passé, le document de résultat affiche des placeholders visibles plutôt
+// que d'échouer (même logique que `required()` ci-dessus).
+export type EvaluationResultForVariables = {
+  score_raw: number;
+  score_max: number;
+  score_percent: number;
+  passed: boolean;
+  completed_at: string | null;
+} | null;
+
 export function resolveDocumentVariables(input: {
   org: Organization;
   training: Training;
@@ -64,6 +76,7 @@ export function resolveDocumentVariables(input: {
   beneficiaryEmail?: string | null;
   beneficiaryRole?: string | null;
   beneficiaryCount?: number;
+  evaluationResult?: EvaluationResultForVariables;
 }): Record<string, string> {
   const {
     org,
@@ -74,6 +87,7 @@ export function resolveDocumentVariables(input: {
     beneficiaryEmail = null,
     beneficiaryRole = null,
     beneficiaryCount = 0,
+    evaluationResult = null,
   } = input;
 
   return {
@@ -181,5 +195,21 @@ export function resolveDocumentVariables(input: {
       session?.convention_reference || `CONV-${(session?.id ?? "").slice(0, 8).toUpperCase() || "XXXXXXXX"}`,
 
     generated_date: formatDate(new Date().toISOString()),
+
+    // Résultat d'évaluation (QCM, cf. migration 0024/0025 — moteur
+    // d'évaluation) : placeholders explicites tant qu'aucune tentative n'a
+    // été complétée, pour ne pas laisser un document de résultat vide.
+    evaluation_score_raw: evaluationResult ? String(evaluationResult.score_raw) : "[à compléter]",
+    evaluation_score_max: evaluationResult ? String(evaluationResult.score_max) : "[à compléter]",
+    evaluation_score_on20: evaluationResult
+      ? (Math.round((evaluationResult.score_raw / evaluationResult.score_max) * 20 * 10) / 10).toString()
+      : "[à compléter]",
+    evaluation_score_percent: evaluationResult ? String(evaluationResult.score_percent) : "[à compléter]",
+    evaluation_passed_label: evaluationResult
+      ? evaluationResult.passed
+        ? "Acquis (≥ 70 %)"
+        : "Non acquis (< 70 %) — à retravailler"
+      : "[Aucune évaluation complétée pour l'instant]",
+    evaluation_completed_date: evaluationResult ? formatDate(evaluationResult.completed_at) : "[à compléter]",
   };
 }

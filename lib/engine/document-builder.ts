@@ -99,6 +99,19 @@ export async function buildDocumentHtml(documentTemplateId: string): Promise<Bui
     beneficiaryCount = count ?? 0;
   }
 
+  // Dernière évaluation complétée pour cette formation (peu importe la
+  // session/le bénéficiaire précis en MVP mono-session) — alimente les
+  // variables evaluation_* du document "Résultat d'évaluation" (migration
+  // 0025) sans coupler ce document générique au moteur d'évaluation lui-même.
+  const { data: latestAttempt } = await supabase
+    .from("evaluation_attempts")
+    .select("score_raw, score_max, score_percent, passed, completed_at")
+    .eq("training_id", training.id)
+    .not("completed_at", "is", null)
+    .order("completed_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   const vars = resolveDocumentVariables({
     org,
     training,
@@ -108,6 +121,16 @@ export async function buildDocumentHtml(documentTemplateId: string): Promise<Bui
     beneficiaryEmail,
     beneficiaryRole,
     beneficiaryCount,
+    evaluationResult:
+      latestAttempt && latestAttempt.score_raw != null && latestAttempt.score_max != null
+        ? {
+            score_raw: latestAttempt.score_raw,
+            score_max: latestAttempt.score_max,
+            score_percent: latestAttempt.score_percent ?? 0,
+            passed: latestAttempt.passed ?? false,
+            completed_at: latestAttempt.completed_at,
+          }
+        : null,
   });
 
   const [blocksResponse, modulesResponse, globalBlocksResponse] = await Promise.all([

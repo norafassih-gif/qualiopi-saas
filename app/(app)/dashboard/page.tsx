@@ -122,6 +122,9 @@ export default async function DashboardPage() {
           <a href="/parametres/qualite" className="text-blue-900 underline">
             ⚙️ Mes informations qualité →
           </a>
+          <a href="/evaluation" className="text-blue-900 underline">
+            📝 Évaluation des acquis →
+          </a>
         </div>
       )}
     </div>
