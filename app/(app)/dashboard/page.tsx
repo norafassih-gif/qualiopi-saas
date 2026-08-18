@@ -1,10 +1,29 @@
+import Link from "next/link";
+import {
+  Building2,
+  GraduationCap,
+  FileText,
+  Globe,
+  CheckCircle2,
+  Circle,
+  ArrowRight,
+  Palette,
+  ClipboardList,
+  Settings,
+  ShieldCheck,
+  LogOut,
+} from "lucide-react";
 import { redirect } from "next/navigation";
 import { getMyOrganization } from "@/lib/actions/organization";
 import { getMyFirstTraining } from "@/lib/actions/training";
 import { getMyFirstSession } from "@/lib/actions/session";
 import { listCategoryQuestions, getMyAnswers } from "@/lib/actions/questions";
+import { listDocumentTemplatesWithStatus } from "@/lib/actions/documents";
 import { signOut } from "@/lib/actions/auth";
 import { isPlatformAdmin } from "@/lib/actions/admin";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ProgressBar } from "@/components/ui/progress-bar";
 
 export default async function DashboardPage() {
   const org = await getMyOrganization();
@@ -26,125 +45,243 @@ export default async function DashboardPage() {
   const themeAnswers = training && themeQuestions.length > 0 ? await getMyAnswers(training.id) : {};
   const themesAnswered =
     themeQuestions.length > 0 && themeQuestions.every((q) => themeAnswers[q.id] !== undefined);
+  const themesApplicable = themeQuestions.length > 0;
 
   // Lien back-office (cf. migration 0034) — visible uniquement pour les
   // comptes ayant le statut "administrateur plateforme", pas pour les
   // futurs clients du SaaS.
   const isAdmin = await isPlatformAdmin();
 
+  // Progression "Formation" : création + (thématiques si applicable) + session.
+  const formationSteps = [Boolean(training), !themesApplicable || themesAnswered, Boolean(session)];
+  const formationPercent = Math.round(
+    (formationSteps.filter(Boolean).length / formationSteps.length) * 100
+  );
+
+  // Progression "Documents" : uniquement calculable une fois formation + session prêtes.
+  let documentsPercent = 0;
+  let documentsGenerated = 0;
+  let documentsTotal = 0;
+  if (training && session) {
+    const templates = await listDocumentTemplatesWithStatus();
+    if (!("error" in templates)) {
+      documentsTotal = templates.length;
+      documentsGenerated = templates.filter((t) => t.generated).length;
+      documentsPercent = documentsTotal > 0 ? Math.round((documentsGenerated / documentsTotal) * 100) : 0;
+    }
+  }
+
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
+    <div className="mx-auto max-w-4xl px-4 py-10">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Bonjour</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Bonjour</h1>
           <p className="text-gray-600">{org.company_name}</p>
         </div>
         <form action={signOut}>
-          <button type="submit" className="text-sm text-gray-500 underline">
+          <button
+            type="submit"
+            className="inline-flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900"
+          >
+            <LogOut className="h-4 w-4" aria-hidden="true" />
             Se déconnecter
           </button>
         </form>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-lg border border-gray-200 p-4">
-          <p className="text-xs font-medium uppercase text-gray-500">Organisme</p>
-          <p className="mt-1 font-medium">{org.company_name}</p>
-          <p className="text-sm text-green-700">✅ Créé</p>
-        </div>
+      {/* Progression d'ensemble */}
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <div className="mb-3 flex items-center gap-2 text-gray-500">
+            <Building2 className="h-4 w-4" aria-hidden="true" />
+            <p className="text-xs font-medium uppercase tracking-wide">Organisme</p>
+          </div>
+          <p className="mb-2 text-2xl font-semibold text-gray-900">100 %</p>
+          <ProgressBar value={100} />
+        </Card>
 
-        <div className="rounded-lg border border-gray-200 p-4">
+        <Card>
+          <div className="mb-3 flex items-center gap-2 text-gray-500">
+            <GraduationCap className="h-4 w-4" aria-hidden="true" />
+            <p className="text-xs font-medium uppercase tracking-wide">Formation</p>
+          </div>
+          <p className="mb-2 text-2xl font-semibold text-gray-900">{formationPercent} %</p>
+          <ProgressBar value={formationPercent} />
+        </Card>
+
+        <Card>
+          <div className="mb-3 flex items-center gap-2 text-gray-500">
+            <FileText className="h-4 w-4" aria-hidden="true" />
+            <p className="text-xs font-medium uppercase tracking-wide">Documents</p>
+          </div>
+          {training && session ? (
+            <>
+              <p className="mb-2 text-2xl font-semibold text-gray-900">{documentsPercent} %</p>
+              <ProgressBar value={documentsPercent} />
+              <p className="mt-2 text-xs text-gray-400">
+                {documentsGenerated} / {documentsTotal} générés
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-gray-400">En attente de la formation</p>
+          )}
+        </Card>
+
+        <Card className="opacity-70">
+          <div className="mb-3 flex items-center gap-2 text-gray-500">
+            <Globe className="h-4 w-4" aria-hidden="true" />
+            <p className="text-xs font-medium uppercase tracking-wide">Site internet</p>
+          </div>
+          <p className="text-sm text-gray-400">Bientôt disponible</p>
+        </Card>
+      </div>
+
+      {/* Détail organisme / formation / session */}
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Card>
+          <p className="text-xs font-medium uppercase text-gray-500">Organisme</p>
+          <p className="mt-1 font-medium text-gray-900">{org.company_name}</p>
+          <Badge variant="success" className="mt-2">
+            <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+            Créé
+          </Badge>
+        </Card>
+
+        <Card>
           <p className="text-xs font-medium uppercase text-gray-500">Ma formation</p>
           {training ? (
             <>
-              <p className="mt-1 font-medium">{training.name}</p>
-              <p className="text-sm text-green-700">✅ Créée</p>
-              {themeQuestions.length > 0 && (
-                <p className="mt-1 text-sm">
+              <p className="mt-1 font-medium text-gray-900">{training.name}</p>
+              <Badge variant="success" className="mt-2">
+                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                Créée
+              </Badge>
+              {themesApplicable && (
+                <div className="mt-2">
                   {themesAnswered ? (
-                    <span className="text-green-700">✅ Thématiques choisies</span>
+                    <Badge variant="success">
+                      <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                      Thématiques choisies
+                    </Badge>
                   ) : (
-                    <a href="/onboarding/themes" className="text-blue-900 underline">
-                      ⚠️ Choisir mes thématiques →
-                    </a>
+                    <Link
+                      href="/onboarding/themes"
+                      className="inline-flex items-center gap-1 text-sm text-blue-900 underline"
+                    >
+                      Choisir mes thématiques
+                      <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                    </Link>
                   )}
-                </p>
+                </div>
               )}
             </>
           ) : (
             <>
               <p className="mt-1 text-sm text-gray-600">Pas encore créée</p>
-              <a href="/onboarding/activite" className="text-sm text-blue-900 underline">
-                Créer ma formation →
-              </a>
+              <Link
+                href="/onboarding/activite"
+                className="mt-1 inline-flex items-center gap-1 text-sm text-blue-900 underline"
+              >
+                Créer ma formation
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </Link>
             </>
           )}
-        </div>
+        </Card>
 
-        <div className="rounded-lg border border-gray-200 p-4">
+        <Card>
           <p className="text-xs font-medium uppercase text-gray-500">Ma session</p>
           {session ? (
             <>
-              <p className="mt-1 font-medium">
+              <p className="mt-1 font-medium text-gray-900">
                 {session.start_date} → {session.end_date}
               </p>
-              <p className="text-sm text-green-700">✅ Créée</p>
-              <a href="/parametres/session" className="mt-1 inline-block text-sm text-blue-900 underline">
-                Modifier →
-              </a>
+              <Badge variant="success" className="mt-2">
+                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                Créée
+              </Badge>
+              <Link
+                href="/parametres/session"
+                className="mt-2 inline-flex items-center gap-1 text-sm text-blue-900 underline"
+              >
+                Modifier
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </Link>
             </>
           ) : training ? (
             <>
               <p className="mt-1 text-sm text-gray-600">Pas encore créée</p>
-              <a href="/onboarding/session" className="text-sm text-blue-900 underline">
-                Créer ma session →
-              </a>
+              <Link
+                href="/onboarding/session"
+                className="mt-1 inline-flex items-center gap-1 text-sm text-blue-900 underline"
+              >
+                Créer ma session
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </Link>
             </>
           ) : (
-            <p className="mt-1 text-sm text-gray-400">En attente de la formation</p>
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-400">
+              <Circle className="h-3.5 w-3.5" aria-hidden="true" />
+              En attente de la formation
+            </p>
           )}
-        </div>
+        </Card>
       </div>
 
-      <div className="mt-6 rounded-lg border border-gray-200 p-4">
+      <Card className="mt-6">
         <p className="text-sm text-gray-600">
           {!training
             ? "Étape suivante : choisir votre domaine de formation puis créer votre première formation."
-            : themeQuestions.length > 0 && !themesAnswered
+            : themesApplicable && !themesAnswered
             ? "Étape suivante : choisir les thématiques de votre formation pour construire automatiquement votre programme."
             : !session
             ? "Étape suivante : renseigner votre première session (bénéficiaire, dates, formateur)."
             : "Votre programme de formation peut être généré automatiquement à partir de vos réponses."}
         </p>
-        {training && (!themeQuestions.length || themesAnswered) && session && (
-          <a href="/onboarding/programme" className="mt-2 inline-block text-sm text-blue-900 underline">
-            Voir mon programme de formation →
-          </a>
+        {training && (!themesApplicable || themesAnswered) && session && (
+          <Link
+            href="/onboarding/programme"
+            className="mt-2 inline-flex items-center gap-1 text-sm text-blue-900 underline"
+          >
+            Voir mon programme de formation
+            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+          </Link>
         )}
-      </div>
+      </Card>
 
       {training && session && (
-        <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
-          <a href="/documents" className="text-blue-900 underline">
-            📄 Mes documents →
-          </a>
-          <a href="/parametres/qualite" className="text-blue-900 underline">
-            ⚙️ Mes informations qualité →
-          </a>
-          <a href="/evaluation" className="text-blue-900 underline">
-            📝 Évaluation des acquis →
-          </a>
-          <a href="/parametres/identite-visuelle" className="text-blue-900 underline">
-            🎨 Identité visuelle →
-          </a>
+        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          <Link href="/documents" className="inline-flex items-center gap-1.5 text-blue-900 underline">
+            <FileText className="h-4 w-4" aria-hidden="true" />
+            Mes documents
+          </Link>
+          <Link
+            href="/parametres/qualite"
+            className="inline-flex items-center gap-1.5 text-blue-900 underline"
+          >
+            <Settings className="h-4 w-4" aria-hidden="true" />
+            Mes informations qualité
+          </Link>
+          <Link href="/evaluation" className="inline-flex items-center gap-1.5 text-blue-900 underline">
+            <ClipboardList className="h-4 w-4" aria-hidden="true" />
+            Évaluation des acquis
+          </Link>
+          <Link
+            href="/parametres/identite-visuelle"
+            className="inline-flex items-center gap-1.5 text-blue-900 underline"
+          >
+            <Palette className="h-4 w-4" aria-hidden="true" />
+            Identité visuelle
+          </Link>
         </div>
       )}
 
       {isAdmin && (
         <div className="mt-6 border-t border-gray-200 pt-4 text-sm">
-          <a href="/admin" className="text-blue-900 underline">
-            ⚙️ Back-office admin →
-          </a>
+          <Link href="/admin" className="inline-flex items-center gap-1.5 text-blue-900 underline">
+            <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+            Back-office admin
+          </Link>
         </div>
       )}
     </div>
