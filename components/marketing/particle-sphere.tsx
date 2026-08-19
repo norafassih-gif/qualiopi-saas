@@ -26,7 +26,8 @@ function fibonacciSpherePoints(count: number) {
   return points;
 }
 
-const POINTS = fibonacciSpherePoints(110);
+const POINTS = fibonacciSpherePoints(150);
+const REFERENCE_SIZE = 220; // taille pour laquelle les points ci-dessous sont calibrés
 
 export function ParticleSphere({
   size = 220,
@@ -36,12 +37,13 @@ export function ParticleSphere({
   className?: string;
 }) {
   const radius = size / 2;
+  const scaleFactor = size / REFERENCE_SIZE; // les points grossissent avec la sphère
 
   return (
     <div
       aria-hidden="true"
       className={`pointer-events-none absolute left-1/2 top-1/2 z-0 animate-sphere-breathe motion-reduce:animate-none ${className}`}
-      style={{ width: size, height: size, perspective: 700 }}
+      style={{ width: size, height: size, perspective: Math.max(700, size * 3) }}
     >
       <div
         className="absolute inset-0 animate-sphere-spin motion-reduce:animate-none"
@@ -49,7 +51,7 @@ export function ParticleSphere({
       >
         {POINTS.map((p, i) => {
           const depth = (p.z + 1) / 2; // 0 (loin) -> 1 (proche)
-          const dotSize = 2 + depth * 2.5;
+          const dotSize = (2 + depth * 3) * scaleFactor;
           return (
             <span
               key={i}
@@ -60,7 +62,7 @@ export function ParticleSphere({
                 marginLeft: -dotSize / 2,
                 marginTop: -dotSize / 2,
                 opacity: 0.25 + depth * 0.65,
-                boxShadow: "0 0 6px 1px rgba(129,140,248,0.55)",
+                boxShadow: "0 0 8px 1px rgba(129,140,248,0.55)",
                 transform: `translate3d(${p.x * radius}px, ${p.y * radius}px, ${p.z * radius}px)`,
               }}
             />

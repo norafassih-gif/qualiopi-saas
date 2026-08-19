@@ -46,7 +46,8 @@ body {
   --animate-sphere-spin: sphere-spin 16s linear infinite;
   --animate-sphere-breathe: sphere-breathe 4s ease-in-out infinite;
   --animate-sphere-travel: sphere-travel 6s ease-in-out infinite;
-  --animate-letter-bulge: letter-bulge 6s ease-in-out infinite;
+  --animate-word-zoom-qualiopi: word-zoom-qualiopi 6s ease-in-out infinite;
+  --animate-word-zoom-pilote: word-zoom-pilote 6s ease-in-out infinite;
 
   @keyframes gradient {
     to {
@@ -143,18 +144,41 @@ body {
     }
   }
 
-  /* Vague de "gonflement" jouée par chaque lettre — même durée que
-     sphere-travel, mais avec un décalage négatif différent par lettre
-     (voir BulgeLetter) pour que le renflement parte de "Qualiopi" et se
-     propage jusqu'à "Pilote", au rythme de la sphère qui passe derrière. */
-  @keyframes letter-bulge {
-    0%,
-    88%,
-    100% {
-      transform: scale(1) translateY(0);
+  /* "Qualiopi" et "Pilote" zooment brièvement chacun leur tour — au moment
+     précis où sphere-travel (même durée de 6s) passe derrière eux — pour
+     donner l'impression que la sphère fait "gonfler" le texte en le
+     traversant, comme un effet de loupe. Combiné dans le même keyframe que
+     le dégradé animé pour "Qualiopi" (une seule animation par mot : mettre
+     bg-clip-text sur un parent puis appliquer une transform sur des lettres
+     enfants casse le rendu du dégradé dans certains navigateurs — ici le
+     scale s'applique directement sur l'élément qui porte le dégradé). */
+  @keyframes word-zoom-qualiopi {
+    0% {
+      transform: scale(1);
+      background-position: 0% center;
     }
-    4% {
-      transform: scale(1.22) translateY(-6px);
+    24%,
+    34% {
+      transform: scale(1);
+    }
+    28% {
+      transform: scale(1.35);
+    }
+    100% {
+      transform: scale(1);
+      background-position: 200% center;
+    }
+  }
+
+  @keyframes word-zoom-pilote {
+    0%,
+    69%,
+    78%,
+    100% {
+      transform: scale(1);
+    }
+    73% {
+      transform: scale(1.35);
     }
   }
 }

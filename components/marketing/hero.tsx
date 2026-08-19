@@ -2,10 +2,6 @@ import Link from "next/link";
 import { Reveal } from "./reveal";
 import { Glow } from "./glow";
 import { ParticleSphere } from "./particle-sphere";
-import { BulgeLetter } from "./bulge-letter";
-
-const QUALIOPI_LETTERS = "Qualiopi".split("");
-const PILOTE_LETTERS = "Pilote".split("");
 
 export function MarketingHero() {
   return (
@@ -27,22 +23,14 @@ export function MarketingHero() {
                     "Qualiopi Pilote", du Q jusqu'au e final. */}
                 <span className="relative inline-block">
                   <div className="absolute top-1/2 -translate-y-1/2 animate-sphere-travel motion-reduce:hidden">
-                    <ParticleSphere size={110} />
+                    <ParticleSphere size={280} />
                   </div>
 
-                  <span className="relative z-10 animate-gradient bg-[linear-gradient(to_right,var(--color-indigo-300),var(--color-gray-50),var(--color-indigo-400),var(--color-gray-50))] bg-[length:200%_auto] bg-clip-text font-extrabold text-transparent">
-                    {QUALIOPI_LETTERS.map((letter, i) => (
-                      <BulgeLetter key={`q-${i}`} index={i}>
-                        {letter}
-                      </BulgeLetter>
-                    ))}
+                  <span className="relative z-10 inline-block animate-word-zoom-qualiopi bg-[linear-gradient(to_right,var(--color-indigo-300),var(--color-gray-50),var(--color-indigo-400),var(--color-gray-50))] bg-[length:200%_auto] bg-clip-text font-extrabold text-transparent motion-reduce:animate-none">
+                    Qualiopi
                   </span>{" "}
-                  <span className="relative z-10 font-extralight text-gray-400">
-                    {PILOTE_LETTERS.map((letter, i) => (
-                      <BulgeLetter key={`p-${i}`} index={QUALIOPI_LETTERS.length + i}>
-                        {letter}
-                      </BulgeLetter>
-                    ))}
+                  <span className="relative z-10 inline-block animate-word-zoom-pilote font-extralight text-gray-400 motion-reduce:animate-none">
+                    Pilote
                   </span>
                 </span>
               </h1>
