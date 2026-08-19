@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Reveal } from "./reveal";
 import { Glow } from "./glow";
-import { ParticleSphere } from "./particle-sphere";
+import { InteractiveSphereLayer } from "./interactive-sphere-layer";
+
+const PILOTE_LETTERS = "Pilote".split("");
 
 export function MarketingHero() {
   return (
@@ -9,7 +11,9 @@ export function MarketingHero() {
       <Glow />
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="py-16 md:py-24">
-          <div className="pb-12 text-center md:pb-16">
+          <div className="relative pb-12 text-center md:pb-16">
+            <InteractiveSphereLayer />
+
             <Reveal>
               <span className="inline-flex items-center gap-3 pb-5 text-sm text-indigo-200/65 before:h-px before:w-6 before:bg-linear-to-r before:from-transparent before:to-indigo-200/50 after:h-px after:w-6 after:bg-linear-to-l after:from-transparent after:to-indigo-200/50">
                 Sans IA, sans jargon Qualiopi
@@ -17,21 +21,19 @@ export function MarketingHero() {
             </Reveal>
 
             <Reveal delay={120}>
-              <h1 className="pb-6 text-5xl leading-none tracking-tight md:text-7xl">
-                {/* Boîte ajustée exactement à la largeur du texte (inline-block) :
-                    la sphère qui traverse de 0 % à 100 % suit ainsi précisément
-                    "Qualiopi Pilote", du Q jusqu'au e final. */}
-                <span className="relative inline-block">
-                  <div className="absolute top-1/2 -translate-y-1/2 animate-sphere-travel motion-reduce:hidden">
-                    <ParticleSphere size={280} />
-                  </div>
-
-                  <span className="relative z-10 inline-block animate-word-zoom-qualiopi bg-[linear-gradient(to_right,var(--color-indigo-300),var(--color-gray-50),var(--color-indigo-400),var(--color-gray-50))] bg-[length:200%_auto] bg-clip-text font-extrabold text-transparent motion-reduce:animate-none">
-                    Qualiopi
-                  </span>{" "}
-                  <span className="relative z-10 inline-block animate-word-zoom-pilote font-extralight text-gray-400 motion-reduce:animate-none">
-                    Pilote
-                  </span>
+              <h1 className="relative z-10 pb-6 text-5xl leading-none tracking-tight md:text-7xl">
+                <span
+                  data-sphere-word="qualiopi"
+                  className="inline-block animate-gradient bg-[linear-gradient(to_right,var(--color-indigo-300),var(--color-gray-50),var(--color-indigo-400),var(--color-gray-50))] bg-[length:200%_auto] bg-clip-text font-extrabold text-transparent motion-reduce:animate-none"
+                >
+                  Qualiopi
+                </span>{" "}
+                <span className="inline-block font-extralight text-gray-400">
+                  {PILOTE_LETTERS.map((letter, i) => (
+                    <span key={i} data-sphere-letter className="inline-block">
+                      {letter}
+                    </span>
+                  ))}
                 </span>
               </h1>
             </Reveal>

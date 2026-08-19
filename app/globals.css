@@ -45,9 +45,6 @@ body {
   --animate-appear-zoom: appear-zoom 0.9s ease-out forwards;
   --animate-sphere-spin: sphere-spin 16s linear infinite;
   --animate-sphere-breathe: sphere-breathe 4s ease-in-out infinite;
-  --animate-sphere-travel: sphere-travel 6s ease-in-out infinite;
-  --animate-word-zoom-qualiopi: word-zoom-qualiopi 6s ease-in-out infinite;
-  --animate-word-zoom-pilote: word-zoom-pilote 6s ease-in-out infinite;
 
   @keyframes gradient {
     to {
@@ -123,62 +120,4 @@ body {
     }
   }
 
-  /* La sphère traverse le titre de gauche (le Q de Qualiopi) à droite (le e
-     de Pilote), puis recommence — synchronisée en durée avec letter-bulge
-     ci-dessous pour donner l'impression qu'elle fait "gonfler" les lettres
-     sur son passage. */
-  @keyframes sphere-travel {
-    0% {
-      left: -6%;
-      opacity: 0;
-    }
-    10% {
-      opacity: 1;
-    }
-    90% {
-      opacity: 1;
-    }
-    100% {
-      left: 106%;
-      opacity: 0;
-    }
-  }
-
-  /* "Qualiopi" et "Pilote" zooment brièvement chacun leur tour — au moment
-     précis où sphere-travel (même durée de 6s) passe derrière eux — pour
-     donner l'impression que la sphère fait "gonfler" le texte en le
-     traversant, comme un effet de loupe. Combiné dans le même keyframe que
-     le dégradé animé pour "Qualiopi" (une seule animation par mot : mettre
-     bg-clip-text sur un parent puis appliquer une transform sur des lettres
-     enfants casse le rendu du dégradé dans certains navigateurs — ici le
-     scale s'applique directement sur l'élément qui porte le dégradé). */
-  @keyframes word-zoom-qualiopi {
-    0% {
-      transform: scale(1);
-      background-position: 0% center;
-    }
-    24%,
-    34% {
-      transform: scale(1);
-    }
-    28% {
-      transform: scale(1.35);
-    }
-    100% {
-      transform: scale(1);
-      background-position: 200% center;
-    }
-  }
-
-  @keyframes word-zoom-pilote {
-    0%,
-    69%,
-    78%,
-    100% {
-      transform: scale(1);
-    }
-    73% {
-      transform: scale(1.35);
-    }
-  }
 }
