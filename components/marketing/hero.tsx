@@ -2,6 +2,10 @@ import Link from "next/link";
 import { Reveal } from "./reveal";
 import { Glow } from "./glow";
 import { ParticleSphere } from "./particle-sphere";
+import { BulgeLetter } from "./bulge-letter";
+
+const QUALIOPI_LETTERS = "Qualiopi".split("");
+const PILOTE_LETTERS = "Pilote".split("");
 
 export function MarketingHero() {
   return (
@@ -18,12 +22,28 @@ export function MarketingHero() {
 
             <Reveal delay={120}>
               <h1 className="pb-6 text-5xl leading-none tracking-tight md:text-7xl">
-                <span className="animate-gradient bg-[linear-gradient(to_right,var(--color-indigo-300),var(--color-gray-50),var(--color-indigo-400),var(--color-gray-50))] bg-[length:200%_auto] bg-clip-text font-extrabold text-transparent">
-                  Qualiopi
-                </span>{" "}
+                {/* Boîte ajustée exactement à la largeur du texte (inline-block) :
+                    la sphère qui traverse de 0 % à 100 % suit ainsi précisément
+                    "Qualiopi Pilote", du Q jusqu'au e final. */}
                 <span className="relative inline-block">
-                  <ParticleSphere size={200} />
-                  <span className="relative z-10 font-extralight text-gray-400">Pilote</span>
+                  <div className="absolute top-1/2 -translate-y-1/2 animate-sphere-travel motion-reduce:hidden">
+                    <ParticleSphere size={110} />
+                  </div>
+
+                  <span className="relative z-10 animate-gradient bg-[linear-gradient(to_right,var(--color-indigo-300),var(--color-gray-50),var(--color-indigo-400),var(--color-gray-50))] bg-[length:200%_auto] bg-clip-text font-extrabold text-transparent">
+                    {QUALIOPI_LETTERS.map((letter, i) => (
+                      <BulgeLetter key={`q-${i}`} index={i}>
+                        {letter}
+                      </BulgeLetter>
+                    ))}
+                  </span>{" "}
+                  <span className="relative z-10 font-extralight text-gray-400">
+                    {PILOTE_LETTERS.map((letter, i) => (
+                      <BulgeLetter key={`p-${i}`} index={QUALIOPI_LETTERS.length + i}>
+                        {letter}
+                      </BulgeLetter>
+                    ))}
+                  </span>
                 </span>
               </h1>
             </Reveal>

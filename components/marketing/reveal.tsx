@@ -40,8 +40,10 @@ export function Reveal({
   return (
     <div
       ref={ref}
-      className={`transition-all duration-700 ease-out motion-reduce:transition-none motion-reduce:opacity-100 motion-reduce:translate-y-0 motion-reduce:blur-none ${
-        visible ? "opacity-100 translate-y-0 blur-none" : "opacity-0 translate-y-8 blur-sm"
+      className={`transition-all duration-700 ease-out motion-reduce:transition-none motion-reduce:opacity-100 motion-reduce:translate-y-0 motion-reduce:blur-none motion-reduce:scale-100 ${
+        visible
+          ? "opacity-100 translate-y-0 scale-100 blur-none"
+          : "opacity-0 translate-y-8 scale-95 blur-sm"
       } ${className}`}
       style={{ transitionDelay: visible ? `${delay}ms` : "0ms" }}
     >

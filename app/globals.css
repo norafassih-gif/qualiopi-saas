@@ -45,6 +45,8 @@ body {
   --animate-appear-zoom: appear-zoom 0.9s ease-out forwards;
   --animate-sphere-spin: sphere-spin 16s linear infinite;
   --animate-sphere-breathe: sphere-breathe 4s ease-in-out infinite;
+  --animate-sphere-travel: sphere-travel 6s ease-in-out infinite;
+  --animate-letter-bulge: letter-bulge 6s ease-in-out infinite;
 
   @keyframes gradient {
     to {
@@ -117,6 +119,42 @@ body {
     }
     50% {
       transform: translate(-50%, -50%) scale(1.15);
+    }
+  }
+
+  /* La sphère traverse le titre de gauche (le Q de Qualiopi) à droite (le e
+     de Pilote), puis recommence — synchronisée en durée avec letter-bulge
+     ci-dessous pour donner l'impression qu'elle fait "gonfler" les lettres
+     sur son passage. */
+  @keyframes sphere-travel {
+    0% {
+      left: -6%;
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+    }
+    90% {
+      opacity: 1;
+    }
+    100% {
+      left: 106%;
+      opacity: 0;
+    }
+  }
+
+  /* Vague de "gonflement" jouée par chaque lettre — même durée que
+     sphere-travel, mais avec un décalage négatif différent par lettre
+     (voir BulgeLetter) pour que le renflement parte de "Qualiopi" et se
+     propage jusqu'à "Pilote", au rythme de la sphère qui passe derrière. */
+  @keyframes letter-bulge {
+    0%,
+    88%,
+    100% {
+      transform: scale(1) translateY(0);
+    }
+    4% {
+      transform: scale(1.22) translateY(-6px);
     }
   }
 }
