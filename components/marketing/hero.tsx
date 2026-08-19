@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Reveal } from "./reveal";
 import { Glow } from "./glow";
+import { ParticleSphere } from "./particle-sphere";
 
 export function MarketingHero() {
   return (
@@ -20,7 +21,10 @@ export function MarketingHero() {
                 <span className="animate-gradient bg-[linear-gradient(to_right,var(--color-indigo-300),var(--color-gray-50),var(--color-indigo-400),var(--color-gray-50))] bg-[length:200%_auto] bg-clip-text font-extrabold text-transparent">
                   Qualiopi
                 </span>{" "}
-                <span className="font-extralight text-gray-400">Pilote</span>
+                <span className="relative inline-block">
+                  <ParticleSphere size={200} />
+                  <span className="relative z-10 font-extralight text-gray-400">Pilote</span>
+                </span>
               </h1>
             </Reveal>
 
