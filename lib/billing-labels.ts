@@ -7,8 +7,7 @@
 const PLAN_LABELS: Record<string, string> = {
   documents: "1 — Documents",
   documents_site: "2 — Documents + Site",
-  documents_site_accompagnement: "3 — + Accompagnement",
-  tout_compris: "4 — Tout compris + LMS",
+  tout_compris: "3 — Tout compris + LMS",
 };
 
 const STATUS_LABELS: Record<string, string> = {

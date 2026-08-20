@@ -13,6 +13,13 @@ type Plan = {
   available: boolean;
 };
 
+// Lien de contact pour l'offre "Accompagnement — sur devis" — en attendant
+// que Nora crée un lien de prise de rendez-vous (Calendly ou équivalent), on
+// pointe vers un mailto pré-rempli. À remplacer par le lien de calendrier dès
+// qu'il existe (cf. claude/roadmap-produit-et-tarifs.md, tâche en cours).
+const ACCOMPAGNEMENT_CONTACT_HREF =
+  "mailto:nora.littlecreatrice@gmail.com?subject=Accompagnement%20Qualiopi%20%E2%80%94%20demande%20de%20devis";
+
 const PLANS: Plan[] = [
   {
     name: "Documents",
@@ -32,29 +39,16 @@ const PLANS: Plan[] = [
   {
     name: "Documents + Site",
     tagline: "Votre dossier de preuve, et le site internet de votre organisme.",
-    price: "55 €",
-    billingNote: "par mois en engagement annuel — 65 €/mois sans engagement",
+    price: "75 €",
+    billingNote: "par mois en engagement annuel — 85 €/mois sans engagement",
     features: [
       "Tout ce qui est inclus dans la formule Documents",
       "Site vitrine généré à partir des mêmes informations",
       "Catalogue de formations, pages légales, accessibilité, contact…",
-      "Aucune conception graphique à faire vous-même",
+      "Option : Logo + charte graphique sur-mesure (+15 €/mois)",
     ],
-    cta: null,
-    available: false,
-  },
-  {
-    name: "Documents + Site + Accompagnement",
-    tagline: "Un référent Qualiopi vous accompagne jusqu'à la certification.",
-    price: "Abonnement + forfait dès 1 490 €",
-    billingNote: "forfait d'accompagnement payé une fois, en plus de l'abonnement ci-dessus",
-    features: [
-      "Tout ce qui est inclus dans la formule Documents + Site",
-      "Mise en relation avec un référent Qualiopi",
-      "Relecture et accompagnement jusqu'à l'obtention de la certification",
-    ],
-    cta: null,
-    available: false,
+    cta: { label: "Créer mon compte", href: "/signup" },
+    available: true,
   },
   {
     name: "Tout compris + LMS",
@@ -62,13 +56,27 @@ const PLANS: Plan[] = [
     price: "129 €",
     billingNote: "par mois en engagement annuel — 149 €/mois sans engagement",
     features: [
-      "Tout ce qui est inclus dans la formule Documents + Site + Accompagnement",
+      "Tout ce qui est inclus dans la formule Documents + Site",
       "Espace apprenant, quiz et évaluations interactives",
       "Contenus vidéo et attestations/certificats automatiques",
       "Statistiques de suivi pédagogique",
+      "Option : Logo + charte graphique sur-mesure (+15 €/mois)",
     ],
-    cta: null,
-    available: false,
+    cta: { label: "Créer mon compte", href: "/signup" },
+    available: true,
+  },
+  {
+    name: "Accompagnement Qualiopi",
+    tagline: "Un référent vous accompagne jusqu'à la certification, sur-mesure.",
+    price: "Sur devis",
+    billingNote: "en complément de l'abonnement de votre choix ci-dessus",
+    features: [
+      "Mise en relation avec un référent Qualiopi",
+      "Relecture personnalisée de votre dossier",
+      "Accompagnement jusqu'à l'obtention de la certification",
+    ],
+    cta: { label: "Nous contacter", href: ACCOMPAGNEMENT_CONTACT_HREF },
+    available: true,
   },
 ];
 

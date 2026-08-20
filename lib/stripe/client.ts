@@ -20,24 +20,30 @@ export function getStripe(): Stripe {
   return _stripe;
 }
 
-// Un seul plan vendable aujourd'hui (cf. /tarifs — "seul le Plan 1 a un
-// bouton d'action réel", les formules 2 à 4 ne sont pas encore construites).
-// Les clés des autres plans sont prévues ici pour éviter de re-designer le
-// mapping quand ils seront prêts, mais restent vides tant qu'ils ne le sont
-// pas — voir isPlanPurchasable ci-dessous, qui empêche explicitement de
-// vendre un plan pas encore livré même si sa variable d'env est absente.
+// Grille tarifaire v2 (décision de Nora, 20/08/2026) : les 3 formules sont
+// vendables dès maintenant, y compris "documents_site" et "tout_compris"
+// alors que le site internet et le LMS ne sont pas encore construits — choix
+// business explicite de Nora (cf. claude/roadmap-produit-et-tarifs.md), pas
+// un oubli. "documents_site_accompagnement" a disparu : l'accompagnement
+// Qualiopi est désormais une prestation "sur devis" hors Stripe (page
+// /tarifs, CTA "Nous contacter"), plus un palier d'abonnement.
 export const STRIPE_PRICE_BY_PLAN: Record<string, string | undefined> = {
   documents: process.env.STRIPE_PRICE_DOCUMENTS,
   documents_site: process.env.STRIPE_PRICE_DOCUMENTS_SITE,
-  documents_site_accompagnement: process.env.STRIPE_PRICE_DOCUMENTS_SITE_ACCOMPAGNEMENT,
   tout_compris: process.env.STRIPE_PRICE_TOUT_COMPRIS,
 };
 
-// Formules réellement livrées et vendables aujourd'hui, cf. section 3.6 du
-// roadmap produit ("seul le Plan 1 a un bouton d'action réel"). À élargir
-// au fur et à mesure que les formules 2/3/4 seront construites.
-export const PURCHASABLE_PLANS = ["documents"] as const;
+// Formules réellement vendables aujourd'hui (les 3, cf. décision de Nora
+// ci-dessus). isPlanPurchasable reste la porte de sécurité : même si une
+// variable d'env de prix venait à manquer, startCheckout refusera quand même
+// tout plan absent de cette liste.
+export const PURCHASABLE_PLANS = ["documents", "documents_site", "tout_compris"] as const;
 
 export function isPlanPurchasable(plan: string): boolean {
   return (PURCHASABLE_PLANS as readonly string[]).includes(plan);
 }
+
+// Add-on optionnel "Logo + charte graphique" (+15 €/mois, prestation de
+// design sur-mesure réalisée par Nora) — indépendant du plan choisi, ajouté
+// comme deuxième ligne dans la session Stripe Checkout quand coché.
+export const STRIPE_PRICE_BRANDING_ADDON = process.env.STRIPE_PRICE_BRANDING_ADDON;

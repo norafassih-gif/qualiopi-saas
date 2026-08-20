@@ -3,7 +3,12 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMyOrganization } from "@/lib/actions/organization";
-import { getStripe, STRIPE_PRICE_BY_PLAN, isPlanPurchasable } from "@/lib/stripe/client";
+import {
+  getStripe,
+  STRIPE_PRICE_BY_PLAN,
+  STRIPE_PRICE_BRANDING_ADDON,
+  isPlanPurchasable,
+} from "@/lib/stripe/client";
 
 export type BillingFormState = { error: string | null };
 
@@ -13,6 +18,7 @@ export type MyBilling = {
   is_blocked: boolean;
   blocked_reason: string | null;
   stripe_customer_id: string | null;
+  has_branding_addon: boolean;
 };
 
 /** Statut de facturation de l'organisme du client connecté. */
@@ -23,7 +29,7 @@ export async function getMyBilling(): Promise<MyBilling | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("organization_billing")
-    .select("plan, subscription_status, is_blocked, blocked_reason, stripe_customer_id")
+    .select("plan, subscription_status, is_blocked, blocked_reason, stripe_customer_id, has_branding_addon")
     .eq("organization_id", org.id)
     .maybeSingle();
 
@@ -58,6 +64,16 @@ export async function startCheckout(_prevState: BillingFormState, formData: Form
     };
   }
 
+  // Add-on optionnel "Logo + charte graphique" (+15 €/mois) — coché depuis
+  // le formulaire, ajouté comme deuxième ligne Stripe indépendamment du plan.
+  const wantsBrandingAddon = formData.get("branding_addon") === "on";
+  if (wantsBrandingAddon && !STRIPE_PRICE_BRANDING_ADDON) {
+    return {
+      error:
+        "L'option Logo + charte graphique n'est pas encore configurée côté serveur. Contactez l'équipe technique.",
+    };
+  }
+
   const org = await getMyOrganization();
   if (!org) {
     redirect("/onboarding/entreprise");
@@ -80,14 +96,23 @@ export async function startCheckout(_prevState: BillingFormState, formData: Form
   let sessionUrl: string | null;
   try {
     const stripe = getStripe();
+    const lineItems = [{ price: priceId, quantity: 1 }];
+    if (wantsBrandingAddon && STRIPE_PRICE_BRANDING_ADDON) {
+      lineItems.push({ price: STRIPE_PRICE_BRANDING_ADDON, quantity: 1 });
+    }
+    const metadata = {
+      organization_id: org.id,
+      plan,
+      branding_addon: wantsBrandingAddon ? "1" : "0",
+    };
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: billing?.stripe_customer_id || undefined,
       customer_email: billing?.stripe_customer_id ? undefined : org.email || user.email || undefined,
       client_reference_id: org.id,
-      line_items: [{ price: priceId, quantity: 1 }],
-      subscription_data: { metadata: { organization_id: org.id, plan } },
-      metadata: { organization_id: org.id, plan },
+      line_items: lineItems,
+      subscription_data: { metadata },
+      metadata,
       success_url: `${appUrl()}/parametres/abonnement?success=1`,
       cancel_url: `${appUrl()}/parametres/abonnement?canceled=1`,
     });

@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
       const session = event.data.object as Stripe.Checkout.Session;
       const organizationId = session.client_reference_id || session.metadata?.organization_id;
       const plan = session.metadata?.plan;
+      const brandingAddon = session.metadata?.branding_addon;
       if (!organizationId) break;
 
       const { error } = await supabase
@@ -52,6 +53,11 @@ export async function POST(req: NextRequest) {
           blocked_at: null,
           blocked_reason: null,
           ...(plan ? { plan } : {}),
+          // Metadata posée par startCheckout (lib/actions/billing.ts) — "1"
+          // si la case "Logo + charte graphique" était cochée au paiement.
+          // Absent (undefined) sur un ancien paiement/webhook rejoué : on ne
+          // touche alors pas à la colonne plutôt que de la remettre à false.
+          ...(brandingAddon !== undefined ? { has_branding_addon: brandingAddon === "1" } : {}),
         })
         .eq("organization_id", organizationId);
       if (error) console.error("stripe webhook: checkout.session.completed", error);
