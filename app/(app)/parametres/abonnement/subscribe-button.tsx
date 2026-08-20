@@ -14,7 +14,7 @@ export function SubscribeButton({
 }: {
   plan: string;
   label: string;
-  /** Affiche la case à cocher optionnelle "Logo + charte graphique" (+15 €/mois). */
+  /** Affiche la case à cocher optionnelle "Logo + charte graphique" (+18 €/mois). */
   showBrandingAddon?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(startCheckout, initialState);
@@ -34,7 +34,7 @@ export function SubscribeButton({
           />
           <span>
             Ajouter <span className="font-medium">Logo + charte graphique</span> — création
-            sur-mesure par notre équipe (+15 €/mois)
+            sur-mesure par notre équipe (+18 €/mois)
           </span>
         </label>
       )}
