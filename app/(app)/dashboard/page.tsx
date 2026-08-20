@@ -11,6 +11,7 @@ import {
   ClipboardList,
   Settings,
   ShieldCheck,
+  CreditCard,
 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getMyOrganization } from "@/lib/actions/organization";
@@ -19,9 +20,11 @@ import { getMyFirstSession } from "@/lib/actions/session";
 import { listCategoryQuestions, getMyAnswers } from "@/lib/actions/questions";
 import { listDocumentTemplatesWithStatus } from "@/lib/actions/documents";
 import { isPlatformAdmin } from "@/lib/actions/admin";
+import { getPendingAccessGrant } from "@/lib/actions/access-grants";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ProgressBar } from "@/components/ui/progress-bar";
+import { AccessGrantBanner } from "@/components/ui/access-grant-banner";
 
 export default async function DashboardPage() {
   const org = await getMyOrganization();
@@ -49,6 +52,7 @@ export default async function DashboardPage() {
   // comptes ayant le statut "administrateur plateforme", pas pour les
   // futurs clients du SaaS.
   const isAdmin = await isPlatformAdmin();
+  const pendingAccessGrant = await getPendingAccessGrant();
 
   // Progression "Formation" : création + (thématiques si applicable) + session.
   const formationSteps = [Boolean(training), !themesApplicable || themesAnswered, Boolean(session)];
@@ -77,6 +81,8 @@ export default async function DashboardPage() {
           <span className="font-light text-gray-500">— {org.company_name}</span>
         </h1>
       </div>
+
+      {pendingAccessGrant && <AccessGrantBanner grant={pendingAccessGrant} />}
 
       {/* Progression d'ensemble */}
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -261,6 +267,13 @@ export default async function DashboardPage() {
           >
             <Palette className="h-4 w-4" aria-hidden="true" />
             Identité visuelle
+          </Link>
+          <Link
+            href="/parametres/abonnement"
+            className="inline-flex items-center gap-1.5 text-blue-900 underline"
+          >
+            <CreditCard className="h-4 w-4" aria-hidden="true" />
+            Mon abonnement
           </Link>
         </div>
       )}

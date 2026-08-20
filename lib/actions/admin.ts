@@ -458,3 +458,206 @@ export async function updateDocumentSectionHtml(_prevState: AdminFormState, form
   revalidatePath(`/admin/documents/${templateId}`);
   redirect(`/admin/documents/${templateId}?saved=1`);
 }
+
+// ---------------------------------------------------------------------------
+// Organisations clientes — abonnement, blocage, accès support (migrations
+// 0036/0037). Distinct des sections ci-dessus : ici on gère des ORGANISMES
+// CLIENTS (données propres à chacun), pas le référentiel global partagé.
+// ---------------------------------------------------------------------------
+
+export type AdminOrganizationRow = {
+  id: string;
+  company_name: string;
+  commercial_name: string | null;
+  email: string | null;
+  created_at: string;
+  plan: string;
+  subscription_status: string;
+  is_blocked: boolean;
+  blocked_reason: string | null;
+  latest_access_grant: {
+    id: string;
+    status: string;
+    requested_at: string;
+    responded_at: string | null;
+    expires_at: string;
+  } | null;
+};
+
+/**
+ * Liste tous les organismes clients de la plateforme avec leur statut de
+ * facturation et la dernière demande d'accès support en date, pour le
+ * tableau de bord /admin/organisations. Deux requêtes séparées (organismes,
+ * puis facturation/demandes) plutôt qu'un embedding PostgREST : plus simple
+ * à lire, et évite les pièges du "limit 1 par groupe" en SQL embarqué.
+ */
+export async function listOrganizationsForAdmin(): Promise<AdminOrganizationRow[]> {
+  await requireAdmin();
+  const supabase = await createClient();
+
+  const { data: orgs, error: orgsError } = await supabase
+    .from("organizations")
+    .select("id, company_name, commercial_name, email, created_at")
+    .order("created_at", { ascending: false });
+  if (orgsError) {
+    console.error("listOrganizationsForAdmin/organizations", orgsError);
+    return [];
+  }
+
+  const { data: billing, error: billingError } = await supabase
+    .from("organization_billing")
+    .select("organization_id, plan, subscription_status, is_blocked, blocked_reason");
+  if (billingError) {
+    console.error("listOrganizationsForAdmin/billing", billingError);
+  }
+  const billingByOrg = new Map((billing ?? []).map((b) => [b.organization_id, b]));
+
+  type GrantRow = {
+    id: string;
+    organization_id: string;
+    status: string;
+    requested_at: string;
+    responded_at: string | null;
+    expires_at: string;
+  };
+
+  const { data: grants, error: grantsError } = await supabase
+    .from("support_access_grants")
+    .select("id, organization_id, status, requested_at, responded_at, expires_at")
+    .order("requested_at", { ascending: false })
+    .returns<GrantRow[]>();
+  if (grantsError) {
+    console.error("listOrganizationsForAdmin/grants", grantsError);
+  }
+  const latestGrantByOrg = new Map<string, GrantRow>();
+  for (const g of grants ?? []) {
+    if (!latestGrantByOrg.has(g.organization_id)) latestGrantByOrg.set(g.organization_id, g);
+  }
+
+  return (orgs ?? []).map((o) => {
+    const b = billingByOrg.get(o.id);
+    const g = latestGrantByOrg.get(o.id);
+    return {
+      id: o.id,
+      company_name: o.company_name,
+      commercial_name: o.commercial_name,
+      email: o.email,
+      created_at: o.created_at,
+      plan: b?.plan ?? "documents",
+      subscription_status: b?.subscription_status ?? "trialing",
+      is_blocked: b?.is_blocked ?? false,
+      blocked_reason: b?.blocked_reason ?? null,
+      latest_access_grant: g
+        ? {
+            id: g.id,
+            status: g.status,
+            requested_at: g.requested_at,
+            responded_at: g.responded_at,
+            expires_at: g.expires_at,
+          }
+        : null,
+    };
+  });
+}
+
+/**
+ * Bloque manuellement un organisme (ex. non-paiement constaté hors Stripe,
+ * abus signalé...), avec un motif obligatoire affiché ensuite sur le
+ * dashboard du client bloqué. Passe par organization_billing, jamais par
+ * organizations directement — cf. commentaire de sécurité en tête de la
+ * migration 0036.
+ */
+export async function blockOrganization(_prevState: AdminFormState, formData: FormData): Promise<AdminFormState> {
+  await requireAdmin();
+
+  const organizationId = String(formData.get("organization_id") || "").trim();
+  const reason = String(formData.get("reason") || "").trim();
+  if (!organizationId) {
+    return { error: "Organisme introuvable." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("organization_billing")
+    .update({
+      is_blocked: true,
+      blocked_at: new Date().toISOString(),
+      blocked_reason: reason || "Bloqué manuellement par l'administrateur.",
+    })
+    .eq("organization_id", organizationId);
+  if (error) {
+    return { error: "Une erreur est survenue : " + error.message };
+  }
+
+  revalidatePath("/admin/organisations");
+  redirect("/admin/organisations?blocked=1");
+}
+
+/** Débloque un organisme (un seul clic, symétrique de toggleRuleActive). */
+export async function unblockOrganization(organizationId: string): Promise<void> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("organization_billing")
+    .update({ is_blocked: false, blocked_at: null, blocked_reason: null })
+    .eq("organization_id", organizationId);
+  if (error) {
+    console.error("unblockOrganization", error);
+    return;
+  }
+  revalidatePath("/admin/organisations");
+}
+
+/**
+ * Crée une demande d'accès support pour un organisme — le client verra une
+ * bannière sur son dashboard et devra explicitement approuver avant que
+ * l'admin puisse consulter ses données (cf. has_active_support_access,
+ * migration 0036).
+ */
+export async function requestSupportAccess(_prevState: AdminFormState, formData: FormData): Promise<AdminFormState> {
+  await requireAdmin();
+
+  const organizationId = String(formData.get("organization_id") || "").trim();
+  const reason = String(formData.get("reason") || "").trim();
+  if (!organizationId) {
+    return { error: "Organisme introuvable." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "Session expirée, reconnectez-vous." };
+  }
+
+  const { error } = await supabase.from("support_access_grants").insert({
+    organization_id: organizationId,
+    requested_by: user.id,
+    reason: reason || null,
+  });
+  if (error) {
+    return { error: "Une erreur est survenue : " + error.message };
+  }
+
+  revalidatePath("/admin/organisations");
+  redirect("/admin/organisations?requested=1");
+}
+
+/**
+ * Révoque un accès support déjà approuvé (avant même son expiration à 30
+ * jours) — ex. le diagnostic est terminé.
+ */
+export async function revokeSupportAccess(grantId: string): Promise<void> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("support_access_grants")
+    .update({ status: "revoked", responded_at: new Date().toISOString() })
+    .eq("id", grantId);
+  if (error) {
+    console.error("revokeSupportAccess", error);
+    return;
+  }
+  revalidatePath("/admin/organisations");
+}

@@ -2,6 +2,11 @@ import { requireAdmin } from "@/lib/actions/admin";
 
 const SECTIONS = [
   {
+    href: "/admin/organisations",
+    title: "Organisations clientes",
+    description: "Liste des clients, formule, statut d'abonnement, blocage, accès support avec autorisation.",
+  },
+  {
     href: "/admin/blocs",
     title: "Blocs de contenu",
     description: "Objectifs, exemples, méthodes... la banque de contenu utilisée par les programmes et documents.",
