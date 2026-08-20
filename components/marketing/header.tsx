@@ -10,6 +10,17 @@ export function MarketingHeader() {
             <Logo />
           </div>
 
+          <ul className="hidden items-center gap-2 sm:flex">
+            <li>
+              <Link
+                href="/tarifs"
+                className="rounded-lg px-3 py-[7px] text-sm font-medium text-gray-300 transition hover:text-white"
+              >
+                Tarifs
+              </Link>
+            </li>
+          </ul>
+
           <ul className="flex flex-1 items-center justify-end gap-3">
             <li>
               <Link
