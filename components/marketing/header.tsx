@@ -13,6 +13,14 @@ export function MarketingHeader() {
           <ul className="hidden items-center gap-2 sm:flex">
             <li>
               <Link
+                href="/formations"
+                className="rounded-lg px-3 py-[7px] text-sm font-medium text-gray-300 transition hover:text-white"
+              >
+                Formations
+              </Link>
+            </li>
+            <li>
+              <Link
                 href="/tarifs"
                 className="rounded-lg px-3 py-[7px] text-sm font-medium text-gray-300 transition hover:text-white"
               >

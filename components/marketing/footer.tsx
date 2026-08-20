@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import FooterIllustration from "@/public/images/footer-illustration.svg";
 import { Logo, PLATFORM_NAME } from "./logo";
 
@@ -21,6 +22,18 @@ export function MarketingFooter() {
             Préparez votre certification Qualiopi sans connaissance préalable du référentiel —
             questionnaires guidés, documents générés automatiquement.
           </p>
+          <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-indigo-200/65">
+            <li>
+              <Link href="/formations" className="transition hover:text-white">
+                Domaines de formation
+              </Link>
+            </li>
+            <li>
+              <Link href="/tarifs" className="transition hover:text-white">
+                Tarifs
+              </Link>
+            </li>
+          </ul>
           <p className="text-xs text-gray-600">
             © {year} {PLATFORM_NAME}
           </p>
