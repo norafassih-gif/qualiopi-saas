@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getMyOrganization } from "@/lib/actions/organization";
+import { requireActiveSubscription } from "@/lib/actions/billing";
 import { getMyFirstTraining } from "@/lib/actions/training";
 import { buildProgramForMyTraining } from "@/lib/engine/program-builder";
 
@@ -14,6 +15,9 @@ const BLOCK_TYPE_LABELS: Record<string, string> = {
 };
 
 export default async function OnboardingProgrammePage() {
+  // Paiement obligatoire avant d'utiliser le logiciel (décision de Nora, 21/08/2026).
+  await requireActiveSubscription();
+
   const org = await getMyOrganization();
   if (!org) {
     redirect("/onboarding/entreprise");

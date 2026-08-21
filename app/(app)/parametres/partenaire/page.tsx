@@ -1,3 +1,4 @@
+import { requireActiveSubscription } from "@/lib/actions/billing";
 import { getMyFirstPartner } from "@/lib/actions/partners";
 import { PartnerForm } from "../_components/partner-form";
 
@@ -6,6 +7,9 @@ export default async function PartenairePage({
 }: {
   searchParams: Promise<{ saved?: string }>;
 }) {
+  // Paiement obligatoire avant d'utiliser le logiciel (décision de Nora, 21/08/2026).
+  await requireActiveSubscription();
+
   const partner = await getMyFirstPartner("partenaire");
   const { saved } = await searchParams;
 

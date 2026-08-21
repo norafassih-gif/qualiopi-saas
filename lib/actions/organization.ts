@@ -62,6 +62,10 @@ export type Organization = {
   external_trainer_contract_type: string | null;
   technical_provider_name: string | null;
   technical_provider_company: string | null;
+  // Distingue un placeholder créé au moment du paiement (cf. migration 0039
+  // et lib/actions/billing.ts startCheckout) du vrai formulaire "Mon
+  // entreprise" rempli juste après.
+  onboarding_company_completed: boolean;
 };
 
 /**
@@ -107,14 +111,6 @@ export async function createOrganization(
     redirect("/login");
   }
 
-  // Garde-fou applicatif en plus de la contrainte unique en base (point 17) :
-  // on vérifie explicitement avant l'insert pour renvoyer un message clair
-  // plutôt qu'une erreur de contrainte SQL brute.
-  const existing = await getMyOrganization();
-  if (existing) {
-    redirect("/dashboard");
-  }
-
   const company_name = String(formData.get("company_name") || "").trim();
   if (!company_name) {
     return { error: "Le nom de l'entreprise est requis." };
@@ -135,7 +131,6 @@ export async function createOrganization(
   const disability_referent_raw = String(formData.get("disability_referent") || "");
 
   const payload = {
-    owner_user_id: user.id,
     company_name,
     commercial_name: String(formData.get("commercial_name") || "") || null,
     manager_name,
@@ -150,9 +145,31 @@ export async function createOrganization(
     disability_referent:
       disability_referent_raw || (is_sole_practitioner ? manager_name : null),
     is_sole_practitioner,
+    onboarding_company_completed: true,
   };
 
-  const { error } = await supabase.from("organizations").insert(payload);
+  // Paiement obligatoire avant de renseigner l'entreprise (décision de Nora,
+  // 21/08/2026) : au moment du paiement, startCheckout a déjà créé un
+  // organisme "placeholder" pour ce compte (cf. lib/actions/billing.ts et
+  // migration 0039). On complète donc ce placeholder par une UPDATE plutôt
+  // que par un nouvel INSERT — un INSERT échouerait de toute façon sur la
+  // contrainte unique de owner_user_id (addendum 17). Le cas "aucun
+  // organisme du tout" est conservé en repli défensif (ne devrait plus se
+  // produire dans le parcours normal, mais évite de casser un usage direct
+  // de cette action hors du nouveau parcours).
+  const existing = await getMyOrganization();
+
+  if (existing) {
+    const { error } = await supabase.from("organizations").update(payload).eq("id", existing.id);
+    if (error) {
+      return { error: "Une erreur est survenue : " + error.message };
+    }
+    redirect("/onboarding/activite");
+  }
+
+  const { error } = await supabase
+    .from("organizations")
+    .insert({ owner_user_id: user.id, ...payload });
 
   if (error) {
     // code 23505 = violation de contrainte unique (owner_user_id) : un

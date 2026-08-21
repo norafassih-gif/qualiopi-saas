@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getMyOrganization } from "@/lib/actions/organization";
+import { requireActiveSubscription } from "@/lib/actions/billing";
 import { getMyFirstTraining } from "@/lib/actions/training";
 import { getMyFirstSession } from "@/lib/actions/session";
 import { listCategoryQuestions, getMyAnswers } from "@/lib/actions/questions";
@@ -27,10 +28,21 @@ import { ProgressBar } from "@/components/ui/progress-bar";
 import { AccessGrantBanner } from "@/components/ui/access-grant-banner";
 
 export default async function DashboardPage() {
+  // Paiement obligatoire avant d'accéder au logiciel (décision de Nora,
+  // 21/08/2026) : redirige vers /onboarding/abonnement si l'abonnement
+  // n'est pas actif (y compris s'il n'existe encore aucun organisme).
+  await requireActiveSubscription();
+
   const org = await getMyOrganization();
 
-  // Pas encore d'organisme -> onboarding (parcours prioritaire, point 2 de la conception).
+  // Garde-fou défensif : ne devrait plus se produire après
+  // requireActiveSubscription() ci-dessus.
   if (!org) {
+    redirect("/onboarding/entreprise");
+  }
+  // Abonnement actif mais formulaire "Mon entreprise" pas encore rempli
+  // (organisme encore au stade "placeholder" créé par startCheckout).
+  if (!org.onboarding_company_completed) {
     redirect("/onboarding/entreprise");
   }
 

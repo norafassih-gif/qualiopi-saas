@@ -2,6 +2,7 @@ import JSZip from "jszip";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getMyOrganization } from "@/lib/actions/organization";
+import { isSubscriptionActiveForOrg } from "@/lib/actions/billing";
 import { getGeneratedDocumentsForZip } from "@/lib/actions/documents";
 
 export const maxDuration = 60;
@@ -42,6 +43,15 @@ export async function GET() {
   const org = await getMyOrganization();
   if (!org) {
     return NextResponse.json({ error: "Non authentifié ou organisme introuvable." }, { status: 401 });
+  }
+
+  // Paiement obligatoire avant de télécharger le dossier (décision de Nora,
+  // 21/08/2026).
+  if (!(await isSubscriptionActiveForOrg(org.id))) {
+    return NextResponse.json(
+      { error: "Un abonnement actif est requis pour télécharger votre dossier." },
+      { status: 402 }
+    );
   }
 
   const docs = await getGeneratedDocumentsForZip();

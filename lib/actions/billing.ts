@@ -2,7 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getMyOrganization } from "@/lib/actions/organization";
+import { getMyOrganization, type Organization } from "@/lib/actions/organization";
+import { isPlatformAdmin } from "@/lib/actions/admin";
 import {
   getStripe,
   STRIPE_PRICE_BY_PLAN,
@@ -45,6 +46,64 @@ function appUrl(): string {
 }
 
 /**
+ * Bloque le tableau de bord et la suite de l'onboarding (formation, thèmes,
+ * session, programme) tant que l'abonnement n'est pas actif — décision de
+ * Nora du 21/08/2026 : plus personne ne doit pouvoir utiliser le logiciel
+ * sans avoir payé. Redirige vers /onboarding/abonnement si l'organisme
+ * n'existe pas encore ou si l'abonnement n'est pas "active".
+ *
+ * Volontairement PAS utilisé sur /onboarding/entreprise : cet écran précis
+ * ne doit pas attendre la confirmation du webhook Stripe (qui peut mettre
+ * quelques secondes), sous peine de renvoyer l'utilisateur vers le paywall
+ * juste après qu'il ait payé. Un organisme n'y existe de toute façon que si
+ * un paiement a été initié (cf. startCheckout), donc rien n'est contournable.
+ */
+export async function requireActiveSubscription(): Promise<void> {
+  // Un administrateur plateforme n'est jamais bloqué par le paywall (même
+  // logique que redirectIfBlocked dans app/(app)/layout.tsx) — indispensable
+  // pour que Nora puisse continuer à tester/utiliser le logiciel sur ses
+  // propres organismes sans avoir à se payer elle-même à chaque fois.
+  if (await isPlatformAdmin()) return;
+
+  const org = await getMyOrganization();
+  if (!org) {
+    redirect("/onboarding/abonnement");
+  }
+
+  const supabase = await createClient();
+  const { data: billing } = await supabase
+    .from("organization_billing")
+    .select("subscription_status")
+    .eq("organization_id", org.id)
+    .maybeSingle();
+
+  if (billing?.subscription_status !== "active") {
+    redirect("/onboarding/abonnement");
+  }
+}
+
+/**
+ * Variante sans redirection, pour les routes API de génération de documents
+ * (app/api/documents/*) qui doivent renvoyer une erreur JSON plutôt que
+ * rediriger un téléchargement de fichier — même règle que
+ * requireActiveSubscription : paiement obligatoire (décision de Nora,
+ * 21/08/2026).
+ */
+export async function isSubscriptionActiveForOrg(organizationId: string): Promise<boolean> {
+  // Même exemption que requireActiveSubscription pour les administrateurs
+  // plateforme, cf. commentaire ci-dessus.
+  if (await isPlatformAdmin()) return true;
+
+  const supabase = await createClient();
+  const { data: billing } = await supabase
+    .from("organization_billing")
+    .select("subscription_status")
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+  return billing?.subscription_status === "active";
+}
+
+/**
  * Démarre un abonnement Stripe pour la formule demandée — redirige vers la
  * page de paiement hébergée par Stripe (Checkout), on ne manipule jamais de
  * numéro de carte nous-mêmes. Le statut réel (actif/en échec/résilié) n'est
@@ -64,7 +123,7 @@ export async function startCheckout(_prevState: BillingFormState, formData: Form
     };
   }
 
-  // Add-on optionnel "Logo + charte graphique" (+15 €/mois) — coché depuis
+  // Add-on optionnel "Logo + charte graphique" (+18 €/mois) — coché depuis
   // le formulaire, ajouté comme deuxième ligne Stripe indépendamment du plan.
   const wantsBrandingAddon = formData.get("branding_addon") === "on";
   if (wantsBrandingAddon && !STRIPE_PRICE_BRANDING_ADDON) {
@@ -74,17 +133,37 @@ export async function startCheckout(_prevState: BillingFormState, formData: Form
     };
   }
 
-  const org = await getMyOrganization();
-  if (!org) {
-    redirect("/onboarding/entreprise");
-  }
-
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
     redirect("/login");
+  }
+
+  let org = await getMyOrganization();
+  let isFirstTimeCheckout = false;
+
+  // Paiement obligatoire avant de renseigner l'entreprise (décision de Nora,
+  // 21/08/2026) : un compte tout juste créé n'a donc pas encore d'organisme
+  // à ce stade. On en crée un minimal ("placeholder") pour pouvoir rattacher
+  // le paiement Stripe à quelque chose — le client complète ses vraies
+  // informations juste après, sur /onboarding/entreprise, qui bascule alors
+  // en UPDATE de cette même ligne plutôt qu'un nouvel INSERT (cf.
+  // lib/actions/organization.ts et migration 0039).
+  if (!org) {
+    const { data: created, error: createError } = await supabase
+      .from("organizations")
+      .insert({ owner_user_id: user.id, company_name: "Organisme à compléter" })
+      .select("*")
+      .single();
+    if (createError || !created) {
+      return {
+        error: "Impossible de démarrer le paiement : " + (createError?.message ?? "erreur inconnue"),
+      };
+    }
+    org = created as Organization;
+    isFirstTimeCheckout = true;
   }
 
   const { data: billing } = await supabase
@@ -105,6 +184,12 @@ export async function startCheckout(_prevState: BillingFormState, formData: Form
       plan,
       branding_addon: wantsBrandingAddon ? "1" : "0",
     };
+    const successPath = isFirstTimeCheckout
+      ? "/onboarding/entreprise?welcome=1"
+      : "/parametres/abonnement?success=1";
+    const cancelPath = isFirstTimeCheckout
+      ? "/onboarding/abonnement?canceled=1"
+      : "/parametres/abonnement?canceled=1";
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: billing?.stripe_customer_id || undefined,
@@ -113,8 +198,8 @@ export async function startCheckout(_prevState: BillingFormState, formData: Form
       line_items: lineItems,
       subscription_data: { metadata },
       metadata,
-      success_url: `${appUrl()}/parametres/abonnement?success=1`,
-      cancel_url: `${appUrl()}/parametres/abonnement?canceled=1`,
+      success_url: `${appUrl()}${successPath}`,
+      cancel_url: `${appUrl()}${cancelPath}`,
     });
     sessionUrl = session.url;
   } catch (err) {

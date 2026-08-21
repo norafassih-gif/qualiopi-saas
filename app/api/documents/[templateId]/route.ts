@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getMyOrganization } from "@/lib/actions/organization";
+import { isSubscriptionActiveForOrg } from "@/lib/actions/billing";
 import { getMyFirstTraining } from "@/lib/actions/training";
 import { getMyFirstSession } from "@/lib/actions/session";
 import { buildDocumentHtml } from "@/lib/engine/document-builder";
@@ -24,6 +25,17 @@ export async function GET(
   const org = await getMyOrganization();
   if (!org) {
     return NextResponse.json({ error: "Non authentifié ou organisme introuvable." }, { status: 401 });
+  }
+
+  // Paiement obligatoire avant de générer un document (décision de Nora,
+  // 21/08/2026) — même règle que requireActiveSubscription, mais en 402
+  // plutôt qu'une redirection, ce téléchargement n'étant pas une navigation
+  // de page.
+  if (!(await isSubscriptionActiveForOrg(org.id))) {
+    return NextResponse.json(
+      { error: "Un abonnement actif est requis pour générer ce document." },
+      { status: 402 }
+    );
   }
 
   const built = await buildDocumentHtml(templateId);

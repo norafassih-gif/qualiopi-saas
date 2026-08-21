@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getMyOrganization } from "@/lib/actions/organization";
+import { requireActiveSubscription } from "@/lib/actions/billing";
 import { getMyFirstTraining } from "@/lib/actions/training";
 import { listDocumentTemplatesWithStatus } from "@/lib/actions/documents";
 
@@ -22,6 +23,9 @@ const FOLDER_ORDER = [
 ];
 
 export default async function DocumentsPage() {
+  // Paiement obligatoire avant d'utiliser le logiciel (décision de Nora, 21/08/2026).
+  await requireActiveSubscription();
+
   const org = await getMyOrganization();
   if (!org) {
     redirect("/onboarding/entreprise");
