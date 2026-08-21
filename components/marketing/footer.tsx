@@ -34,6 +34,33 @@ export function MarketingFooter() {
               </Link>
             </li>
           </ul>
+          <ul className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-gray-500">
+            <li>
+              <Link href="/mentions-legales" className="transition hover:text-gray-300">
+                Mentions légales
+              </Link>
+            </li>
+            <li>
+              <Link href="/cgu" className="transition hover:text-gray-300">
+                CGU
+              </Link>
+            </li>
+            <li>
+              <Link href="/cgv" className="transition hover:text-gray-300">
+                CGV
+              </Link>
+            </li>
+            <li>
+              <Link href="/confidentialite" className="transition hover:text-gray-300">
+                Confidentialité
+              </Link>
+            </li>
+            <li>
+              <Link href="/cookies" className="transition hover:text-gray-300">
+                Cookies
+              </Link>
+            </li>
+          </ul>
           <p className="text-xs text-gray-600">
             © {year} {PLATFORM_NAME}
           </p>
