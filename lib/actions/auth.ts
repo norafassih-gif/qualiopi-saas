@@ -50,6 +50,28 @@ export async function signUp(_prevState: AuthState, formData: FormData): Promise
   redirect("/signup/verifiez-votre-email");
 }
 
+// Connexion/inscription via Google (Supabase Auth OAuth). Un seul et même
+// flux sert à la fois pour "se connecter" et "créer un compte" : Supabase
+// crée automatiquement l'utilisateur au premier passage, puis
+// /auth/callback échange le code contre une session et redirige vers
+// /dashboard — qui renvoie lui-même vers /onboarding/entreprise si
+// l'organisme n'existe pas encore (cf. app/(app)/dashboard/page.tsx). Pas
+// besoin donc de distinguer "login" et "signup" côté Google.
+export async function signInWithGoogle(): Promise<void> {
+  const supabase = await createClient();
+  const origin = await getOrigin();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: `${origin}/auth/callback?next=/dashboard` },
+  });
+
+  if (error || !data.url) {
+    redirect("/login?error=oauth");
+  }
+
+  redirect(data.url);
+}
+
 export async function signIn(_prevState: AuthState, formData: FormData): Promise<AuthState> {
   const email = String(formData.get("email") || "").trim();
   const password = String(formData.get("password") || "");
