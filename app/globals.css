@@ -125,4 +125,43 @@ body {
      (perspective, taille de naissance/sortie...) échantillonnée en JS, donc
      un seul jeu de @keyframes partagé ici ne conviendrait pas. Rien à
      déclarer dans ce thème pour lui. */
+
+  /* Écran abstrait du hero "ordinateur qui tourne" (components/marketing/
+     rotating-device-hero.tsx, Phase 26) — purement décoratif et ambiant
+     (pas lié au scroll, contrairement à la rotation de l'appareil qui elle
+     passe par motion/useTransform). Chaque barre utilise le même
+     @keyframes avec un animation-delay différent (posé en style inline)
+     pour un rendu organique plutôt que synchronisé. */
+  --animate-data-bar: data-bar 2.4s ease-in-out infinite;
+  --animate-data-line: data-line 3.6s linear infinite;
+  --animate-data-pulse: data-pulse 2.8s ease-in-out infinite;
+
+  @keyframes data-bar {
+    0%,
+    100% {
+      transform: scaleY(0.35);
+    }
+    50% {
+      transform: scaleY(1);
+    }
+  }
+
+  @keyframes data-line {
+    from {
+      stroke-dashoffset: 320;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes data-pulse {
+    0%,
+    100% {
+      opacity: 0.35;
+    }
+    50% {
+      opacity: 0.9;
+    }
+  }
 }

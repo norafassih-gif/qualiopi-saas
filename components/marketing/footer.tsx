@@ -7,7 +7,12 @@ export function MarketingFooter() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="relative">
+    // Clip local (l'illustration ci-dessous, 1076px, déborde sur les petits
+    // écrans) — plutôt qu'un clip posé plus haut sur la page, qui casserait
+    // `position: sticky` pour les sections situées avant le footer dans le
+    // DOM (cf. app/page.tsx). Sans risque ici : le footer n'est l'ancêtre de
+    // rien d'autre.
+    <footer className="relative overflow-hidden">
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
         <div
           className="pointer-events-none absolute bottom-0 left-1/2 -z-10 -translate-x-1/2"

@@ -63,7 +63,10 @@ const FEATURES = [
 
 export function Features() {
   return (
-    <section className="relative">
+    // overflow-hidden posé ici (localement) plutôt qu'au niveau de la page :
+    // un clip plus haut casserait `position: sticky` pour toute section
+    // située avant celle-ci dans le DOM (cf. app/page.tsx, RotatingDeviceHero).
+    <section className="relative overflow-hidden">
       <div
         className="pointer-events-none absolute left-1/2 top-0 -z-10 -mt-20 -translate-x-1/2"
         aria-hidden="true"

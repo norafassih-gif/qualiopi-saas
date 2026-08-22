@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { Reveal } from "./reveal";
+import { NoiseCtaButton } from "./noise-cta-button";
 import type { TrainingDomainContent } from "@/lib/marketing/training-domains/types";
 
 /**
@@ -147,12 +148,9 @@ export function TrainingDomainPage({ content }: { content: TrainingDomainContent
           <Reveal>
             <div className="mx-auto max-w-xs sm:flex sm:max-w-none sm:justify-center">
               <div>
-                <Link
-                  href="/signup"
-                  className="mb-4 flex w-full items-center justify-center rounded-lg bg-indigo-500 px-6 py-3 text-sm font-semibold text-white transition duration-300 hover:scale-105 hover:bg-indigo-400 sm:mb-0 sm:w-auto"
-                >
+                <NoiseCtaButton href="/signup" className="mb-4 w-full sm:mb-0 sm:w-auto">
                   Créer mon compte
-                </Link>
+                </NoiseCtaButton>
               </div>
               <div>
                 <Link
