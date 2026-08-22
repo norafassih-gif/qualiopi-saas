@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { MarketingHeader } from "@/components/marketing/header";
 import { MarketingFooter } from "@/components/marketing/footer";
-import { HeroScrollNotions } from "@/components/marketing/hero-scroll-notions";
+import { MarqueeHero } from "@/components/marketing/marquee-hero";
+import { NotionsGrid } from "@/components/marketing/notions-grid";
 import { HowItWorks } from "@/components/marketing/how-it-works";
 import { Features } from "@/components/marketing/features";
 import { MarketingCta } from "@/components/marketing/cta";
@@ -25,23 +26,26 @@ export default async function Home() {
       <MarketingHeader />
       <main className="relative grow">
         {/*
-          Phase 27 : remplace à la fois `MarketingHero` (titre + sphère de
-          particules "constellation" qui suivait la souris) et
-          `RotatingDeviceHero` (Phase 26, l'ordinateur qui tournait) par un
-          seul hero "scroll-reveal" — titre/CTA d'abord, qui s'efface au
-          scroll pour laisser place aux 4 plaquettes (cf.
-          hero-scroll-notions.tsx pour le détail et le contexte de la
-          demande). Les deux anciens composants restent dans le dépôt,
-          inutilisés, plutôt que supprimés (au cas où) — même logique que
-          `principles-corridor.tsx`/`stream-corridor.tsx` en Phase 25/26.
+          Phase 27bis : remplace le hero "scroll-reveal" (Phase 27,
+          hero-scroll-notions.tsx) par une grille de vignettes en 3D
+          (`MarqueeHero`), sur demande de Nora avec référence visuelle
+          explicite ("ce n'est pas du tout ça... ça doit ressembler à ça").
+          hero-scroll-notions.tsx, rotating-device-hero.tsx et hero.tsx
+          restent dans le dépôt, inutilisés, plutôt que supprimés (au cas
+          où) — même logique reconduite phase après phase depuis la 25.
 
-          `PageIllustration`/`Glow` (halo + formes floues décoratives) sont
-          désormais rendus À L'INTÉRIEUR de `HeroScrollNotions`, sur
-          l'élément qui porte lui-même `overflow-hidden` — pas ici sur un
-          ancêtre du panneau sticky, ce qui casserait `position: sticky`
-          (cf. la note laissée dans ce composant).
+          `MarqueeHero` est la seule section volontairement sombre du site
+          (cf. le commentaire dans ce composant) — le header au-dessus
+          garde son propre fond blanc/90 flottant, donc reste lisible
+          quel que soit ce qu'il y a derrière lui.
+
+          `NotionsGrid` reprend statiquement (sans scroll ni animation) les
+          4 mêmes notions déjà utilisées dans les héros précédents, pour ne
+          pas perdre ce contenu déjà rédigé au fil des changements de
+          mécanisme visuel.
         */}
-        <HeroScrollNotions />
+        <MarqueeHero />
+        <NotionsGrid />
         <HowItWorks />
         <Features />
         <MarketingCta />
