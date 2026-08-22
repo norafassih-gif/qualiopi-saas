@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   requireAdmin,
   listOrganizationsForAdmin,
@@ -42,12 +43,20 @@ export default async function AdminOrganizationsPage({
             données (formations, sessions, documents) nécessite en plus son autorisation explicite.
           </p>
         </div>
-        <a
-          href="/api/admin/export-organizations"
-          className="shrink-0 rounded-md border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
-        >
-          Exporter les emails (CSV)
-        </a>
+        <div className="flex shrink-0 gap-2">
+          <Link
+            href="/admin/organisations/nouveau"
+            className="rounded-md bg-blue-900 px-3 py-2 text-xs font-medium text-white hover:bg-blue-800"
+          >
+            + Nouveau client
+          </Link>
+          <a
+            href="/api/admin/export-organizations"
+            className="rounded-md border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Exporter les emails (CSV)
+          </a>
+        </div>
       </div>
 
       {requested === "1" && (

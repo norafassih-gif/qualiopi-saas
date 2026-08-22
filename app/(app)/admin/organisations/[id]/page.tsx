@@ -4,6 +4,7 @@ import { getOrganizationForAdmin, toggleOrganizationAddonAdmin } from "@/lib/act
 import { planLabel, subscriptionStatusLabel } from "@/lib/billing-labels";
 import { ContactForm } from "./contact-form";
 import { PlanForm } from "./plan-form";
+import { ResendLinkForm } from "./resend-link-form";
 
 /**
  * Fiche organisme détaillée (back-office admin) — demande de Nora
@@ -47,6 +48,7 @@ export default async function AdminOrganizationDetailPage({
       <div className="flex flex-col gap-6">
         <ContactForm org={org} />
         <PlanForm org={org} />
+        <ResendLinkForm organizationId={org.id} />
 
         <div className="rounded-lg border border-gray-200 p-4">
           <h2 className="mb-1 text-sm font-semibold text-gray-900">Add-ons</h2>

@@ -3,6 +3,11 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service";
+
+function appUrl(): string {
+  return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+}
 
 /**
  * Back-office admin (cf. migration 0034, section "ADMINISTRATION" de la
@@ -800,6 +805,143 @@ export async function updateOrganizationPlanAdmin(
   revalidatePath(`/admin/organisations/${organizationId}`);
   revalidatePath("/admin/organisations");
   redirect(`/admin/organisations/${organizationId}?saved=1`);
+}
+
+// ---------------------------------------------------------------------------
+// Création manuelle d'un nouveau client depuis le back-office — demande
+// explicite de Nora (24/08/2026) : "que de mon espace admin, je puisse
+// créer un nouveau client qui va rentrer ensuite dans la base de données",
+// pour offrir le logiciel en essai à un OF (ex. avant de le facturer) sans
+// lui faire passer le tunnel d'inscription + paiement Stripe normal, et sans
+// dépendre du circuit "demander l'accès support" (lui-même prévu pour un
+// tout autre usage : consulter les données OPÉRATIONNELLES d'un client déjà
+// existant avec son consentement — pas pour créer un compte).
+//
+// Utilise le service_role (comme le webhook Stripe) car ceci crée un vrai
+// utilisateur Supabase Auth — une opération réservée à l'API d'administration,
+// impossible avec le client "normal" soumis à RLS.
+// ---------------------------------------------------------------------------
+
+export type CreateClientFormState = {
+  error: string | null;
+  setupLink?: string;
+  organizationId?: string;
+};
+
+/**
+ * Crée le compte (Supabase Auth) et l'organisme d'un nouveau client en un
+ * seul geste, avec la formule choisie déjà active — aucun paiement Stripe
+ * requis. `generateLink({ type: "invite" })` fait les deux choses en un seul
+ * appel : créer l'utilisateur ET produire un lien "définir votre mot de
+ * passe" à lui transmettre (par toi, pas par email automatique — aucun
+ * fournisseur d'email transactionnel n'est configuré sur ce projet).
+ */
+export async function createClientOrganization(
+  _prevState: CreateClientFormState,
+  formData: FormData
+): Promise<CreateClientFormState> {
+  await requireAdmin();
+
+  const company_name = String(formData.get("company_name") || "").trim();
+  const email = String(formData.get("email") || "").trim().toLowerCase();
+  const commercial_name = String(formData.get("commercial_name") || "").trim();
+  const phone = String(formData.get("phone") || "").trim();
+  const plan = String(formData.get("plan") || "documents").trim();
+
+  if (!company_name || !email) {
+    return { error: "Le nom de l'organisme et l'email sont requis." };
+  }
+
+  const supabase = createServiceRoleClient();
+
+  const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+    type: "invite",
+    email,
+    options: { redirectTo: `${appUrl()}/dashboard` },
+  });
+
+  if (linkError || !linkData?.user) {
+    const alreadyExists = linkError?.message?.toLowerCase().includes("already");
+    return {
+      error: alreadyExists
+        ? "Un compte existe déjà avec cet email — utilisez une autre adresse, ou gérez son organisme depuis la liste."
+        : "Impossible de créer le compte : " + (linkError?.message ?? "erreur inconnue"),
+    };
+  }
+
+  const { data: org, error: orgError } = await supabase
+    .from("organizations")
+    .insert({
+      owner_user_id: linkData.user.id,
+      company_name,
+      commercial_name: commercial_name || null,
+      email,
+      phone: phone || null,
+      onboarding_company_completed: false,
+    })
+    .select("id")
+    .single();
+
+  if (orgError || !org) {
+    return {
+      error:
+        "Le compte a été créé mais l'organisme n'a pas pu être enregistré : " +
+        (orgError?.message ?? "erreur inconnue") +
+        " — contactez le support technique avant de réessayer (le compte existe déjà).",
+    };
+  }
+
+  // organization_billing existe déjà à ce stade (créée automatiquement par
+  // le trigger handle_new_organization_billing, cf. migration 0036) — on la
+  // met simplement à jour avec la formule choisie et un statut actif.
+  const { error: billingError } = await supabase
+    .from("organization_billing")
+    .update({ plan, subscription_status: "active" })
+    .eq("organization_id", org.id);
+  if (billingError) {
+    console.error("createClientOrganization/billing", billingError);
+  }
+
+  revalidatePath("/admin/organisations");
+  return { error: null, setupLink: linkData.properties.action_link, organizationId: org.id };
+}
+
+export type ResendLinkFormState = { error: string | null; link?: string };
+
+/**
+ * Régénère un lien "définir votre mot de passe" pour un client déjà
+ * existant — utile si le premier lien envoyé a expiré ou n'a jamais été
+ * transmis. Contrairement à la création (type "invite", qui exige qu'aucun
+ * compte n'existe), on utilise ici "recovery" : le compte existe déjà.
+ */
+export async function resendClientLoginLink(
+  _prevState: ResendLinkFormState,
+  formData: FormData
+): Promise<ResendLinkFormState> {
+  await requireAdmin();
+
+  const organizationId = String(formData.get("organization_id") || "").trim();
+  const supabase = createServiceRoleClient();
+
+  const { data: org, error: orgError } = await supabase
+    .from("organizations")
+    .select("email")
+    .eq("id", organizationId)
+    .maybeSingle();
+  if (orgError || !org?.email) {
+    return { error: "Aucun email connu pour cet organisme." };
+  }
+
+  const { data, error } = await supabase.auth.admin.generateLink({
+    type: "recovery",
+    email: org.email,
+    options: { redirectTo: `${appUrl()}/dashboard` },
+  });
+  if (error || !data) {
+    return { error: "Erreur : " + (error?.message ?? "inconnue") };
+  }
+
+  return { error: null, link: data.properties.action_link };
 }
 
 /**
