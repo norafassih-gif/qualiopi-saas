@@ -101,13 +101,36 @@ export default async function DocumentsPage() {
                         <span className="text-xs text-gray-500">
                           {doc.generated ? "✅ Généré" : "❌ Non généré"}
                         </span>
-                        {/* Lien de téléchargement de fichier (pas une page interne) : <a> natif est volontaire ici, pas next/link. */}
-                        <a
-                          href={`/api/documents/${doc.id}`}
-                          className="rounded-md bg-blue-900 px-3 py-1.5 text-xs text-white"
+                        {/*
+                          Formulaire GET (pas un <a> simple) : demande de Nora
+                          (24/08/2026) "il faut que les organismes puissent
+                          mettre les dates qu'ils veulent sur les documents" —
+                          un <input type="date"> dans un <form method="get">
+                          se sérialise nativement en ?date=... au clic sur
+                          "Télécharger", sans JavaScript côté client, cohérent
+                          avec le reste du projet (route API en téléchargement
+                          de fichier réel, pas une Server Action). Champ vide
+                          = date du jour (comportement inchangé), cf.
+                          app/api/documents/[templateId]/route.ts.
+                        */}
+                        <form
+                          method="get"
+                          action={`/api/documents/${doc.id}`}
+                          className="flex items-center gap-2"
                         >
-                          Télécharger le PDF
-                        </a>
+                          <input
+                            type="date"
+                            name="date"
+                            aria-label="Date à afficher sur le document (optionnel — aujourd'hui par défaut)"
+                            className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700"
+                          />
+                          <button
+                            type="submit"
+                            className="rounded-md bg-blue-900 px-3 py-1.5 text-xs text-white"
+                          >
+                            Télécharger le PDF
+                          </button>
+                        </form>
                       </div>
                     </div>
                   ))}

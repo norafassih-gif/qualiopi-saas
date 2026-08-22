@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getMyOrganization } from "@/lib/actions/organization";
-import { requireActiveSubscription } from "@/lib/actions/billing";
+import { requireActiveSubscription, getMyBilling } from "@/lib/actions/billing";
 import { getMyFirstTraining } from "@/lib/actions/training";
 import { getMyFirstSession } from "@/lib/actions/session";
 import { listCategoryQuestions, getMyAnswers } from "@/lib/actions/questions";
@@ -65,6 +65,7 @@ export default async function DashboardPage() {
   // futurs clients du SaaS.
   const isAdmin = await isPlatformAdmin();
   const pendingAccessGrant = await getPendingAccessGrant();
+  const billing = await getMyBilling();
 
   // Progression "Formation" : création + (thématiques si applicable) + session.
   const formationSteps = [Boolean(training), !themesApplicable || themesAnswered, Boolean(session)];
@@ -95,6 +96,33 @@ export default async function DashboardPage() {
       </div>
 
       {pendingAccessGrant && <AccessGrantBanner grant={pendingAccessGrant} />}
+
+      {/*
+        Accès LMS (campus.pivotformation.com) — demande de Nora (24/08/2026) :
+        compte créé automatiquement au paiement de la formule "tout_compris"
+        (cf. webhook Stripe + lib/integrations/campus-lms.ts). Affiché
+        uniquement quand le lien existe réellement : pas de message
+        "en cours" avant que Nora ait configuré l'intégration côté serveur,
+        pour ne pas laisser croire à un client payant que quelque chose est
+        cassé alors que le provisioning n'a simplement pas encore eu lieu.
+      */}
+      {billing?.plan === "tout_compris" && org.campus_setup_link && (
+        <div className="mb-8 rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+          <p className="text-sm font-medium text-indigo-900">Votre espace LMS est prêt</p>
+          <p className="mt-1 text-sm text-indigo-800">
+            Cliquez sur le lien ci-dessous pour définir votre mot de passe et accéder à votre
+            plateforme de formation en ligne (campus.pivotformation.com).
+          </p>
+          <a
+            href={org.campus_setup_link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-block rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white"
+          >
+            Activer mon accès LMS
+          </a>
+        </div>
+      )}
 
       {/* Progression d'ensemble */}
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

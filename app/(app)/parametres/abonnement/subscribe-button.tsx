@@ -32,12 +32,19 @@ type PersonalizationOption = "standard" | "personalized";
  * définitivement +5 euros pour personnaliser le document"). Un changement
  * ultérieur passera par le portail Stripe / une future page dédiée, pas par
  * ce formulaire d'abonnement.
+ *
+ * Choix obligatoire, SANS présélection par défaut (Phase 27quinquies,
+ * 24/08/2026, retour de Nora) : au chargement, aucune des deux cartes n'est
+ * cochée et le bouton "Choisir cette formule" reste désactivé tant que le
+ * client n'a pas cliqué explicitement sur l'une des deux — pour l'obliger à
+ * faire un choix actif plutôt que de glisser sur un "standard" présélectionné
+ * sans y prêter attention.
  */
 function PersonalizationChoice({
   value,
   onChange,
 }: {
-  value: PersonalizationOption;
+  value: PersonalizationOption | null;
   onChange: (value: PersonalizationOption) => void;
 }) {
   return (
@@ -93,6 +100,11 @@ function PersonalizationChoice({
           <p className="mt-2 text-xs font-medium text-indigo-300">+5 €/mois</p>
         </button>
       </div>
+      {value === null && (
+        <p className="mt-2 text-xs text-amber-600">
+          Choisissez un format ci-dessus pour pouvoir continuer.
+        </p>
+      )}
     </div>
   );
 }
@@ -117,7 +129,7 @@ export function SubscribeButton({
 }) {
   const [state, formAction, pending] = useActionState(startCheckout, initialState);
   const [addon, setAddon] = useState(false);
-  const [personalization, setPersonalization] = useState<PersonalizationOption>("standard");
+  const [personalization, setPersonalization] = useState<PersonalizationOption | null>(null);
   const dark = variant === "dark";
 
   return (
@@ -145,7 +157,7 @@ export function SubscribeButton({
       {state.error && <p className="mb-2 text-sm text-red-600">{state.error}</p>}
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || personalization === null}
         className={
           dark
             ? "flex w-full items-center justify-center rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-semibold text-white transition duration-300 hover:scale-105 hover:bg-indigo-400 disabled:opacity-50 disabled:hover:scale-100"

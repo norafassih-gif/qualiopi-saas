@@ -66,6 +66,12 @@ export type Organization = {
   // et lib/actions/billing.ts startCheckout) du vrai formulaire "Mon
   // entreprise" rempli juste après.
   onboarding_company_completed: boolean;
+  // Provisioning automatique du compte LMS externe (campus.pivotformation.com,
+  // cf. migration 0043 et lib/integrations/campus-lms.ts) — renseigné par le
+  // webhook Stripe pour la formule "tout_compris", jamais par le client.
+  campus_org_id: string | null;
+  campus_setup_link: string | null;
+  campus_account_created_at: string | null;
 };
 
 /**

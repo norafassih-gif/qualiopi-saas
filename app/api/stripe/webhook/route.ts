@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe/client";
 import { createServiceRoleClient } from "@/lib/supabase/service";
+import { provisionCampusAccount } from "@/lib/integrations/campus-lms";
 
 // Reçoit les événements Stripe (paiement réussi, abonnement modifié/résilié)
 // et met à jour organization_billing en conséquence. C'est la SEULE façon
@@ -66,6 +67,45 @@ export async function POST(req: NextRequest) {
         })
         .eq("organization_id", organizationId);
       if (error) console.error("stripe webhook: checkout.session.completed", error);
+
+      // Provisioning automatique du compte LMS externe (campus.pivotformation.com)
+      // pour la formule "tout_compris" — demande de Nora (24/08/2026). Uniquement
+      // au premier paiement de cette formule (campus_account_created_at encore
+      // vide) : un webhook rejoué ou un renouvellement ne doit pas re-déclencher
+      // une création de compte. Échec non bloquant : on ne fait jamais échouer ce
+      // webhook (et donc l'activation de l'abonnement) à cause d'un problème sur
+      // l'intégration LMS, cf. commentaire de provisionCampusAccount.
+      if (plan === "tout_compris") {
+        const { data: org } = await supabase
+          .from("organizations")
+          .select("company_name, email, siret, phone, address, campus_account_created_at")
+          .eq("id", organizationId)
+          .maybeSingle();
+
+        if (org && !org.campus_account_created_at) {
+          const result = await provisionCampusAccount({
+            companyName: org.company_name,
+            email: org.email,
+            siret: org.siret,
+            phone: org.phone,
+            address: org.address,
+          });
+
+          if (result.ok) {
+            const { error: campusError } = await supabase
+              .from("organizations")
+              .update({
+                campus_org_id: result.campusOrgId,
+                campus_setup_link: result.setupLink,
+                campus_account_created_at: new Date().toISOString(),
+              })
+              .eq("id", organizationId);
+            if (campusError) console.error("stripe webhook: écriture campus_*", campusError);
+          } else {
+            console.error("stripe webhook: provisionCampusAccount a échoué —", result.error);
+          }
+        }
+      }
       break;
     }
 

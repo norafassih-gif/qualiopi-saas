@@ -33,12 +33,22 @@ export default async function AdminOrganizationsPage({
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
-      <h1 className="mb-1 text-2xl font-bold">Organisations clientes</h1>
-      <p className="mb-6 text-sm text-gray-600">
-        Tous les organismes inscrits sur la plateforme, leur formule et leur statut d&apos;abonnement. Le
-        blocage d&apos;un compte empêche l&apos;accès à son tableau de bord ; l&apos;accès à ses données
-        (formations, sessions, documents) nécessite en plus son autorisation explicite.
-      </p>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="mb-1 text-2xl font-bold">Organisations clientes</h1>
+          <p className="text-sm text-gray-600">
+            Tous les organismes inscrits sur la plateforme, leur formule et leur statut d&apos;abonnement.
+            Le blocage d&apos;un compte empêche l&apos;accès à son tableau de bord ; l&apos;accès à ses
+            données (formations, sessions, documents) nécessite en plus son autorisation explicite.
+          </p>
+        </div>
+        <a
+          href="/api/admin/export-organizations"
+          className="shrink-0 rounded-md border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+        >
+          Exporter les emails (CSV)
+        </a>
+      </div>
 
       {requested === "1" && (
         <div className="mb-6 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
@@ -91,6 +101,12 @@ export default async function AdminOrganizationsPage({
               </div>
 
               <div className="flex flex-col items-end gap-2">
+                <a
+                  href={`/admin/organisations/${org.id}`}
+                  className="rounded-md border border-gray-300 px-3 py-1 text-xs text-gray-700"
+                >
+                  Gérer
+                </a>
                 {org.is_blocked ? (
                   <form action={unblockOrganization.bind(null, org.id)}>
                     <button type="submit" className="rounded-md bg-blue-900 px-3 py-1 text-xs text-white">

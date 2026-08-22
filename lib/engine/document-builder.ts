@@ -109,7 +109,17 @@ function escapeHtml(text: string): string {
  *  - checklist / signature_block : pas encore utilisés par un modèle, rendu
  *    minimal prévu pour les prochains documents (convention, émargement…)
  */
-export async function buildDocumentHtml(documentTemplateId: string): Promise<BuildDocumentResult> {
+export async function buildDocumentHtml(
+  documentTemplateId: string,
+  /**
+   * Date personnalisée pour {{generated_date}} (format "YYYY-MM-DD",
+   * celui d'un <input type="date">) — cf. app/(app)/documents/page.tsx et
+   * app/api/documents/[templateId]/route.ts. Demande de Nora (24/08/2026) :
+   * les organismes doivent pouvoir choisir la date affichée sur leurs
+   * documents plutôt que de subir systématiquement la date du jour.
+   */
+  customDate?: string
+): Promise<BuildDocumentResult> {
   const rawOrg = await getMyOrganization();
   if (!rawOrg) return { error: "Organisme introuvable — complétez d'abord votre profil." };
   const org = await applyPersonalizationGate(rawOrg);
@@ -197,6 +207,7 @@ export async function buildDocumentHtml(documentTemplateId: string): Promise<Bui
     beneficiaryRole,
     beneficiaryCount,
     partner,
+    generatedDate: customDate ?? null,
     evaluationResult:
       latestAttempt && latestAttempt.score_raw != null && latestAttempt.score_max != null
         ? {

@@ -661,3 +661,171 @@ export async function revokeSupportAccess(grantId: string): Promise<void> {
   }
   revalidatePath("/admin/organisations");
 }
+
+// ---------------------------------------------------------------------------
+// Fiche organisme détaillée — modifications manuelles demandées par Nora
+// (24/08/2026) : "changer sa formule manuellement, activer/désactiver un
+// add-on manuellement, modifier ses coordonnées (email, nom d'organisme...)".
+// Distinct du blocage/accès support ci-dessus (déjà gérés depuis la liste) :
+// ici on modifie directement les données de facturation et de contact d'un
+// client, SANS toucher à Stripe — ces actions ne créent, ne modifient ni ne
+// résilient aucun abonnement Stripe réel, seulement notre propre base
+// (utile pour un geste commercial, une correction, un accord négocié hors
+// Stripe). L'écriture sur `organizations` nécessite la policy RLS
+// "org_update_admin" (migration 0042) ; l'écriture sur `organization_billing`
+// passe déjà par "billing_admin_write" (migration 0036).
+// ---------------------------------------------------------------------------
+
+export type AdminOrganizationDetail = {
+  id: string;
+  company_name: string;
+  commercial_name: string | null;
+  email: string | null;
+  siret: string | null;
+  phone: string | null;
+  plan: string;
+  subscription_status: string;
+  has_branding_addon: boolean;
+  has_personalization_addon: boolean;
+  is_blocked: boolean;
+  blocked_reason: string | null;
+};
+
+export async function getOrganizationForAdmin(organizationId: string): Promise<AdminOrganizationDetail | null> {
+  await requireAdmin();
+  const supabase = await createClient();
+
+  const { data: org, error: orgError } = await supabase
+    .from("organizations")
+    .select("id, company_name, commercial_name, email, siret, phone")
+    .eq("id", organizationId)
+    .maybeSingle();
+  if (orgError || !org) {
+    console.error("getOrganizationForAdmin/organizations", orgError);
+    return null;
+  }
+
+  const { data: billing, error: billingError } = await supabase
+    .from("organization_billing")
+    .select("plan, subscription_status, has_branding_addon, has_personalization_addon, is_blocked, blocked_reason")
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+  if (billingError) {
+    console.error("getOrganizationForAdmin/billing", billingError);
+  }
+
+  return {
+    ...org,
+    plan: billing?.plan ?? "documents",
+    subscription_status: billing?.subscription_status ?? "trialing",
+    has_branding_addon: billing?.has_branding_addon ?? false,
+    has_personalization_addon: billing?.has_personalization_addon ?? false,
+    is_blocked: billing?.is_blocked ?? false,
+    blocked_reason: billing?.blocked_reason ?? null,
+  };
+}
+
+/**
+ * Modifie manuellement les coordonnées d'un organisme (nom, nom commercial,
+ * email, SIRET, téléphone) — ex. faute de frappe signalée, changement
+ * d'adresse email de facturation, correction demandée par le client par
+ * téléphone plutôt que depuis son propre compte.
+ */
+export async function updateOrganizationContactAdmin(
+  _prevState: AdminFormState,
+  formData: FormData
+): Promise<AdminFormState> {
+  await requireAdmin();
+
+  const organizationId = String(formData.get("organization_id") || "").trim();
+  const company_name = String(formData.get("company_name") || "").trim();
+  if (!organizationId || !company_name) {
+    return { error: "Le nom de l'organisme est requis." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("organizations")
+    .update({
+      company_name,
+      commercial_name: String(formData.get("commercial_name") || "").trim() || null,
+      email: String(formData.get("email") || "").trim() || null,
+      siret: String(formData.get("siret") || "").trim() || null,
+      phone: String(formData.get("phone") || "").trim() || null,
+    })
+    .eq("id", organizationId);
+
+  if (error) {
+    return { error: "Une erreur est survenue : " + error.message };
+  }
+
+  revalidatePath(`/admin/organisations/${organizationId}`);
+  revalidatePath("/admin/organisations");
+  redirect(`/admin/organisations/${organizationId}?saved=1`);
+}
+
+/**
+ * Change manuellement la formule et/ou le statut d'abonnement d'un
+ * organisme, indépendamment de Stripe — demande explicite de Nora ("changer
+ * sa formule manuellement"). N'affecte QUE organization_billing ; aucun
+ * appel à l'API Stripe. Si l'organisme a par ailleurs un abonnement Stripe
+ * actif, celui-ci continuera à se facturer normalement et le prochain
+ * webhook (renouvellement, mise à jour) pourra écraser ce changement manuel
+ * — cette action est prévue pour des cas hors Stripe ou des corrections
+ * ponctuelles, pas comme mécanisme de changement de formule côté client.
+ */
+export async function updateOrganizationPlanAdmin(
+  _prevState: AdminFormState,
+  formData: FormData
+): Promise<AdminFormState> {
+  await requireAdmin();
+
+  const organizationId = String(formData.get("organization_id") || "").trim();
+  const plan = String(formData.get("plan") || "").trim();
+  const subscription_status = String(formData.get("subscription_status") || "").trim();
+  if (!organizationId || !plan || !subscription_status) {
+    return { error: "Organisme, formule et statut requis." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("organization_billing")
+    .update({ plan, subscription_status })
+    .eq("organization_id", organizationId);
+
+  if (error) {
+    return { error: "Une erreur est survenue : " + error.message };
+  }
+
+  revalidatePath(`/admin/organisations/${organizationId}`);
+  revalidatePath("/admin/organisations");
+  redirect(`/admin/organisations/${organizationId}?saved=1`);
+}
+
+/**
+ * Active/désactive manuellement un add-on (branding +18 €/mois ou
+ * personnalisation +5 €/mois) pour un organisme, sans passer par Stripe —
+ * demande explicite de Nora ("activer/désactiver un add-on manuellement").
+ * Même limite que updateOrganizationPlanAdmin ci-dessus : ne crée ni ne
+ * modifie aucun abonnement Stripe réel, seulement notre colonne de contrôle
+ * d'accès (lue par lib/engine/document-builder.ts pour déverrouiller la
+ * personnalisation des documents, cf. applyPersonalizationGate).
+ */
+export async function toggleOrganizationAddonAdmin(
+  organizationId: string,
+  addon: "has_branding_addon" | "has_personalization_addon",
+  value: boolean
+): Promise<void> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("organization_billing")
+    .update({ [addon]: value })
+    .eq("organization_id", organizationId);
+  if (error) {
+    console.error("toggleOrganizationAddonAdmin", error);
+    return;
+  }
+  revalidatePath(`/admin/organisations/${organizationId}`);
+  revalidatePath("/admin/organisations");
+}

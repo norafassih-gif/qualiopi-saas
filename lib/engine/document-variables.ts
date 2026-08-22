@@ -40,6 +40,15 @@ function formatDate(value: string | null): string {
   return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
 }
 
+// Garde-fou pour generated_date (cf. plus bas) : une valeur venant d'un
+// <input type="date"> transite par une query string avant d'arriver ici —
+// on revérifie qu'elle est bien une date exploitable plutôt que de faire
+// confiance à ce qui a traversé la route API.
+function isValidIsoDate(value: string | null): value is string {
+  if (!value) return false;
+  return !Number.isNaN(new Date(value).getTime());
+}
+
 // Pour les champs personnels (référents, contacts) qui n'ont pas de valeur
 // par défaut sûre : plutôt que d'inventer une donnée ou de laisser un vide
 // silencieux, on affiche un repère visible dans le document généré, pour que
@@ -79,6 +88,16 @@ export function resolveDocumentVariables(input: {
   beneficiaryCount?: number;
   evaluationResult?: EvaluationResultForVariables;
   partner?: Partner | null;
+  /**
+   * Date affichée en {{generated_date}} (ex. "Fait à ..., le ...") — par
+   * défaut la date du jour de génération. Demande de Nora (24/08/2026) :
+   * "il faut que les organismes puissent mettre les dates qu'ils veulent sur
+   * les documents" — un organisme peut avoir besoin d'antidater/postdater un
+   * document (ex. générer aujourd'hui un document daté du premier jour de
+   * formation). Chaîne au format ISO ("YYYY-MM-DD" suffit, celui d'un
+   * <input type="date">) ; ignorée si absente ou invalide.
+   */
+  generatedDate?: string | null;
 }): Record<string, string> {
   const {
     org,
@@ -91,6 +110,7 @@ export function resolveDocumentVariables(input: {
     beneficiaryCount = 0,
     evaluationResult = null,
     partner = null,
+    generatedDate = null,
   } = input;
 
   return {
@@ -197,7 +217,7 @@ export function resolveDocumentVariables(input: {
     convention_reference:
       session?.convention_reference || `CONV-${(session?.id ?? "").slice(0, 8).toUpperCase() || "XXXXXXXX"}`,
 
-    generated_date: formatDate(new Date().toISOString()),
+    generated_date: formatDate(isValidIsoDate(generatedDate) ? generatedDate : new Date().toISOString()),
 
     // Résultat d'évaluation (QCM, cf. migration 0024/0025 — moteur
     // d'évaluation) : placeholders explicites tant qu'aucune tentative n'a

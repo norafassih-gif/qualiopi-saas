@@ -17,10 +17,21 @@ export const maxDuration = 60;
  * "généré".
  */
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ templateId: string }> }
 ) {
   const { templateId } = await context.params;
+
+  // Date personnalisée facultative (?date=YYYY-MM-DD) — demande de Nora
+  // (24/08/2026) : les organismes doivent pouvoir choisir la date affichée
+  // sur le document plutôt que de subir systématiquement la date du jour.
+  // Revalidée ici (pas seulement dans resolveDocumentVariables) pour ne
+  // jamais transmettre une chaîne vide ou manifestement invalide plus loin.
+  const requestedDate = new URL(request.url).searchParams.get("date");
+  const customDate =
+    requestedDate && requestedDate.trim().length > 0 && !Number.isNaN(new Date(requestedDate).getTime())
+      ? requestedDate
+      : undefined;
 
   const org = await getMyOrganization();
   if (!org) {
@@ -38,7 +49,7 @@ export async function GET(
     );
   }
 
-  const built = await buildDocumentHtml(templateId);
+  const built = await buildDocumentHtml(templateId, customDate);
   if ("error" in built) {
     return NextResponse.json({ error: built.error }, { status: 400 });
   }
