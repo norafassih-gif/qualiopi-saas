@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signUp, signInWithGoogle, type AuthState } from "@/lib/actions/auth";
 import { GoogleIcon } from "@/components/auth/google-icon";
+import { AuthSplitLayout } from "@/components/auth/auth-split-layout";
+import { PasswordField } from "@/components/auth/password-field";
 
 const initialState: AuthState = { error: null };
 
@@ -25,15 +27,12 @@ function SignupForm() {
   const oauthError = searchParams.get("error") === "oauth";
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4">
-      <h1 className="mb-2 text-2xl font-bold">Créer mon compte</h1>
-      <p className="mb-6 text-sm text-gray-600">
-        Vous allez ensuite renseigner les informations de votre organisme de
-        formation.
-      </p>
-
+    <AuthSplitLayout
+      title="Créer mon compte"
+      subtitle="Vous renseignerez ensuite les informations de votre organisme de formation."
+    >
       {oauthError && (
-        <p className="mb-4 text-sm text-red-600" role="alert">
+        <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600" role="alert">
           La connexion avec Google a échoué. Réessayez ou créez votre compte avec votre email.
         </p>
       )}
@@ -41,42 +40,35 @@ function SignupForm() {
       <form action={signInWithGoogle}>
         <button
           type="submit"
-          className="mb-4 flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="mb-5 flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
         >
           <GoogleIcon className="h-4 w-4" />
           Continuer avec Google
         </button>
       </form>
 
-      <div className="mb-4 flex items-center gap-3 text-xs text-gray-400">
+      <div className="mb-5 flex items-center gap-3 text-xs text-gray-400">
         <div className="h-px flex-1 bg-gray-200" />
-        ou
+        ou avec votre email
         <div className="h-px flex-1 bg-gray-200" />
       </div>
 
       <form action={formAction} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1 text-sm">
-          Email
+        <div>
+          <label htmlFor="signup-email" className="mb-1.5 block text-sm font-medium text-gray-700">
+            Email
+          </label>
           <input
+            id="signup-email"
             type="email"
             name="email"
             required
             autoComplete="email"
-            className="rounded-md border border-gray-300 px-3 py-2"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
           />
-        </label>
+        </div>
 
-        <label className="flex flex-col gap-1 text-sm">
-          Mot de passe
-          <input
-            type="password"
-            name="password"
-            required
-            minLength={8}
-            autoComplete="new-password"
-            className="rounded-md border border-gray-300 px-3 py-2"
-          />
-        </label>
+        <PasswordField label="Mot de passe (8 caractères minimum)" name="password" autoComplete="new-password" minLength={8} />
 
         {state.error && (
           <p className="text-sm text-red-600" role="alert">
@@ -87,7 +79,7 @@ function SignupForm() {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-blue-900 px-4 py-2 text-white disabled:opacity-50"
+          className="mt-1 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:opacity-50"
         >
           {pending ? "Création en cours…" : "Créer mon compte"}
         </button>
@@ -95,10 +87,10 @@ function SignupForm() {
 
       <p className="mt-6 text-sm text-gray-600">
         Déjà un compte ?{" "}
-        <Link href="/login" className="text-blue-900 underline">
+        <Link href="/login" className="font-medium text-gray-900 underline underline-offset-2">
           Se connecter
         </Link>
       </p>
-    </div>
+    </AuthSplitLayout>
   );
 }

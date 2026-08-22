@@ -45,6 +45,7 @@ body {
   --animate-appear-zoom: appear-zoom 0.9s ease-out forwards;
   --animate-sphere-spin: sphere-spin 16s linear infinite;
   --animate-sphere-breathe: sphere-breathe 4s ease-in-out infinite;
+  --animate-corridor-stream: corridor-stream 15s linear infinite;
 
   @keyframes gradient {
     to {
@@ -117,6 +118,30 @@ body {
     }
     50% {
       transform: translate(-50%, -50%) scale(1.15);
+    }
+  }
+
+  /* Corridor de cartes en 3D (section "Ce qui change" de la page d'accueil,
+     components/marketing/principles-corridor.tsx) : chaque carte part au loin
+     (petite, transparente), grossit en approchant le "spectateur", puis
+     ressort côté opposé. --lane-x/--lane-y/--lane-rot sont fixés par carte
+     (en style inline) pour répartir les cartes sur plusieurs couloirs ; seule
+     la profondeur (translateZ) et l'échelle sont animées ici. */
+  @keyframes corridor-stream {
+    0% {
+      transform: translate3d(var(--lane-x, 0px), var(--lane-y, 0px), -900px) rotateY(var(--lane-rot, 0deg)) scale(0.35);
+      opacity: 0;
+    }
+    12% {
+      opacity: 1;
+    }
+    78% {
+      opacity: 1;
+      transform: translate3d(var(--lane-x, 0px), var(--lane-y, 0px), 40px) rotateY(var(--lane-rot, 0deg)) scale(1);
+    }
+    100% {
+      transform: translate3d(var(--lane-x, 0px), var(--lane-y, 0px), 520px) rotateY(var(--lane-rot, 0deg)) scale(1.55);
+      opacity: 0;
     }
   }
 
