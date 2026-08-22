@@ -2,12 +2,54 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getMyOrganization, type Organization } from "@/lib/actions/organization";
+import { getMyBilling } from "@/lib/actions/billing";
+import { isPlatformAdmin } from "@/lib/actions/admin";
 import { getMyFirstTraining } from "@/lib/actions/training";
 import { getMyFirstSession } from "@/lib/actions/session";
 import { getMyFirstPartner, type PartnerType } from "@/lib/actions/partners";
 import { resolveDocumentVariables } from "./document-variables";
 import { EVALUATION_PHASE_DOCUMENT_TEMPLATE, type EvaluationPhase } from "./evaluation-phases";
 import { getFontOption } from "./branding-fonts";
+
+// Valeurs "document standard" (aucune personnalisation) — appliquées quand
+// l'add-on "document personnalisé" (+5 €/mois, migration 0041) n'est pas
+// actif, cf. applyPersonalizationGate ci-dessous.
+const STANDARD_BRAND_COLOR_PRIMARY = "#1e3a8a";
+const STANDARD_BRAND_COLOR_SECONDARY = "#64748b";
+const STANDARD_FONT_FAMILY = "helvetica";
+
+/**
+ * Neutralise le logo, le cachet, la signature, les couleurs et la police de
+ * l'organisme quand l'add-on "document personnalisé" (+5 €/mois) n'est pas
+ * actif — demande explicite de Nora (24/08/2026) : "si je choisis 29 euros,
+ * j'ai mes documents qui ne sont pas personnalisés". Renseigné une fois sur
+ * /parametres/identite-visuelle, ces champs restaient auparavant utilisés
+ * par tous les documents générés quel que soit l'abonnement ; ce filtre
+ * s'applique ICI, au moment de la génération — pas seulement sur le
+ * formulaire d'édition (cf. lib/actions/branding.ts) — pour que la
+ * personnalisation disparaisse aussi immédiatement si le client résilie
+ * l'option, sans dépendre d'une purge des données existantes.
+ *
+ * Les administrateurs plateforme restent exemptés (même règle que
+ * requireActiveSubscription) pour que Nora puisse continuer à tester le
+ * rendu personnalisé sans avoir à souscrire l'option sur son propre compte.
+ */
+async function applyPersonalizationGate(org: Organization): Promise<Organization> {
+  if (await isPlatformAdmin()) return org;
+
+  const billing = await getMyBilling();
+  if (billing?.has_personalization_addon) return org;
+
+  return {
+    ...org,
+    logo_url: null,
+    stamp_url: null,
+    signature_url: null,
+    brand_color_primary: STANDARD_BRAND_COLOR_PRIMARY,
+    brand_color_secondary: STANDARD_BRAND_COLOR_SECONDARY,
+    font_family: STANDARD_FONT_FAMILY,
+  };
+}
 
 // Quels modèles de document utilisent les variables {{partner_*}} (cf.
 // migrations 0032/0033) et pour quel type de tiers — évite de faire un
@@ -68,8 +110,9 @@ function escapeHtml(text: string): string {
  *    minimal prévu pour les prochains documents (convention, émargement…)
  */
 export async function buildDocumentHtml(documentTemplateId: string): Promise<BuildDocumentResult> {
-  const org = await getMyOrganization();
-  if (!org) return { error: "Organisme introuvable — complétez d'abord votre profil." };
+  const rawOrg = await getMyOrganization();
+  if (!rawOrg) return { error: "Organisme introuvable — complétez d'abord votre profil." };
+  const org = await applyPersonalizationGate(rawOrg);
 
   const training = await getMyFirstTraining();
   if (!training) return { error: "Formation introuvable — créez d'abord votre formation." };

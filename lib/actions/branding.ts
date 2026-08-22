@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMyOrganization } from "@/lib/actions/organization";
+import { getMyBilling } from "@/lib/actions/billing";
+import { isPlatformAdmin } from "@/lib/actions/admin";
 import { isFontOptionKey } from "@/lib/engine/branding-fonts";
 
 export type BrandingFormState = { error: string | null };
@@ -110,6 +112,22 @@ export async function updateBranding(_prevState: BrandingFormState, formData: Fo
   const org = await getMyOrganization();
   if (!org) {
     redirect("/onboarding/entreprise");
+  }
+
+  // Garde-fou serveur (demande de Nora, 24/08/2026) : la page ne propose déjà
+  // plus ce formulaire sans l'add-on "document personnalisé" (+5 €/mois,
+  // cf. app/(app)/parametres/identite-visuelle/page.tsx), mais on refuse
+  // aussi ici toute soumission directe (contournement du formulaire) —
+  // exemption plateforme identique à applyPersonalizationGate
+  // (lib/engine/document-builder.ts) pour que Nora puisse tester sans payer.
+  if (!(await isPlatformAdmin())) {
+    const billing = await getMyBilling();
+    if (!billing?.has_personalization_addon) {
+      return {
+        error:
+          "L'option \"document personnalisé\" (+5 €/mois) n'est pas active sur votre abonnement — activez-la depuis Abonnement pour personnaliser vos documents.",
+      };
+    }
   }
 
   const supabase = await createClient();

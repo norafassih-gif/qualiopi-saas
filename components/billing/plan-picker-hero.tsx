@@ -30,7 +30,6 @@ const PLANS: PlanCard[] = [
       "Questionnaire guidé, sans jargon Qualiopi",
       "Bibliothèque de contenu pour votre domaine de formation",
       "Programme, convention, émargement, procédures, évaluations…",
-      "Identité visuelle : logo, couleurs, police sur tous vos documents",
       "Téléchargement du dossier complet, classé et prêt pour l'audit",
       "Option : document personnalisé (logo, cachet, signature) +5 €/mois",
     ],
