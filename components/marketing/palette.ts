@@ -72,6 +72,36 @@ export const ACCENT_CARD: Record<AccentColor, string> = {
   lime: "from-lime-100 to-lime-50 text-lime-700 border-lime-200 shadow-lime-200/70",
 };
 
+/**
+ * Carte "verre liquide" sombre (Phase 27ter, 24/08/2026) — même esthétique
+ * que les vignettes du hero (`public/images/marquee/doc-*.svg` : dégradé
+ * quasi-noir + halo teinté flouté en coin + liseré clair en haut), reprise
+ * ici en CSS pour les 4 cartes de `NotionsGrid` suite au retour de Nora
+ * ("cas doivent être flottantes et en glacis liquide"). Contrairement à
+ * `ACCENT_CARD` (fond pastel clair, texte saturé), ces cartes sont sombres
+ * et flottent sur le fond blanc de la page — le contraste fort porte
+ * l'attention plutôt qu'un dégradé pastel qui se fond dans la page.
+ */
+export const ACCENT_GLASS: Record<AccentColor, string> = {
+  indigo:
+    "border-white/10 shadow-indigo-950/30 [background:radial-gradient(120%_140%_at_20%_15%,rgba(99,102,241,0.35),transparent_60%),linear-gradient(160deg,#101018,#020204)]",
+  emerald:
+    "border-white/10 shadow-emerald-950/30 [background:radial-gradient(120%_140%_at_20%_15%,rgba(16,185,129,0.35),transparent_60%),linear-gradient(160deg,#0e1614,#020204)]",
+  amber:
+    "border-white/10 shadow-amber-950/30 [background:radial-gradient(120%_140%_at_20%_15%,rgba(245,158,11,0.32),transparent_60%),linear-gradient(160deg,#181410,#020204)]",
+  rose: "border-white/10 shadow-rose-950/30 [background:radial-gradient(120%_140%_at_20%_15%,rgba(244,63,94,0.32),transparent_60%),linear-gradient(160deg,#180f13,#020204)]",
+  sky: "border-white/10 shadow-sky-950/30 [background:radial-gradient(120%_140%_at_20%_15%,rgba(14,165,233,0.32),transparent_60%),linear-gradient(160deg,#0d1620,#020204)]",
+  violet:
+    "border-white/10 shadow-violet-950/30 [background:radial-gradient(120%_140%_at_20%_15%,rgba(139,92,246,0.35),transparent_60%),linear-gradient(160deg,#15111e,#020204)]",
+  teal: "border-white/10 shadow-teal-950/30 [background:radial-gradient(120%_140%_at_20%_15%,rgba(20,184,166,0.32),transparent_60%),linear-gradient(160deg,#0d1716,#020204)]",
+  fuchsia:
+    "border-white/10 shadow-fuchsia-950/30 [background:radial-gradient(120%_140%_at_20%_15%,rgba(217,70,239,0.32),transparent_60%),linear-gradient(160deg,#180f1a,#020204)]",
+  orange:
+    "border-white/10 shadow-orange-950/30 [background:radial-gradient(120%_140%_at_20%_15%,rgba(249,115,22,0.32),transparent_60%),linear-gradient(160deg,#181210,#020204)]",
+  cyan: "border-white/10 shadow-cyan-950/30 [background:radial-gradient(120%_140%_at_20%_15%,rgba(6,182,212,0.32),transparent_60%),linear-gradient(160deg,#0d1618,#020204)]",
+  lime: "border-white/10 shadow-lime-950/30 [background:radial-gradient(120%_140%_at_20%_15%,rgba(132,204,22,0.32),transparent_60%),linear-gradient(160deg,#131810,#020204)]",
+};
+
 /** Renvoie la teinte n°`index` de la palette, en bouclant. */
 export function accentAt(index: number): AccentColor {
   return ACCENT_ORDER[index % ACCENT_ORDER.length];

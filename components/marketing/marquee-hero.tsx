@@ -52,7 +52,7 @@ export function MarqueeHero() {
         <NoiseCtaButton href="/signup">Créer mon compte</NoiseCtaButton>
         <Link
           href="/login"
-          className="rounded-md border border-gray-300 bg-white/70 px-6 py-2.5 text-sm font-medium text-gray-700 backdrop-blur-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:ring-offset-2 focus:ring-offset-white"
+          className="rounded-full border border-gray-300 bg-white/70 px-6 py-2.5 text-sm font-medium text-gray-700 backdrop-blur-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:ring-offset-2 focus:ring-offset-white"
         >
           Se connecter
         </Link>

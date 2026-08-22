@@ -1,6 +1,6 @@
 import { Sparkles, ShieldCheck, FileText, Globe2, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ACCENT_CARD, type AccentColor } from "./palette";
+import { ACCENT_GLASS, type AccentColor } from "./palette";
 
 type Notion = {
   num: string;
@@ -49,29 +49,41 @@ const NOTIONS: Notion[] = [
  * simplement affichées côte à côte, sans aucune animation liée au scroll.
  * Conserve le message déjà construit/validé sans le lier à un mécanisme de
  * héro particulier, qui a changé plusieurs fois dans la même conversation.
+ *
+ * Phase 27ter (24/08/2026) : cartes restylées en "verre liquide" sombre
+ * (`ACCENT_GLASS`, cf. palette.ts) pour reprendre l'esthétique des vignettes
+ * du hero (`MarqueeHero`), suite au retour de Nora ("cas doivent être
+ * flottantes et en glacis liquide") — remplace l'ancien fond pastel clair
+ * (`ACCENT_CARD`). Léger flottement vertical continu (`animate-float-card`,
+ * défini dans `app/globals.css`) avec un décalage différent par carte pour
+ * un mouvement organique plutôt que synchronisé ; mis en pause si
+ * `prefers-reduced-motion` (cf. skill `apple-style-website`, § 5).
  */
 export function NotionsGrid() {
   return (
-    <section className="relative">
+    <section className="relative bg-white">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-20">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {NOTIONS.map((notion) => {
+          {NOTIONS.map((notion, index) => {
             const Icon = notion.icon;
             return (
               <div
                 key={notion.num}
+                style={{ animationDelay: `${index * 350}ms` }}
                 className={cn(
-                  "rounded-2xl border bg-linear-to-br p-6 shadow-sm",
-                  ACCENT_CARD[notion.accent],
+                  "animate-float-card relative overflow-hidden rounded-2xl border p-6 shadow-xl transition-transform duration-300 ease-out hover:-translate-y-1 motion-reduce:animate-none",
+                  ACCENT_GLASS[notion.accent],
                 )}
               >
-                <div className="mb-3 flex items-center gap-2 text-xs font-medium opacity-70">
+                {/* Liseré clair en haut — même effet "matériau" que les vignettes du hero. */}
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/25" />
+                <div className="mb-3 flex items-center gap-2 text-xs font-medium text-white/50">
                   <span>{notion.num}</span>
                   <span>/ 04</span>
                 </div>
-                <Icon className="mb-3 h-6 w-6" aria-hidden="true" />
-                <h3 className="mb-1.5 text-base font-semibold">{notion.title}</h3>
-                <p className="text-sm opacity-80">{notion.description}</p>
+                <Icon className="mb-3 h-6 w-6 text-white" aria-hidden="true" />
+                <h3 className="mb-1.5 text-base font-semibold text-white">{notion.title}</h3>
+                <p className="text-sm text-white/70">{notion.description}</p>
               </div>
             );
           })}

@@ -44,6 +44,17 @@ body {
   --animate-appear-zoom: appear-zoom 0.9s ease-out forwards;
   --animate-sphere-spin: sphere-spin 16s linear infinite;
   --animate-sphere-breathe: sphere-breathe 4s ease-in-out infinite;
+  --animate-float-card: float-card 6s ease-in-out infinite;
+
+  @keyframes float-card {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
 
   @keyframes gradient {
     to {
