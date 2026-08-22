@@ -27,8 +27,8 @@ export default async function Home() {
       <MarketingHeader />
       <main className="relative grow">
         <PageIllustration multiple />
-        <PrinciplesCorridor />
         <MarketingHero />
+        <PrinciplesCorridor />
         <HowItWorks />
         <Features />
         <MarketingCta />

@@ -11,43 +11,53 @@ import BlurredShapeGray from "@/public/images/blurred-shape-gray.svg";
 import BlurredShape from "@/public/images/blurred-shape.svg";
 import { PLATFORM_NAME } from "./logo";
 import { Reveal } from "./reveal";
+import { ACCENT_ICON, accentAt } from "./palette";
 
+// Couleurs tirées de la même palette que le couloir de cartes du hero
+// (Phase 24) — une teinte différente par carte plutôt qu'un indigo unique,
+// pour créer une harmonie avec le hero (retour de Nora).
 const FEATURES = [
   {
     icon: FileStack,
     title: "Documents générés automatiquement",
     description:
       "Programme, convention, feuilles d'émargement, attestations... rédigés à partir de vos réponses et prêts à télécharger en PDF.",
+    color: accentAt(1),
   },
   {
     icon: Layers,
     title: "Bibliothèque par domaine de formation",
     description:
       "Objectifs, modules et questionnaires adaptés à votre spécialité : langues, community management, vente, management, RH...",
+    color: accentAt(3),
   },
   {
     icon: ListChecks,
     title: "Questionnaire guidé",
     description:
       "Aucune connaissance de Qualiopi requise : des questions simples, un parcours étape par étape, sans jargon administratif.",
+    color: accentAt(5),
   },
   {
     icon: FolderArchive,
     title: "Dossier prêt pour l'audit",
     description:
       "Téléchargez l'ensemble de vos documents classés et organisés, prêts à être présentés à votre auditeur.",
+    color: accentAt(7),
   },
   {
     icon: ShieldCheck,
     title: "Conforme au référentiel",
     description:
       "Des contenus construits à partir des exigences du référentiel national qualité, sans que vous ayez à les maîtriser vous-même.",
+    color: accentAt(9),
   },
   {
     icon: Settings2,
     title: "Personnalisable",
     description:
       "Vos informations, votre logo, vos couleurs : chaque document généré porte l'identité de votre organisme.",
+    color: accentAt(10),
   },
 ];
 
@@ -97,7 +107,7 @@ export function Features() {
             {FEATURES.map((feature, index) => (
               <Reveal key={feature.title} delay={(index % 3) * 120}>
                 <article>
-                  <feature.icon className="mb-3 h-6 w-6 text-indigo-500" aria-hidden="true" />
+                  <feature.icon className={`mb-3 h-6 w-6 ${ACCENT_ICON[feature.color]}`} aria-hidden="true" />
                   <h3 className="mb-1 text-base font-semibold text-gray-900">{feature.title}</h3>
                   <p className="text-gray-600">{feature.description}</p>
                 </article>

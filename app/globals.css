@@ -44,7 +44,7 @@ body {
   --animate-appear-zoom: appear-zoom 0.9s ease-out forwards;
   --animate-sphere-spin: sphere-spin 16s linear infinite;
   --animate-sphere-breathe: sphere-breathe 4s ease-in-out infinite;
-  --animate-corridor-stream: corridor-stream 15s linear infinite;
+  --animate-corridor-stream: corridor-stream 22s linear infinite;
 
   @keyframes gradient {
     to {
@@ -122,25 +122,41 @@ body {
 
   /* Corridor de cartes en 3D (section "Ce qui change" de la page d'accueil,
      components/marketing/principles-corridor.tsx) : chaque carte part au loin
-     (petite, transparente), grossit en approchant le "spectateur", puis
-     ressort côté opposé. --lane-x/--lane-y/--lane-rot sont fixés par carte
-     (en style inline) pour répartir les cartes sur plusieurs couloirs ; seule
-     la profondeur (translateZ) et l'échelle sont animées ici. */
+     (petite, transparente), grossit en approchant le "spectateur", reste
+     nette/lisible un court instant au premier plan, puis ressort en grossissant
+     encore et en s'estompant. --lane-x/--lane-y/--lane-rot sont fixés par
+     carte (en style inline) pour répartir les cartes sur plusieurs couloirs ;
+     seule la profondeur (translateZ) et l'échelle sont animées ici.
+
+     Retravaillé en Phase 24 (retour de Nora : "tout s'enchaîne, ce n'est pas
+     très organisé") — la fenêtre où une carte reste pleinement opaque est
+     volontairement courte (~30 % du cycle, entre 10 % et 40 %) plutôt que la
+     quasi-totalité du trajet comme avant (66 %), pour qu'une seule carte par
+     couloir soit lisible à la fois au lieu de plusieurs qui se chevauchent en
+     permanence — cf. le commentaire sur DURATION_S dans principles-corridor.tsx
+     pour le calcul de l'espacement entre cartes d'un même couloir. */
   @keyframes corridor-stream {
     0% {
-      transform: translate3d(var(--lane-x, 0px), var(--lane-y, 0px), -900px) rotateY(var(--lane-rot, 0deg)) scale(0.35);
+      transform: translate3d(var(--lane-x, 0px), var(--lane-y, 0px), -950px) rotateY(var(--lane-rot, 0deg)) scale(0.3);
       opacity: 0;
     }
-    12% {
+    10% {
       opacity: 1;
     }
-    78% {
+    25% {
+      transform: translate3d(var(--lane-x, 0px), var(--lane-y, 0px), -280px) rotateY(var(--lane-rot, 0deg)) scale(0.68);
+    }
+    40% {
       opacity: 1;
       transform: translate3d(var(--lane-x, 0px), var(--lane-y, 0px), 40px) rotateY(var(--lane-rot, 0deg)) scale(1);
     }
-    100% {
-      transform: translate3d(var(--lane-x, 0px), var(--lane-y, 0px), 520px) rotateY(var(--lane-rot, 0deg)) scale(1.55);
+    58% {
       opacity: 0;
+      transform: translate3d(var(--lane-x, 0px), var(--lane-y, 0px), 340px) rotateY(var(--lane-rot, 0deg)) scale(1.45);
+    }
+    100% {
+      opacity: 0;
+      transform: translate3d(var(--lane-x, 0px), var(--lane-y, 0px), 340px) rotateY(var(--lane-rot, 0deg)) scale(1.45);
     }
   }
 

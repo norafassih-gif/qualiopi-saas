@@ -1,7 +1,11 @@
 import { Building2, ListTree, FileDown } from "lucide-react";
 import { Spotlight } from "./spotlight";
 import { Reveal } from "./reveal";
+import { ACCENT_BADGE, ACCENT_ICON, accentAt } from "./palette";
 
+// Couleurs tirées de la même palette que le couloir de cartes du hero
+// (Phase 24) — plutôt qu'un indigo unique partout, pour que les teintes du
+// hero "se fondent" un peu dans le reste de la page (retour de Nora).
 const STEPS = [
   {
     icon: Building2,
@@ -9,6 +13,7 @@ const STEPS = [
     title: "Renseignez votre organisme",
     description:
       "Nom, SIRET, coordonnées, logo : vos informations sont enregistrées une fois pour toutes et réutilisées automatiquement dans chaque document.",
+    color: accentAt(0),
   },
   {
     icon: ListTree,
@@ -16,6 +21,7 @@ const STEPS = [
     title: "Choisissez votre domaine de formation",
     description:
       "Langues, community management, management, vente, RH... le logiciel adapte automatiquement les objectifs, modules et évaluations à votre spécialité.",
+    color: accentAt(4),
   },
   {
     icon: FileDown,
@@ -23,6 +29,7 @@ const STEPS = [
     title: "Téléchargez vos documents",
     description:
       "Programme, convention, feuilles d'émargement, procédures qualité... générés automatiquement et classés, prêts à présenter à votre auditeur.",
+    color: accentAt(8),
   },
 ];
 
@@ -56,9 +63,9 @@ export function HowItWorks() {
                 <div className="group/card relative h-full overflow-hidden rounded-2xl bg-gray-200 p-px before:pointer-events-none before:absolute before:-left-40 before:-top-40 before:z-10 before:h-80 before:w-80 before:translate-x-[var(--mouse-x)] before:translate-y-[var(--mouse-y)] before:rounded-full before:bg-indigo-500/80 before:opacity-0 before:blur-3xl before:transition-opacity before:duration-500 group-hover:before:opacity-100">
                   <div className="relative z-20 h-full overflow-hidden rounded-[inherit] bg-white p-6">
                     <div className="relative">
-                      <step.icon className="mb-4 h-8 w-8 text-indigo-500" aria-hidden="true" />
+                      <step.icon className={`mb-4 h-8 w-8 ${ACCENT_ICON[step.color]}`} aria-hidden="true" />
                       <div className="mb-2">
-                        <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
+                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${ACCENT_BADGE[step.color]}`}>
                           {step.tag}
                         </span>
                       </div>
