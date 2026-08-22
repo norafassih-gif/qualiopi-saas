@@ -18,45 +18,45 @@ export function MarketingFooter() {
 
         <div className="flex flex-col items-center gap-3 py-8 text-center md:py-12">
           <Logo />
-          <p className="max-w-md text-sm text-indigo-200/65">
+          <p className="max-w-md text-sm text-gray-600">
             Préparez votre certification Qualiopi sans connaissance préalable du référentiel —
             questionnaires guidés, documents générés automatiquement.
           </p>
-          <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-indigo-200/65">
+          <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-gray-600">
             <li>
-              <Link href="/formations" className="transition hover:text-white">
+              <Link href="/formations" className="transition hover:text-gray-900">
                 Domaines de formation
               </Link>
             </li>
             <li>
-              <Link href="/tarifs" className="transition hover:text-white">
+              <Link href="/tarifs" className="transition hover:text-gray-900">
                 Tarifs
               </Link>
             </li>
           </ul>
           <ul className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-gray-500">
             <li>
-              <Link href="/mentions-legales" className="transition hover:text-gray-300">
+              <Link href="/mentions-legales" className="transition hover:text-gray-900">
                 Mentions légales
               </Link>
             </li>
             <li>
-              <Link href="/cgu" className="transition hover:text-gray-300">
+              <Link href="/cgu" className="transition hover:text-gray-900">
                 CGU
               </Link>
             </li>
             <li>
-              <Link href="/cgv" className="transition hover:text-gray-300">
+              <Link href="/cgv" className="transition hover:text-gray-900">
                 CGV
               </Link>
             </li>
             <li>
-              <Link href="/confidentialite" className="transition hover:text-gray-300">
+              <Link href="/confidentialite" className="transition hover:text-gray-900">
                 Confidentialité
               </Link>
             </li>
             <li>
-              <Link href="/cookies" className="transition hover:text-gray-300">
+              <Link href="/cookies" className="transition hover:text-gray-900">
                 Cookies
               </Link>
             </li>

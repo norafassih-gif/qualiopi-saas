@@ -36,14 +36,14 @@ export function AuthSplitLayout({
     <div className="grid min-h-screen lg:grid-cols-2">
       {/* Panneau gauche — habillage "hero" compact, visible à partir de lg */}
       <div
-        className="relative hidden overflow-hidden lg:flex lg:flex-col"
-        style={{ backgroundColor: "#030712", color: "#e5e7eb" }}
+        className="relative hidden overflow-hidden border-r border-gray-100 lg:flex lg:flex-col"
+        style={{ backgroundColor: "#f9fafb", color: "#111827" }}
       >
         <PageIllustration />
 
         <Link
           href="/"
-          className="relative z-20 m-6 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-gray-300 backdrop-blur-xs transition hover:border-white/30 hover:text-white"
+          className="relative z-20 m-6 inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm transition hover:border-gray-300 hover:text-gray-900"
           aria-label="Retour à l'accueil"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
@@ -56,11 +56,11 @@ export function AuthSplitLayout({
             <h1 className="relative z-10 pb-4 text-4xl leading-none tracking-tight">
               <span
                 data-sphere-word="qualiopi"
-                className="inline-block animate-gradient bg-[linear-gradient(to_right,var(--color-indigo-300),var(--color-gray-50),var(--color-indigo-400),var(--color-gray-50))] bg-[length:200%_auto] bg-clip-text font-extrabold text-transparent motion-reduce:animate-none"
+                className="inline-block animate-gradient bg-[linear-gradient(to_right,var(--color-indigo-600),var(--color-gray-900),var(--color-indigo-500),var(--color-gray-900))] bg-[length:200%_auto] bg-clip-text font-extrabold text-transparent motion-reduce:animate-none"
               >
                 Qualiopi
               </span>{" "}
-              <span className="inline-block font-extralight text-gray-400">
+              <span className="inline-block font-extralight text-gray-500">
                 {PILOTE_LETTERS.map((letter, i) => (
                   <span key={i} data-sphere-letter className="inline-block">
                     {letter}
@@ -71,13 +71,13 @@ export function AuthSplitLayout({
           </Reveal>
 
           <Reveal delay={150}>
-            <p className="relative z-10 max-w-sm text-lg text-indigo-200/65">
+            <p className="relative z-10 max-w-sm text-lg text-gray-600">
               Votre organisme de formation, certifié Qualiopi sans prise de tête.
             </p>
           </Reveal>
         </div>
 
-        <p className="relative z-20 m-6 text-xs text-indigo-200/40">
+        <p className="relative z-20 m-6 text-xs text-gray-500">
           © {new Date().getFullYear()} {PLATFORM_NAME} — sans IA à l&apos;usage
         </p>
       </div>

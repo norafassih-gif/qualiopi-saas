@@ -72,7 +72,7 @@ export function Features() {
       </div>
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="border-t border-gray-800 py-12 md:py-20">
+        <div className="border-t border-gray-200 py-12 md:py-20">
           <Reveal>
             <div className="mx-auto max-w-3xl pb-12 text-center md:pb-16">
               <div className="inline-flex items-center gap-3 pb-3 before:h-px before:w-8 before:bg-linear-to-r before:from-transparent before:to-indigo-200/50 after:h-px after:w-8 after:bg-linear-to-l after:from-transparent after:to-indigo-200/50">
@@ -80,13 +80,13 @@ export function Features() {
                   Ce que fait {PLATFORM_NAME}
                 </span>
               </div>
-              <h2 className="pb-4 text-3xl text-gray-100 md:text-4xl">
+              <h2 className="pb-4 text-3xl text-gray-900 md:text-4xl">
                 <span className="font-extrabold">Tout ce qu&apos;il faut</span>{" "}
-                <span className="font-light text-gray-400">
+                <span className="font-light text-gray-500">
                   pour réussir votre certification
                 </span>
               </h2>
-              <p className="text-lg text-indigo-200/65">
+              <p className="text-lg text-gray-600">
                 Pensé pour les personnes qui créent leur organisme de formation, pas pour les
                 experts qualité.
               </p>
@@ -98,8 +98,8 @@ export function Features() {
               <Reveal key={feature.title} delay={(index % 3) * 120}>
                 <article>
                   <feature.icon className="mb-3 h-6 w-6 text-indigo-500" aria-hidden="true" />
-                  <h3 className="mb-1 text-base font-semibold text-gray-100">{feature.title}</h3>
-                  <p className="text-indigo-200/65">{feature.description}</p>
+                  <h3 className="mb-1 text-base font-semibold text-gray-900">{feature.title}</h3>
+                  <p className="text-gray-600">{feature.description}</p>
                 </article>
               </Reveal>
             ))}

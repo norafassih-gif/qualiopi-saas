@@ -59,7 +59,7 @@ export default async function AdminBlocsPage({
             href={`/admin/blocs/${b.id}?category=${category ?? ""}`}
             className="rounded-lg border border-gray-200 px-4 py-3 hover:border-blue-900"
           >
-            <p className="mb-1 text-xs text-gray-400">
+            <p className="mb-1 text-xs text-gray-500">
               {b.code} — {b.type} {!b.is_active && "— ❌ désactivé"}
             </p>
             <p className="text-sm text-gray-900">{b.text.length > 160 ? b.text.slice(0, 160) + "…" : b.text}</p>

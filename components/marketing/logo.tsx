@@ -11,10 +11,10 @@ export const PLATFORM_NAME = "Qualiopi Pilote";
 export function Logo() {
   return (
     <Link href="/" className="inline-flex shrink-0 items-center gap-2" aria-label={PLATFORM_NAME}>
-      <ShieldCheck className="h-6 w-6 text-indigo-400" aria-hidden="true" />
-      <span className="text-sm tracking-wide text-gray-100">
+      <ShieldCheck className="h-6 w-6 text-indigo-500" aria-hidden="true" />
+      <span className="text-sm tracking-wide text-gray-900">
         <span className="font-extrabold">Qualiopi</span>{" "}
-        <span className="font-light text-gray-300">Pilote</span>
+        <span className="font-light text-gray-600">Pilote</span>
       </span>
     </Link>
   );

@@ -125,12 +125,12 @@ export default async function DashboardPage() {
             <>
               <p className="mb-2 text-2xl font-semibold text-gray-900">{documentsPercent} %</p>
               <ProgressBar value={documentsPercent} />
-              <p className="mt-2 text-xs text-gray-400">
+              <p className="mt-2 text-xs text-gray-500">
                 {documentsGenerated} / {documentsTotal} générés
               </p>
             </>
           ) : (
-            <p className="text-sm text-gray-400">En attente de la formation</p>
+            <p className="text-sm text-gray-500">En attente de la formation</p>
           )}
         </Card>
 
@@ -139,7 +139,7 @@ export default async function DashboardPage() {
             <Globe className="h-4 w-4" aria-hidden="true" />
             <p className="text-xs font-medium uppercase tracking-wide">Site internet</p>
           </div>
-          <p className="text-sm text-gray-400">Bientôt disponible</p>
+          <p className="text-sm text-gray-500">Bientôt disponible</p>
         </Card>
       </div>
 
@@ -227,7 +227,7 @@ export default async function DashboardPage() {
               </Link>
             </>
           ) : (
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-400">
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-500">
               <Circle className="h-3.5 w-3.5" aria-hidden="true" />
               En attente de la formation
             </p>

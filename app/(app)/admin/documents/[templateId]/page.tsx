@@ -35,7 +35,7 @@ export default async function AdminDocumentSectionsPage({
             className="rounded-lg border border-gray-200 px-4 py-3 hover:border-blue-900"
           >
             <p className="text-sm text-gray-900">{s.title}</p>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-gray-500">
               {s.code} — type : {s.content_type}
               {s.content_type !== "rich_text" && s.content_type !== "variable_block" && " (non éditable en texte libre ici)"}
             </p>

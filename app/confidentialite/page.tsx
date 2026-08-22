@@ -26,17 +26,17 @@ export default function ConfidentialitePage() {
       <H2>2. Données collectées</H2>
       <Ul>
         <li>
-          <span className="text-white">Compte utilisateur</span> : nom, adresse email, mot de
+          <span className="font-semibold text-gray-900">Compte utilisateur</span> : nom, adresse email, mot de
           passe (stocké de façon chiffrée) ou identifiant du compte Google en cas de connexion
           via Google.
         </li>
         <li>
-          <span className="text-white">Organisme</span> : nom de l&apos;entreprise, nom
+          <span className="font-semibold text-gray-900">Organisme</span> : nom de l&apos;entreprise, nom
           commercial, nom du dirigeant, SIRET, adresse, téléphone, email, logo et couleurs de
           l&apos;identité visuelle.
         </li>
         <li>
-          <span className="text-white">Formations et sessions</span> : nom des formations,
+          <span className="font-semibold text-gray-900">Formations et sessions</span> : nom des formations,
           informations sur les bénéficiaires (nom, entreprise), dates de session, et toute
           donnée saisie par le client afin de générer ses documents. Ces informations concernent
           les propres apprenants du client : celui-ci reste responsable du traitement de ces
@@ -44,7 +44,7 @@ export default function ConfidentialitePage() {
           sens du RGPD pour leur hébergement technique.
         </li>
         <li>
-          <span className="text-white">Facturation</span> : gérée directement par Stripe.
+          <span className="font-semibold text-gray-900">Facturation</span> : gérée directement par Stripe.
           Pivot Formation ne collecte ni ne stocke aucune donnée de carte bancaire.
         </li>
       </Ul>
@@ -92,7 +92,7 @@ export default function ConfidentialitePage() {
         Conformément au RGPD, vous disposez d&apos;un droit d&apos;accès, de rectification,
         d&apos;effacement, de limitation, d&apos;opposition et de portabilité de vos données, ainsi
         que du droit d&apos;introduire une réclamation auprès de la CNIL (
-        <a href="https://www.cnil.fr" className="text-indigo-300 underline underline-offset-2 hover:text-indigo-200">
+        <a href="https://www.cnil.fr" className="text-indigo-700 underline underline-offset-2 hover:text-indigo-900">
           cnil.fr
         </a>
         ). Ces droits s&apos;exercent en écrivant à pedagogie@pivotformation.com.

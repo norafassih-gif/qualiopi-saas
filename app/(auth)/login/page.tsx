@@ -44,7 +44,7 @@ function LoginForm() {
         </button>
       </form>
 
-      <div className="mb-5 flex items-center gap-3 text-xs text-gray-400">
+      <div className="mb-5 flex items-center gap-3 text-xs text-gray-500">
         <div className="h-px flex-1 bg-gray-200" />
         ou avec votre email
         <div className="h-px flex-1 bg-gray-200" />

@@ -9,6 +9,11 @@
  * 3D (pas de three.js/WebGL) — juste des `<span>` et deux animations CSS,
  * dans l'esprit "site léger, sans dépendance inutile" du projet. Composant
  * serveur : aucun JS n'est envoyé au navigateur pour l'afficher.
+ *
+ * Couleurs recalibrées en Phase 23 (passage du site au thème clair) : les
+ * points étaient à l'origine un indigo pâle avec un halo lumineux, pensés
+ * pour se détacher sur fond noir — invisibles sur fond blanc. Points plus
+ * saturés (indigo-500/600) avec une ombre douce plutôt qu'un halo lumineux.
  */
 function fibonacciSpherePoints(count: number) {
   const points: { x: number; y: number; z: number }[] = [];
@@ -55,14 +60,14 @@ export function ParticleSphere({
           return (
             <span
               key={i}
-              className="absolute left-1/2 top-1/2 rounded-full bg-indigo-300"
+              className="absolute left-1/2 top-1/2 rounded-full bg-indigo-600"
               style={{
                 width: dotSize,
                 height: dotSize,
                 marginLeft: -dotSize / 2,
                 marginTop: -dotSize / 2,
-                opacity: 0.25 + depth * 0.65,
-                boxShadow: "0 0 8px 1px rgba(129,140,248,0.55)",
+                opacity: 0.45 + depth * 0.5,
+                boxShadow: "0 1px 4px 0 rgba(67,56,202,0.35)",
                 transform: `translate3d(${p.x * radius}px, ${p.y * radius}px, ${p.z * radius}px)`,
               }}
             />

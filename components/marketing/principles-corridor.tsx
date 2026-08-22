@@ -20,6 +20,8 @@ const PRINCIPLES: Principle[] = [
   { text: "Prêt pour l'audit", from: "teal" },
   { text: "Vos couleurs, votre logo", from: "fuchsia" },
   { text: "Sans coût caché", from: "orange" },
+  { text: "Accompagnement sur mesure", from: "cyan" },
+  { text: "Site internet inclus", from: "lime" },
 ];
 
 // Répartition sur 3 "couloirs" (gauche / centre / droite), légèrement
@@ -31,16 +33,21 @@ const LANES = [
   { x: 230, y: -10, rot: 12 },
 ];
 
+// Palette claire (Phase 23) : fond pastel + texte saturé de la même teinte,
+// à l'opposé du fond translucide + texte quasi blanc pensé pour un fond noir
+// à l'origine (invisible sur fond blanc).
 const CARD_COLOR_CLASSES: Record<string, string> = {
-  indigo: "from-indigo-500/25 to-indigo-500/5 text-indigo-100 shadow-indigo-500/20",
-  emerald: "from-emerald-500/25 to-emerald-500/5 text-emerald-100 shadow-emerald-500/20",
-  amber: "from-amber-500/25 to-amber-500/5 text-amber-100 shadow-amber-500/20",
-  rose: "from-rose-500/25 to-rose-500/5 text-rose-100 shadow-rose-500/20",
-  sky: "from-sky-500/25 to-sky-500/5 text-sky-100 shadow-sky-500/20",
-  violet: "from-violet-500/25 to-violet-500/5 text-violet-100 shadow-violet-500/20",
-  teal: "from-teal-500/25 to-teal-500/5 text-teal-100 shadow-teal-500/20",
-  fuchsia: "from-fuchsia-500/25 to-fuchsia-500/5 text-fuchsia-100 shadow-fuchsia-500/20",
-  orange: "from-orange-500/25 to-orange-500/5 text-orange-100 shadow-orange-500/20",
+  indigo: "from-indigo-100 to-indigo-50 text-indigo-700 border-indigo-200 shadow-indigo-200/70",
+  emerald: "from-emerald-100 to-emerald-50 text-emerald-700 border-emerald-200 shadow-emerald-200/70",
+  amber: "from-amber-100 to-amber-50 text-amber-700 border-amber-200 shadow-amber-200/70",
+  rose: "from-rose-100 to-rose-50 text-rose-700 border-rose-200 shadow-rose-200/70",
+  sky: "from-sky-100 to-sky-50 text-sky-700 border-sky-200 shadow-sky-200/70",
+  violet: "from-violet-100 to-violet-50 text-violet-700 border-violet-200 shadow-violet-200/70",
+  teal: "from-teal-100 to-teal-50 text-teal-700 border-teal-200 shadow-teal-200/70",
+  fuchsia: "from-fuchsia-100 to-fuchsia-50 text-fuchsia-700 border-fuchsia-200 shadow-fuchsia-200/70",
+  orange: "from-orange-100 to-orange-50 text-orange-700 border-orange-200 shadow-orange-200/70",
+  cyan: "from-cyan-100 to-cyan-50 text-cyan-700 border-cyan-200 shadow-cyan-200/70",
+  lime: "from-lime-100 to-lime-50 text-lime-700 border-lime-200 shadow-lime-200/70",
 };
 
 const DURATION_S = 15;
@@ -61,7 +68,7 @@ export function PrinciplesCorridor() {
     <section className="relative py-8 md:py-12">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <Reveal>
-          <p className="mx-auto mb-8 max-w-xl text-center text-sm text-indigo-200/50">
+          <p className="mx-auto mb-8 max-w-xl text-center text-sm text-gray-500">
             Ce qui change avec {"Qualiopi Pilote"}
           </p>
         </Reveal>
@@ -87,7 +94,7 @@ export function PrinciplesCorridor() {
                   } as React.CSSProperties}
                 >
                   <div
-                    className={`flex h-[90px] items-center justify-center rounded-2xl border border-white/10 bg-linear-to-br px-5 text-center text-lg font-semibold shadow-xl ${CARD_COLOR_CLASSES[principle.from]}`}
+                    className={`flex h-[90px] items-center justify-center rounded-2xl border bg-linear-to-br px-5 text-center text-lg font-semibold shadow-lg ${CARD_COLOR_CLASSES[principle.from]}`}
                   >
                     {principle.text}
                   </div>
@@ -98,7 +105,7 @@ export function PrinciplesCorridor() {
         </div>
 
         {/* Doublon accessible et statique — voir commentaire du composant. */}
-        <ul className="mx-auto mt-8 flex max-w-4xl flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-indigo-200/60">
+        <ul className="mx-auto mt-8 flex max-w-4xl flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-gray-600">
           {PRINCIPLES.map((principle) => (
             <li key={principle.text} className="flex items-center gap-1.5">
               <span className="h-1 w-1 rounded-full bg-indigo-400" aria-hidden="true" />

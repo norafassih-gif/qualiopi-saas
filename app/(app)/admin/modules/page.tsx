@@ -46,7 +46,7 @@ export default async function AdminModulesPage({
             className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3 hover:border-blue-900"
           >
             <div>
-              <p className="text-xs text-gray-400">{m.code}</p>
+              <p className="text-xs text-gray-500">{m.code}</p>
               <p className="text-sm text-gray-900">{m.title}</p>
             </div>
             <span className="text-xs text-gray-500">

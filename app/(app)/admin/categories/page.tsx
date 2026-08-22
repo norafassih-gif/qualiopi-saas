@@ -33,7 +33,7 @@ export default async function AdminCategoriesPage({
           >
             <div>
               <p className="text-sm font-medium text-gray-900">
-                {c.label} <span className="text-xs text-gray-400">({c.id})</span>
+                {c.label} <span className="text-xs text-gray-500">({c.id})</span>
               </p>
               {c.description && <p className="text-xs text-gray-500">{c.description}</p>}
             </div>

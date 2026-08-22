@@ -43,7 +43,7 @@ export default async function OnboardingAbonnementPage({
   return (
     <div
       className="relative min-h-[calc(100vh-57px)] overflow-hidden"
-      style={{ backgroundColor: "#030712", color: "#e5e7eb" }}
+      style={{ backgroundColor: "#ffffff", color: "#111827" }}
     >
       <PageIllustration />
       <main className="relative">
@@ -55,11 +55,11 @@ export default async function OnboardingAbonnementPage({
                   Dernière étape avant de démarrer
                 </span>
               </div>
-              <h1 className="pb-4 text-3xl text-gray-100 md:text-4xl">
+              <h1 className="pb-4 text-3xl text-gray-900 md:text-4xl">
                 <span className="font-extrabold">Choisissez votre formule</span>{" "}
-                <span className="font-light text-gray-400">pour activer votre compte</span>
+                <span className="font-light text-gray-500">pour activer votre compte</span>
               </h1>
-              <p className="text-lg text-indigo-200/65">
+              <p className="text-lg text-gray-600">
                 Votre compte est créé — il ne reste qu&apos;à choisir votre abonnement. Vous
                 renseignerez les informations de votre organisme juste après.
               </p>
@@ -68,7 +68,7 @@ export default async function OnboardingAbonnementPage({
 
           {canceled === "1" && (
             <Reveal>
-              <div className="mx-auto mb-10 max-w-xl rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-center text-sm text-amber-200">
+              <div className="mx-auto mb-10 max-w-xl rounded-lg border border-amber-300 bg-amber-50 p-3 text-center text-sm text-amber-800">
                 Paiement annulé — rien n&apos;a été débité. Choisissez une formule ci-dessous
                 pour continuer.
               </div>
@@ -78,17 +78,17 @@ export default async function OnboardingAbonnementPage({
           <PlanPickerHero />
 
           <Reveal delay={200}>
-            <div className="mx-auto mt-12 flex max-w-3xl flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-indigo-200/60">
+            <div className="mx-auto mt-12 flex max-w-3xl flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-gray-600">
               <span className="inline-flex items-center gap-2">
-                <Lock className="h-4 w-4 text-indigo-400" aria-hidden="true" />
+                <Lock className="h-4 w-4 text-indigo-500" aria-hidden="true" />
                 Paiement sécurisé par Stripe
               </span>
               <span className="inline-flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-indigo-400" aria-hidden="true" />
+                <ShieldCheck className="h-4 w-4 text-indigo-500" aria-hidden="true" />
                 Vos coordonnées bancaires ne sont jamais stockées par nos soins
               </span>
               <span className="inline-flex items-center gap-2">
-                <Undo2 className="h-4 w-4 text-indigo-400" aria-hidden="true" />
+                <Undo2 className="h-4 w-4 text-indigo-500" aria-hidden="true" />
                 Vous pouvez annuler avant de confirmer le paiement
               </span>
             </div>

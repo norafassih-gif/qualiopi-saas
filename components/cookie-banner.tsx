@@ -59,14 +59,11 @@ export function CookieBanner() {
       role="region"
       aria-label="Information sur les cookies"
     >
-      <div
-        className="mx-auto flex max-w-xl flex-col gap-3 rounded-xl border border-white/10 p-4 shadow-2xl backdrop-blur sm:flex-row sm:items-center"
-        style={{ backgroundColor: "rgba(3, 7, 18, 0.96)" }}
-      >
-        <p className="text-sm text-gray-300">
+      <div className="mx-auto flex max-w-xl flex-col gap-3 rounded-xl border border-gray-200 bg-white/98 p-4 shadow-2xl backdrop-blur sm:flex-row sm:items-center">
+        <p className="text-sm text-gray-600">
           Nous utilisons uniquement le cookie strictement nécessaire à votre connexion — aucun
           cookie publicitaire ou de mesure d&apos;audience.{" "}
-          <Link href="/cookies" className="underline decoration-gray-500 underline-offset-2 hover:text-white">
+          <Link href="/cookies" className="underline decoration-gray-500 underline-offset-2 hover:text-gray-900">
             En savoir plus
           </Link>
           .

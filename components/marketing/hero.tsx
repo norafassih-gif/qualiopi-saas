@@ -15,7 +15,7 @@ export function MarketingHero() {
             <InteractiveSphereLayer />
 
             <Reveal>
-              <span className="inline-flex items-center gap-3 pb-5 text-sm text-indigo-200/65 before:h-px before:w-6 before:bg-linear-to-r before:from-transparent before:to-indigo-200/50 after:h-px after:w-6 after:bg-linear-to-l after:from-transparent after:to-indigo-200/50">
+              <span className="inline-flex items-center gap-3 pb-5 text-sm text-gray-600 before:h-px before:w-6 before:bg-linear-to-r before:from-transparent before:to-indigo-200/50 after:h-px after:w-6 after:bg-linear-to-l after:from-transparent after:to-indigo-200/50">
                 Sans IA, sans jargon Qualiopi
               </span>
             </Reveal>
@@ -24,11 +24,11 @@ export function MarketingHero() {
               <h1 className="relative z-10 pb-6 text-5xl leading-none tracking-tight md:text-7xl">
                 <span
                   data-sphere-word="qualiopi"
-                  className="inline-block animate-gradient bg-[linear-gradient(to_right,var(--color-indigo-300),var(--color-gray-50),var(--color-indigo-400),var(--color-gray-50))] bg-[length:200%_auto] bg-clip-text font-extrabold text-transparent motion-reduce:animate-none"
+                  className="inline-block animate-gradient bg-[linear-gradient(to_right,var(--color-indigo-600),var(--color-gray-900),var(--color-indigo-500),var(--color-gray-900))] bg-[length:200%_auto] bg-clip-text font-extrabold text-transparent motion-reduce:animate-none"
                 >
                   Qualiopi
                 </span>{" "}
-                <span className="inline-block font-extralight text-gray-400">
+                <span className="inline-block font-extralight text-gray-500">
                   {PILOTE_LETTERS.map((letter, i) => (
                     <span key={i} data-sphere-letter className="inline-block">
                       {letter}
@@ -39,14 +39,14 @@ export function MarketingHero() {
             </Reveal>
 
             <Reveal delay={240}>
-              <p className="mx-auto max-w-2xl text-xl font-medium text-gray-200 md:text-2xl">
+              <p className="mx-auto max-w-2xl text-xl font-medium text-gray-700 md:text-2xl">
                 Votre organisme de formation, certifié Qualiopi sans prise de tête.
               </p>
             </Reveal>
 
             <Reveal delay={360}>
               <div className="mx-auto max-w-2xl">
-                <p className="mb-8 mt-4 text-lg text-indigo-200/65">
+                <p className="mb-8 mt-4 text-lg text-gray-600">
                   Répondez à des questions simples : le logiciel construit automatiquement votre
                   programme de formation et génère tous les documents de votre dossier, prêts pour
                   l&apos;audit.
@@ -67,7 +67,7 @@ export function MarketingHero() {
                 <div>
                   <Link
                     href="/login"
-                    className="flex w-full items-center justify-center rounded-lg border border-gray-700 px-6 py-3 text-sm font-semibold text-gray-300 transition duration-300 hover:scale-105 hover:border-gray-500 hover:text-white sm:ml-4 sm:w-auto"
+                    className="flex w-full items-center justify-center rounded-lg border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-600 transition duration-300 hover:scale-105 hover:border-gray-400 hover:text-gray-900 sm:ml-4 sm:w-auto"
                   >
                     Se connecter
                   </Link>

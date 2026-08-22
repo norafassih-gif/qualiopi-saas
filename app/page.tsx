@@ -22,13 +22,13 @@ export default async function Home() {
   return (
     <div
       className="relative flex min-h-screen flex-col overflow-hidden"
-      style={{ backgroundColor: "#030712", color: "#e5e7eb" }}
+      style={{ backgroundColor: "#ffffff", color: "#111827" }}
     >
       <MarketingHeader />
       <main className="relative grow">
         <PageIllustration multiple />
-        <MarketingHero />
         <PrinciplesCorridor />
+        <MarketingHero />
         <HowItWorks />
         <Features />
         <MarketingCta />

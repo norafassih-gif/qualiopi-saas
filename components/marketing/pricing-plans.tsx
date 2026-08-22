@@ -92,11 +92,11 @@ export function PricingPlans() {
                   Tarifs
                 </span>
               </div>
-              <h1 className="pb-4 text-3xl text-gray-100 md:text-4xl">
+              <h1 className="pb-4 text-3xl text-gray-900 md:text-4xl">
                 <span className="font-extrabold">Une formule pour chaque étape</span>{" "}
-                <span className="font-light text-gray-400">de votre organisme de formation</span>
+                <span className="font-light text-gray-500">de votre organisme de formation</span>
               </h1>
-              <p className="text-lg text-indigo-200/65">
+              <p className="text-lg text-gray-600">
                 Commencez par vos documents de preuve, puis ajoutez votre site internet,
                 l&apos;accompagnement à l&apos;audit et votre plateforme de formation en ligne
                 quand vous en avez besoin.
@@ -107,31 +107,31 @@ export function PricingPlans() {
           <Spotlight className="group mx-auto grid max-w-sm items-stretch gap-6 lg:max-w-none lg:grid-cols-2 xl:grid-cols-4">
             {PLANS.map((plan, index) => (
               <Reveal key={plan.name} delay={index * 120} className="h-full">
-                <div className="group/card relative h-full overflow-hidden rounded-2xl bg-gray-800 p-px before:pointer-events-none before:absolute before:-left-40 before:-top-40 before:z-10 before:h-80 before:w-80 before:translate-x-[var(--mouse-x)] before:translate-y-[var(--mouse-y)] before:rounded-full before:bg-indigo-500/80 before:opacity-0 before:blur-3xl before:transition-opacity before:duration-500 group-hover:before:opacity-100">
-                  <div className="relative z-20 flex h-full flex-col overflow-hidden rounded-[inherit] bg-gray-950 p-6 after:pointer-events-none after:absolute after:inset-0 after:bg-linear-to-br after:from-gray-900/50 after:via-gray-800/25 after:to-gray-900/50">
+                <div className="group/card relative h-full overflow-hidden rounded-2xl bg-gray-200 p-px before:pointer-events-none before:absolute before:-left-40 before:-top-40 before:z-10 before:h-80 before:w-80 before:translate-x-[var(--mouse-x)] before:translate-y-[var(--mouse-y)] before:rounded-full before:bg-indigo-500/80 before:opacity-0 before:blur-3xl before:transition-opacity before:duration-500 group-hover:before:opacity-100">
+                  <div className="relative z-20 flex h-full flex-col overflow-hidden rounded-[inherit] bg-white p-6">
                     <div className="relative flex h-full flex-col">
                       <div className="mb-3">
                         {plan.available ? (
-                          <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
+                          <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
                             Disponible maintenant
                           </span>
                         ) : (
-                          <span className="rounded-full bg-gray-800/60 px-2.5 py-0.5 text-xs font-medium text-indigo-300">
+                          <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
                             Bientôt disponible
                           </span>
                         )}
                       </div>
 
-                      <h2 className="mb-1 text-base font-semibold text-gray-100">{plan.name}</h2>
-                      <p className="mb-4 text-sm text-indigo-200/65">{plan.tagline}</p>
+                      <h2 className="mb-1 text-base font-semibold text-gray-900">{plan.name}</h2>
+                      <p className="mb-4 text-sm text-gray-600">{plan.tagline}</p>
 
-                      <p className="mb-1 text-2xl font-extrabold text-gray-50">{plan.price}</p>
-                      <p className="mb-5 text-xs text-indigo-200/50">{plan.billingNote}</p>
+                      <p className="mb-1 text-2xl font-extrabold text-gray-900">{plan.price}</p>
+                      <p className="mb-5 text-xs text-gray-500">{plan.billingNote}</p>
 
                       <ul className="mb-6 flex flex-1 flex-col gap-2.5">
                         {plan.features.map((feature) => (
-                          <li key={feature} className="flex items-start gap-2 text-sm text-indigo-200/80">
-                            <Check className="mt-0.5 h-4 w-4 shrink-0 text-indigo-400" aria-hidden="true" />
+                          <li key={feature} className="flex items-start gap-2 text-sm text-gray-700">
+                            <Check className="mt-0.5 h-4 w-4 shrink-0 text-indigo-500" aria-hidden="true" />
                             {feature}
                           </li>
                         ))}
@@ -145,7 +145,7 @@ export function PricingPlans() {
                           {plan.cta.label}
                         </Link>
                       ) : (
-                        <span className="mt-auto flex items-center justify-center rounded-lg border border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-500">
+                        <span className="mt-auto flex items-center justify-center rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-500">
                           {plan.name === "Tout compris + LMS" ? (
                             <GraduationCap className="mr-1.5 h-4 w-4" aria-hidden="true" />
                           ) : null}
@@ -160,7 +160,7 @@ export function PricingPlans() {
           </Spotlight>
 
           <Reveal delay={520}>
-            <p className="mx-auto mt-10 max-w-2xl text-center text-sm text-indigo-200/50">
+            <p className="mx-auto mt-10 max-w-2xl text-center text-sm text-gray-500">
               Le coût de l&apos;audit Qualiopi lui-même, payé à l&apos;organisme certificateur,
               n&apos;est inclus dans aucune formule — il varie selon la taille de votre structure
               (environ 990 € à 2 500 € HT sur 3 ans pour un petit organisme).

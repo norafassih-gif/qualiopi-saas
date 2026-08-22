@@ -50,13 +50,13 @@ export default function MentionsLegalesPage() {
       <Ul>
         <li>
           Vercel Inc. (hébergement de l&apos;application) —{" "}
-          <a href="https://vercel.com" className="text-indigo-300 underline underline-offset-2 hover:text-indigo-200">
+          <a href="https://vercel.com" className="text-indigo-700 underline underline-offset-2 hover:text-indigo-900">
             vercel.com
           </a>
         </li>
         <li>
           Supabase, Inc. (base de données, authentification, stockage des fichiers) —{" "}
-          <a href="https://supabase.com" className="text-indigo-300 underline underline-offset-2 hover:text-indigo-200">
+          <a href="https://supabase.com" className="text-indigo-700 underline underline-offset-2 hover:text-indigo-900">
             supabase.com
           </a>
         </li>

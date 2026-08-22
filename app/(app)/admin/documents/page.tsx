@@ -17,13 +17,13 @@ export default async function AdminDocumentsPage() {
         {templates.map((t) => (
           <div key={t.id} className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
             <a href={`/admin/documents/${t.id}`} className="text-sm text-gray-900 hover:underline">
-              {t.label} <span className="text-xs text-gray-400">({t.folder_group ?? "—"})</span>
+              {t.label} <span className="text-xs text-gray-500">({t.folder_group ?? "—"})</span>
               {!t.is_active && <span className="ml-2 text-xs text-gray-500">— ❌ désactivé</span>}
             </a>
             <form action={toggleDocumentTemplateActive.bind(null, t.id, !t.is_active)}>
               <button
                 type="submit"
-                className={`rounded-md px-3 py-1 text-xs ${t.is_active ? "border border-gray-300" : "bg-blue-900 text-white"}`}
+                className={`rounded-md px-3 py-1 text-xs ${t.is_active ? "border border-gray-300" : "bg-indigo-600 text-white"}`}
               >
                 {t.is_active ? "Désactiver" : "Activer"}
               </button>
@@ -32,7 +32,7 @@ export default async function AdminDocumentsPage() {
         ))}
       </div>
 
-      <a href="/admin" className="mt-8 inline-block text-sm text-blue-900 underline">
+      <a href="/admin" className="mt-8 inline-block text-sm text-indigo-600 underline">
         ← Retour au back-office
       </a>
     </div>

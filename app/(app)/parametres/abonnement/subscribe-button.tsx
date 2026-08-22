@@ -33,9 +33,7 @@ export function SubscribeButton({
     <form action={formAction}>
       <input type="hidden" name="plan" value={plan} />
       {showBrandingAddon && (
-        <label
-          className={`mb-3 flex items-start gap-2 text-sm ${dark ? "text-indigo-200/80" : "text-gray-700"}`}
-        >
+        <label className="mb-3 flex items-start gap-2 text-sm text-gray-700">
           <input
             type="checkbox"
             name="branding_addon"
@@ -49,16 +47,14 @@ export function SubscribeButton({
           </span>
         </label>
       )}
-      {state.error && (
-        <p className={`mb-2 text-sm ${dark ? "text-rose-400" : "text-red-600"}`}>{state.error}</p>
-      )}
+      {state.error && <p className="mb-2 text-sm text-red-600">{state.error}</p>}
       <button
         type="submit"
         disabled={pending}
         className={
           dark
             ? "flex w-full items-center justify-center rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-semibold text-white transition duration-300 hover:scale-105 hover:bg-indigo-400 disabled:opacity-50 disabled:hover:scale-100"
-            : "rounded-md bg-blue-900 px-4 py-2 text-sm text-white disabled:opacity-50"
+            : "rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-50"
         }
       >
         {pending ? "Redirection vers le paiement…" : label}
