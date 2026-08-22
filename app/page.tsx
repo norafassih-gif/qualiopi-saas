@@ -2,9 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { MarketingHeader } from "@/components/marketing/header";
 import { MarketingFooter } from "@/components/marketing/footer";
-import { PageIllustration } from "@/components/marketing/page-illustration";
-import { MarketingHero } from "@/components/marketing/hero";
-import { RotatingDeviceHero } from "@/components/marketing/rotating-device-hero";
+import { HeroScrollNotions } from "@/components/marketing/hero-scroll-notions";
 import { HowItWorks } from "@/components/marketing/how-it-works";
 import { Features } from "@/components/marketing/features";
 import { MarketingCta } from "@/components/marketing/cta";
@@ -27,24 +25,23 @@ export default async function Home() {
       <MarketingHeader />
       <main className="relative grow">
         {/*
-          Zone clippée localement (illustrations/halo qui débordent
-          volontairement de chaque côté) — le clip n'est PLUS posé sur ce
-          <div> ni sur <main>/le conteneur racine ci-dessus : un ancêtre en
-          `overflow: hidden`/`auto`/`scroll` casse `position: sticky` pour
-          TOUS ses descendants (y compris loin en dessous), même si cet
-          ancêtre ne déborde jamais lui-même. C'est exactement ce qui rendait
-          RotatingDeviceHero non collant (Phase 26) : le clip qui vivait ici
-          au niveau de la page entière empêchait son <div className="sticky">
-          de se fixer à l'écran pendant le scroll. Chaque section qui a
-          besoin de clipper son propre débordement décoratif le fait
-          désormais elle-même (footer.tsx, features.tsx) plutôt que de
-          compter sur un clip posé plus haut.
+          Phase 27 : remplace à la fois `MarketingHero` (titre + sphère de
+          particules "constellation" qui suivait la souris) et
+          `RotatingDeviceHero` (Phase 26, l'ordinateur qui tournait) par un
+          seul hero "scroll-reveal" — titre/CTA d'abord, qui s'efface au
+          scroll pour laisser place aux 4 plaquettes (cf.
+          hero-scroll-notions.tsx pour le détail et le contexte de la
+          demande). Les deux anciens composants restent dans le dépôt,
+          inutilisés, plutôt que supprimés (au cas où) — même logique que
+          `principles-corridor.tsx`/`stream-corridor.tsx` en Phase 25/26.
+
+          `PageIllustration`/`Glow` (halo + formes floues décoratives) sont
+          désormais rendus À L'INTÉRIEUR de `HeroScrollNotions`, sur
+          l'élément qui porte lui-même `overflow-hidden` — pas ici sur un
+          ancêtre du panneau sticky, ce qui casserait `position: sticky`
+          (cf. la note laissée dans ce composant).
         */}
-        <div className="relative overflow-hidden">
-          <PageIllustration multiple />
-          <MarketingHero />
-        </div>
-        <RotatingDeviceHero />
+        <HeroScrollNotions />
         <HowItWorks />
         <Features />
         <MarketingCta />
