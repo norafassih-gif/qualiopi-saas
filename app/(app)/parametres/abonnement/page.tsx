@@ -57,6 +57,12 @@ export default async function AbonnementPage({
             Option active : <span className="font-medium">Logo + charte graphique</span>
           </p>
         )}
+        {billing?.has_personalization_addon && (
+          <p className="mt-2 text-sm text-gray-600">
+            Option active : <span className="font-medium">Document personnalisé</span> (logo, cachet,
+            signature)
+          </p>
+        )}
       </div>
 
       {!hasActiveSubscription && (

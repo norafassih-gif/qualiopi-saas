@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
       const organizationId = session.client_reference_id || session.metadata?.organization_id;
       const plan = session.metadata?.plan;
       const brandingAddon = session.metadata?.branding_addon;
+      const personalizationAddon = session.metadata?.personalization_addon;
       if (!organizationId) break;
 
       const { error } = await supabase
@@ -58,6 +59,10 @@ export async function POST(req: NextRequest) {
           // Absent (undefined) sur un ancien paiement/webhook rejoué : on ne
           // touche alors pas à la colonne plutôt que de la remettre à false.
           ...(brandingAddon !== undefined ? { has_branding_addon: brandingAddon === "1" } : {}),
+          // Idem pour l'add-on "document personnalisé" (+5 €/mois, migration 0041).
+          ...(personalizationAddon !== undefined
+            ? { has_personalization_addon: personalizationAddon === "1" }
+            : {}),
         })
         .eq("organization_id", organizationId);
       if (error) console.error("stripe webhook: checkout.session.completed", error);

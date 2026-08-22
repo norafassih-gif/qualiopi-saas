@@ -43,7 +43,13 @@ export function isPlanPurchasable(plan: string): boolean {
   return (PURCHASABLE_PLANS as readonly string[]).includes(plan);
 }
 
-// Add-on optionnel "Logo + charte graphique" (+15 €/mois, prestation de
+// Add-on optionnel "Logo + charte graphique" (+18 €/mois, prestation de
 // design sur-mesure réalisée par Nora) — indépendant du plan choisi, ajouté
 // comme deuxième ligne dans la session Stripe Checkout quand coché.
 export const STRIPE_PRICE_BRANDING_ADDON = process.env.STRIPE_PRICE_BRANDING_ADDON;
+
+// Add-on optionnel "document personnalisé" (+5 €/mois — date automatique,
+// émargement en ligne, cachet et signature électronique sur les PDF générés,
+// migration 0041) — proposé sur les 3 formules (contrairement à l'add-on
+// branding ci-dessus, réservé aux formules avec site), cumulable avec lui.
+export const STRIPE_PRICE_PERSONALIZATION_ADDON = process.env.STRIPE_PRICE_PERSONALIZATION_ADDON;

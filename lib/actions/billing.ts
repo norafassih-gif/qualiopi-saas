@@ -8,6 +8,7 @@ import {
   getStripe,
   STRIPE_PRICE_BY_PLAN,
   STRIPE_PRICE_BRANDING_ADDON,
+  STRIPE_PRICE_PERSONALIZATION_ADDON,
   isPlanPurchasable,
 } from "@/lib/stripe/client";
 
@@ -20,6 +21,7 @@ export type MyBilling = {
   blocked_reason: string | null;
   stripe_customer_id: string | null;
   has_branding_addon: boolean;
+  has_personalization_addon: boolean;
 };
 
 /** Statut de facturation de l'organisme du client connecté. */
@@ -30,7 +32,9 @@ export async function getMyBilling(): Promise<MyBilling | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("organization_billing")
-    .select("plan, subscription_status, is_blocked, blocked_reason, stripe_customer_id, has_branding_addon")
+    .select(
+      "plan, subscription_status, is_blocked, blocked_reason, stripe_customer_id, has_branding_addon, has_personalization_addon",
+    )
     .eq("organization_id", org.id)
     .maybeSingle();
 
@@ -133,6 +137,18 @@ export async function startCheckout(_prevState: BillingFormState, formData: Form
     };
   }
 
+  // Add-on optionnel "document personnalisé" (+5 €/mois, migration 0041) —
+  // choisi via les deux cartes (standard / personnalisé) du formulaire,
+  // ajouté comme ligne Stripe supplémentaire, cumulable avec l'add-on
+  // branding ci-dessus.
+  const wantsPersonalizationAddon = formData.get("personalization_addon") === "on";
+  if (wantsPersonalizationAddon && !STRIPE_PRICE_PERSONALIZATION_ADDON) {
+    return {
+      error:
+        "L'option document personnalisé n'est pas encore configurée côté serveur. Contactez l'équipe technique.",
+    };
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -179,10 +195,14 @@ export async function startCheckout(_prevState: BillingFormState, formData: Form
     if (wantsBrandingAddon && STRIPE_PRICE_BRANDING_ADDON) {
       lineItems.push({ price: STRIPE_PRICE_BRANDING_ADDON, quantity: 1 });
     }
+    if (wantsPersonalizationAddon && STRIPE_PRICE_PERSONALIZATION_ADDON) {
+      lineItems.push({ price: STRIPE_PRICE_PERSONALIZATION_ADDON, quantity: 1 });
+    }
     const metadata = {
       organization_id: org.id,
       plan,
       branding_addon: wantsBrandingAddon ? "1" : "0",
+      personalization_addon: wantsPersonalizationAddon ? "1" : "0",
     };
     const successPath = isFirstTimeCheckout
       ? "/onboarding/entreprise?welcome=1"
