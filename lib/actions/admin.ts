@@ -954,16 +954,23 @@ export async function resendClientLoginLink(
 
   const { data: org, error: orgError } = await supabase
     .from("organizations")
-    .select("email")
+    .select("owner_user_id")
     .eq("id", organizationId)
     .maybeSingle();
-  if (orgError || !org?.email) {
-    return { error: "Aucun email connu pour cet organisme." };
+  if (orgError || !org?.owner_user_id) {
+    return { error: "Aucun propriétaire connu pour cet organisme." };
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.admin.getUserById(
+    org.owner_user_id
+  );
+  if (userError || !userData?.user?.email) {
+    return { error: "Impossible de retrouver le compte de connexion de cet organisme." };
   }
 
   const { data, error } = await supabase.auth.admin.generateLink({
     type: "magiclink",
-    email: org.email,
+    email: userData.user.email,
     options: { redirectTo: `${appUrl()}/dashboard` },
   });
   if (error || !data) {
