@@ -50,10 +50,18 @@ export function NewClientForm() {
       <div className="rounded-lg border border-green-200 bg-green-50 p-5">
         <p className="mb-1 text-sm font-semibold text-green-900">Compte créé !</p>
         <p className="mb-3 text-sm text-green-800">
-          Envoie ce lien à ton client pour qu&apos;il définisse son mot de passe et se connecte —
-          copie-le et transmets-le toi-même (par email, WhatsApp...), aucun envoi automatique n&apos;est
-          configuré.
+          Ce lien connecte directement au compte du client (aucun mot de passe à définir). Ouvre-le
+          toi-même pour agir en son nom, ou copie-le pour le lui transmettre (email, WhatsApp...) —
+          aucun envoi automatique n&apos;est configuré.
         </p>
+        <a
+          href={state.setupLink}
+          target="_blank"
+          rel="noreferrer"
+          className="mb-3 inline-block rounded-md bg-blue-900 px-4 py-2 text-sm font-medium text-white"
+        >
+          Ouvrir la session client →
+        </a>
         <CopyableLink link={state.setupLink} />
         <div className="mt-4 flex gap-3 text-sm">
           {state.organizationId && (

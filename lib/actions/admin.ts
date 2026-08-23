@@ -820,6 +820,13 @@ export async function updateOrganizationPlanAdmin(
 // Utilise le service_role (comme le webhook Stripe) car ceci crée un vrai
 // utilisateur Supabase Auth — une opération réservée à l'API d'administration,
 // impossible avec le client "normal" soumis à RLS.
+//
+// Important (correctif du 24/08/2026, cf. app/auth/confirm/route.ts) : ne
+// JAMAIS utiliser `linkData.properties.action_link` tel quel — il pointe vers
+// le serveur Supabase et redirige avec les jetons dans le fragment d'URL,
+// que notre serveur ne peut jamais lire (c'était le bug "ça ne fonctionne
+// pas" remonté par Nora). On reconstruit toujours le lien nous-mêmes à
+// partir de `properties.hashed_token`, vers /auth/confirm.
 // ---------------------------------------------------------------------------
 
 export type CreateClientFormState = {
@@ -832,9 +839,11 @@ export type CreateClientFormState = {
  * Crée le compte (Supabase Auth) et l'organisme d'un nouveau client en un
  * seul geste, avec la formule choisie déjà active — aucun paiement Stripe
  * requis. `generateLink({ type: "invite" })` fait les deux choses en un seul
- * appel : créer l'utilisateur ET produire un lien "définir votre mot de
- * passe" à lui transmettre (par toi, pas par email automatique — aucun
- * fournisseur d'email transactionnel n'est configuré sur ce projet).
+ * appel : créer l'utilisateur ET produire un jeton permettant de se connecter
+ * directement à sa place (le lien reconstruit ci-dessous connecte
+ * immédiatement — aucun mot de passe à définir avant de pouvoir l'utiliser),
+ * à transmettre toi-même au client si besoin (pas d'email automatique —
+ * aucun fournisseur d'email transactionnel n'est configuré sur ce projet).
  */
 export async function createClientOrganization(
   _prevState: CreateClientFormState,
@@ -903,16 +912,36 @@ export async function createClientOrganization(
   }
 
   revalidatePath("/admin/organisations");
-  return { error: null, setupLink: linkData.properties.action_link, organizationId: org.id };
+  return {
+    error: null,
+    setupLink: buildAdminAuthLink(linkData.properties.hashed_token, "invite"),
+    organizationId: org.id,
+  };
+}
+
+/**
+ * Reconstruit un lien de connexion directe à partir d'un jeton renvoyé par
+ * generateLink() — voir le commentaire au-dessus de createClientOrganization
+ * pour le pourquoi (ne jamais utiliser action_link tel quel).
+ */
+function buildAdminAuthLink(tokenHash: string, type: string): string {
+  const next = encodeURIComponent("/dashboard");
+  return `${appUrl()}/auth/confirm?token_hash=${tokenHash}&type=${type}&next=${next}`;
 }
 
 export type ResendLinkFormState = { error: string | null; link?: string };
 
 /**
- * Régénère un lien "définir votre mot de passe" pour un client déjà
- * existant — utile si le premier lien envoyé a expiré ou n'a jamais été
- * transmis. Contrairement à la création (type "invite", qui exige qu'aucun
- * compte n'existe), on utilise ici "recovery" : le compte existe déjà.
+ * Génère un lien de connexion directe pour un organisme déjà existant — sert
+ * à la fois à (a) renvoyer un accès à un vrai client qui aurait perdu son
+ * lien initial, et (b) permettre à Nora de "se connecter en tant que ce
+ * client" en un clic pour tester/faire une démo, sans mot de passe à définir
+ * ni email à recevoir. Utilise "magiclink" (pas "recovery") : ce type est
+ * fait pour une connexion directe et n'implique aucune réinitialisation de
+ * mot de passe (l'app n'a de toute façon pas d'écran dédié à ça).
+ *
+ * Le lien reste à usage unique et expire — en régénérer un nouveau à chaque
+ * fois qu'on veut s'en servir, jamais réutiliser un ancien.
  */
 export async function resendClientLoginLink(
   _prevState: ResendLinkFormState,
@@ -933,7 +962,7 @@ export async function resendClientLoginLink(
   }
 
   const { data, error } = await supabase.auth.admin.generateLink({
-    type: "recovery",
+    type: "magiclink",
     email: org.email,
     options: { redirectTo: `${appUrl()}/dashboard` },
   });
@@ -941,7 +970,7 @@ export async function resendClientLoginLink(
     return { error: "Erreur : " + (error?.message ?? "inconnue") };
   }
 
-  return { error: null, link: data.properties.action_link };
+  return { error: null, link: buildAdminAuthLink(data.properties.hashed_token, "magiclink") };
 }
 
 /**
