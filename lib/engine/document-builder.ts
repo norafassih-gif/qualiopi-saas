@@ -5,7 +5,8 @@ import { getMyOrganization, type Organization } from "@/lib/actions/organization
 import { getMyBilling } from "@/lib/actions/billing";
 import { isPlatformAdmin } from "@/lib/actions/admin";
 import { getMyFirstTraining } from "@/lib/actions/training";
-import { getMyFirstSession, getMyFirstBeneficiary } from "@/lib/actions/session";
+import { getMyFirstSession, getMyFirstBeneficiary, getSessionBeneficiaries } from "@/lib/actions/session";
+import { countDistinctBeneficiaries } from "@/lib/actions/beneficiary-dedup";
 import { getMyFirstPartner, type PartnerType } from "@/lib/actions/partners";
 import { resolveDocumentVariables } from "./document-variables";
 import { EVALUATION_PHASE_DOCUMENT_TEMPLATE, type EvaluationPhase } from "./evaluation-phases";
@@ -177,9 +178,15 @@ export async function buildDocumentHtml(
     // rajoutés") où un document pouvait piocher une fiche vide plutôt que
     // celle réellement complétée par l'organisme, surtout après un doublon
     // historique de bénéficiaires sur une même session.
-    const [beneficiary, { count }] = await Promise.all([
+    // beneficiaryCount ne doit PAS être un simple COUNT(*) brut sur la table
+    // : cf. Phase 32ter (24/08/2026, Nora : "je vois nombre de participants,
+    // 3... il n'y a qu'une personne") — un devis affichait 3 participants à
+    // cause de 3 lignes dupliquées désignant la même personne (même bug
+    // historique que ci-dessus). countDistinctBeneficiaries() (lib/actions/
+    // session.ts) déduplique par nom normalisé avant de compter.
+    const [beneficiary, allBeneficiaries] = await Promise.all([
       getMyFirstBeneficiary(session.id),
-      supabase.from("beneficiaries").select("id", { count: "exact", head: true }).eq("session_id", session.id),
+      getSessionBeneficiaries(session.id),
     ]);
     if (beneficiary) {
       beneficiaryName = beneficiary.full_name;
@@ -200,7 +207,7 @@ export async function buildDocumentHtml(
       beneficiaryScheduleConstraints = beneficiary.schedule_constraints;
       beneficiaryHasDisability = beneficiary.has_disability;
     }
-    beneficiaryCount = count ?? 0;
+    beneficiaryCount = countDistinctBeneficiaries(allBeneficiaries);
   }
 
   // Dernière évaluation complétée pour cette formation (peu importe la

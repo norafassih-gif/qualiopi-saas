@@ -90,20 +90,9 @@ export async function getMyFirstSession(): Promise<TrainingSession | null> {
  * ci-dessous pour la vraie liste.
  */
 export async function getMyFirstBeneficiary(sessionId: string): Promise<Beneficiary | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("beneficiaries")
-    .select("*")
-    .eq("session_id", sessionId)
-    .order("created_at", { ascending: true })
-    .order("id", { ascending: true });
-
-  if (error) {
-    console.error("getMyFirstBeneficiary", error);
-    return null;
-  }
-  if (!data || data.length === 0) return null;
-  if (data.length === 1) return data[0] as Beneficiary;
+  const all = await getSessionBeneficiaries(sessionId);
+  if (all.length === 0) return null;
+  if (all.length === 1) return all[0];
 
   // Plusieurs lignes existent pour cette session (cas normal depuis la
   // Phase 29 multi-apprenants, mais aussi d'anciens doublons créés par un
@@ -113,10 +102,38 @@ export async function getMyFirstBeneficiary(sessionId: string): Promise<Benefici
   // même created_at (ex. backfill de migration) : on choisit la ligne la
   // plus renseignée plutôt que la première trouvée dans un ordre arbitraire,
   // pour ne jamais perdre de vue des réponses déjà saisies.
-  return (data as Beneficiary[]).reduce((best, current) =>
+  return all.reduce((best, current) =>
     beneficiaryCompleteness(current) > beneficiaryCompleteness(best) ? current : best
   );
 }
+
+/**
+ * Retourne TOUTES les lignes bénéficiaires d'une session, triées par ordre
+ * de création. Utilisée par getMyFirstBeneficiary() (choix de la ligne "la
+ * plus complète") et par countDistinctBeneficiaries() (Phase 32ter,
+ * 24/08/2026 : "je vois nombre de participants, 3" alors qu'une seule
+ * personne participe réellement) pour ne faire qu'une seule requête au lieu
+ * de deux requêtes séparées comme avant.
+ */
+export async function getSessionBeneficiaries(sessionId: string): Promise<Beneficiary[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("beneficiaries")
+    .select("*")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
+
+  if (error) {
+    console.error("getSessionBeneficiaries", error);
+    return [];
+  }
+  return (data as Beneficiary[]) ?? [];
+}
+
+// countDistinctBeneficiaries() vit désormais dans lib/actions/beneficiary-dedup.ts
+// (fonction synchrone — ne peut pas être exportée depuis ce fichier "use
+// server", cf. commentaire là-bas).
 
 function beneficiaryCompleteness(b: Beneficiary): number {
   const textFields = [

@@ -10,11 +10,13 @@ function Field({
   name,
   required = false,
   type = "text",
+  help,
 }: {
   label: string;
   name: string;
   required?: boolean;
   type?: string;
+  help?: string;
 }) {
   return (
     <label className="flex flex-col gap-1 text-sm">
@@ -25,6 +27,7 @@ function Field({
         required={required}
         className="rounded-md border border-gray-300 px-3 py-2"
       />
+      {help && <span className="text-xs text-gray-500">{help}</span>}
     </label>
   );
 }
@@ -83,7 +86,11 @@ export function OnboardingSessionForm() {
         plus tard.
       </div>
       <Field label="Nom complet du bénéficiaire" name="beneficiary_name" required />
-      <Field label="Entreprise du bénéficiaire (optionnel)" name="beneficiary_company" />
+      <Field
+        label="Entreprise du bénéficiaire (optionnel pour un particulier)"
+        name="beneficiary_company"
+        help="À renseigner si la formation est prise en charge par une entreprise ou un OPCO : ce nom apparaît comme cocontractant sur la convention de formation."
+      />
       <Field label="Email du bénéficiaire (optionnel)" name="beneficiary_email" type="email" />
       <Field
         label="Poste occupé / statut actuel du bénéficiaire (optionnel)"

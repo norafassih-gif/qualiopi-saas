@@ -326,6 +326,18 @@ export function resolveDocumentVariables(input: {
 
     student_name: beneficiaryName ?? "",
     student_company: beneficiaryCompany ?? "",
+    // Utilisée uniquement dans la convention de formation (clause "Et le
+    // cocontractant : ...") — cf. Phase 32ter, 24/08/2026 : Nora a généré une
+    // convention où la ligne du cocontractant était totalement vide ("il n'y
+    // a rien marqué") car le champ "Entreprise du bénéficiaire" avait été
+    // laissé vide (étiqueté "(optionnel)" sur /parametres/session). Contrairement
+    // à {{student_company}} (laissé vide sans alerte ailleurs, ex. devis,
+    // attestation, où l'absence d'entreprise est normale pour un particulier),
+    // ici on affiche un repère visible plutôt qu'un vide silencieux, car la
+    // convention de formation suppose structurellement un cocontractant
+    // identifié (entreprise, OPCO...) — contrairement au contrat de formation
+    // particulier, document distinct prévu pour les bénéficiaires individuels.
+    student_company_required: required(beneficiaryCompany, "Entreprise du bénéficiaire (cocontractant)"),
     student_email: beneficiaryEmail ?? "",
     student_role: beneficiaryRole ?? "",
     // Signature electronique simple du beneficiaire (cf. migration

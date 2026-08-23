@@ -97,6 +97,24 @@ export function getMissingRequiredFields(
         href: GROUP_HREF.session,
       });
     }
+
+    // Phase 32ter, 24/08/2026 : Nora a généré une convention de formation
+    // dont la ligne "cocontractant" était vide car l'entreprise du
+    // bénéficiaire n'était pas renseignée (champ étiqueté "optionnel" sur
+    // /parametres/session). Ne signaler ce champ que lorsque le financement
+    // suppose une entreprise/OPCO cocontractant — pas pour un particulier en
+    // autofinancement/CPF, pour qui ce champ est réellement facultatif.
+    if (
+      session &&
+      (session.funding_type === "entreprise" || session.funding_type === "opco") &&
+      isEmpty(beneficiary.company)
+    ) {
+      missing.push({
+        label: "Entreprise du bénéficiaire (nécessaire pour la convention de formation)",
+        group: "session",
+        href: GROUP_HREF.session,
+      });
+    }
   }
 
   return missing;

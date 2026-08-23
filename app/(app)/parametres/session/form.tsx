@@ -29,12 +29,14 @@ function Field({
   required = false,
   type = "text",
   defaultValue,
+  help,
 }: {
   label: string;
   name: string;
   required?: boolean;
   type?: string;
   defaultValue?: string;
+  help?: string;
 }) {
   return (
     <label className="flex flex-col gap-1 text-sm">
@@ -46,6 +48,7 @@ function Field({
         defaultValue={defaultValue}
         className="rounded-md border border-gray-300 px-3 py-2"
       />
+      {help && <span className="text-xs text-gray-500">{help}</span>}
     </label>
   );
 }
@@ -172,9 +175,10 @@ export function EditSessionForm({
           defaultValue={beneficiary?.full_name ?? ""}
         />
         <Field
-          label="Entreprise du bénéficiaire (optionnel)"
+          label="Entreprise du bénéficiaire (optionnel pour un particulier)"
           name="beneficiary_company"
           defaultValue={beneficiary?.company ?? ""}
+          help="À renseigner si la formation est prise en charge par une entreprise ou un OPCO : ce nom apparaît comme cocontractant sur la convention de formation."
         />
         <Field
           label="Email du bénéficiaire (optionnel)"
