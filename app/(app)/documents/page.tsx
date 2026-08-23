@@ -54,7 +54,7 @@ export default async function DocumentsPage() {
 
       {!("error" in templates) && templates.some((t) => t.generated) && (
         // eslint-disable-next-line @next/next/no-html-link-for-pages
-        
+        <a
           href="/api/documents/zip"
           className="mb-6 inline-block rounded-md bg-blue-900 px-4 py-2 text-sm text-white"
         >
