@@ -144,6 +144,9 @@ export function resolveDocumentVariables(input: {
   beneficiaryEmail?: string | null;
   beneficiaryRole?: string | null;
   beneficiaryCount?: number;
+  beneficiarySignatureName?: string | null;
+  beneficiarySignatureAccepted?: boolean;
+  beneficiarySignatureDate?: string | null;
   evaluationResult?: EvaluationResultForVariables;
   partner?: Partner | null;
   /**
@@ -166,6 +169,9 @@ export function resolveDocumentVariables(input: {
     beneficiaryEmail = null,
     beneficiaryRole = null,
     beneficiaryCount = 0,
+    beneficiarySignatureName = null,
+    beneficiarySignatureAccepted = false,
+    beneficiarySignatureDate = null,
     evaluationResult = null,
     partner = null,
     generatedDate = null,
@@ -278,6 +284,17 @@ export function resolveDocumentVariables(input: {
     student_company: beneficiaryCompany ?? "",
     student_email: beneficiaryEmail ?? "",
     student_role: beneficiaryRole ?? "",
+    // Signature electronique simple du beneficiaire (cf. migration
+    // beneficiary_signature_capture) : nom tape + case Lu et approuve + date,
+    // saisis sur /parametres/session. Tant que non signe, on retrouve
+    // exactement le texte a completer a la main affiche auparavant dans les
+    // modeles (convention, contrat, dossier admission...).
+    student_signature_block: beneficiarySignatureAccepted && beneficiarySignatureName
+      ? `Signature électronique enregistrée<br/><strong>${beneficiarySignatureName}</strong> — le ${formatDate(beneficiarySignatureDate)}<br/>(mention « Lu et approuvé »)`
+      : `Date et signature (précédée de la mention manuscrite « Lu et approuvé ») :<br/><br/><br/>`,
+    student_signature_status: beneficiarySignatureAccepted && beneficiarySignatureName
+      ? `le ${formatDate(beneficiarySignatureDate)}, par ${beneficiarySignatureName} (« Lu et approuvé »)`
+      : "……………………",
     participant_count: beneficiaryCount > 0 ? String(beneficiaryCount) : "1",
 
     // Tarif / financement (cf. migration 0012) — utilisés par le devis, la

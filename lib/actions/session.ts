@@ -34,6 +34,9 @@ export type Beneficiary = {
   company: string | null;
   email: string | null;
   role: string | null;
+  signature_name: string | null;
+  signature_accepted: boolean;
+  signature_date: string | null;
 };
 
 /**
@@ -371,6 +374,7 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
   const funding_details = String(formData.get("funding_details") || "").trim();
   const payment_terms = String(formData.get("payment_terms") || "").trim();
   const status = String(formData.get("status") || session.status).trim();
+  const signature_accepted = formData.get("signature_accepted") === "on";
 
   if (!trainer_name) {
     return { error: "Le nom du formateur est requis." };
@@ -387,6 +391,14 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
   if (!["planned", "in_progress", "done", "cancelled"].includes(status)) {
     return { error: "Statut de session invalide." };
   }
+
+  const was_signed = beneficiary?.signature_accepted ?? false;
+  const signature_name = signature_accepted ? beneficiary_name : null;
+  const signature_date = signature_accepted
+    ? was_signed && beneficiary?.signature_date
+      ? beneficiary.signature_date
+      : new Date().toISOString().slice(0, 10)
+    : null;
 
   const supabase = await createClient();
 
@@ -420,6 +432,9 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
         company: beneficiary_company || null,
         email: beneficiary_email || null,
         role: beneficiary_role || null,
+        signature_name,
+        signature_accepted,
+        signature_date,
       })
       .eq("id", beneficiary.id);
 
@@ -433,6 +448,9 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
       company: beneficiary_company || null,
       email: beneficiary_email || null,
       role: beneficiary_role || null,
+      signature_name,
+      signature_accepted,
+      signature_date,
     });
 
     if (beneficiaryError) {

@@ -153,11 +153,14 @@ export async function buildDocumentHtml(
   let beneficiaryEmail: string | null = null;
   let beneficiaryRole: string | null = null;
   let beneficiaryCount = 0;
+  let beneficiarySignatureName: string | null = null;
+  let beneficiarySignatureAccepted = false;
+  let beneficiarySignatureDate: string | null = null;
   if (session) {
     const [{ data: beneficiaries }, { count }] = await Promise.all([
       supabase
         .from("beneficiaries")
-        .select("full_name, company, email, role")
+        .select("full_name, company, email, role, signature_name, signature_accepted, signature_date")
         .eq("session_id", session.id)
         .order("id")
         .limit(1),
@@ -168,6 +171,9 @@ export async function buildDocumentHtml(
       beneficiaryCompany = beneficiaries[0].company;
       beneficiaryEmail = beneficiaries[0].email;
       beneficiaryRole = beneficiaries[0].role;
+      beneficiarySignatureName = beneficiaries[0].signature_name;
+      beneficiarySignatureAccepted = beneficiaries[0].signature_accepted;
+      beneficiarySignatureDate = beneficiaries[0].signature_date;
     }
     beneficiaryCount = count ?? 0;
   }
@@ -206,6 +212,9 @@ export async function buildDocumentHtml(
     beneficiaryEmail,
     beneficiaryRole,
     beneficiaryCount,
+    beneficiarySignatureName,
+    beneficiarySignatureAccepted,
+    beneficiarySignatureDate,
     partner,
     generatedDate: customDate ?? null,
     evaluationResult:

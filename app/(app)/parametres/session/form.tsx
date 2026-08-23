@@ -139,6 +139,24 @@ export function EditSessionForm({
           name="beneficiary_role"
           defaultValue={beneficiary?.role ?? ""}
         />
+
+        <label className="mt-2 flex items-start gap-2 rounded-md border border-gray-200 bg-gray-50 p-3 text-sm">
+          <input
+            type="checkbox"
+            name="signature_accepted"
+            defaultChecked={beneficiary?.signature_accepted ?? false}
+            className="mt-0.5"
+          />
+          <span>
+            Lu et approuvé — le bénéficiaire confirme avoir pris connaissance des documents et signe électroniquement (son nom ci-dessus fait foi de signature).
+            {beneficiary?.signature_accepted && beneficiary?.signature_date ? (
+              <span className="mt-1 block text-xs text-green-700">
+                Signé le {beneficiary.signature_date}
+                {beneficiary.signature_name ? ` par ${beneficiary.signature_name}` : ""}.
+              </span>
+            ) : null}
+          </span>
+        </label>
       </fieldset>
 
       <fieldset className="flex flex-col gap-3 border-t border-gray-200 pt-4">
