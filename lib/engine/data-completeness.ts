@@ -1,5 +1,6 @@
 import type { Organization } from "@/lib/actions/organization";
 import type { TrainingSession, Beneficiary } from "@/lib/actions/session";
+import type { Partner } from "@/lib/actions/partners";
 
 export type MissingFieldGroup = "entreprise" | "qualite" | "session";
 
@@ -71,6 +72,15 @@ export function getMissingRequiredFields(
   push("qualite", "Email du référent handicap", org.disability_referent_email);
   push("qualite", "Téléphone du référent handicap", org.disability_referent_phone);
 
+  // Ville du siège et région (cf. lib/engine/document-variables.ts,
+  // required()) : utilisées sur la quasi-totalité des documents pour la
+  // formule de clôture "Fait à {{organization_city}}, le ...", oubliées de
+  // cette liste jusqu'ici — demande de Nora (25/08/2026) : "je veux bien
+  // renseigner les informations manquantes, mais il faut que le système me
+  // dise qu'elles sont manquantes."
+  push("qualite", "Ville du siège", org.organization_city);
+  push("qualite", "Région", org.region);
+
   if (session) {
     if (session.price_unit !== "gratuit" && session.price_amount == null) {
       missing.push({ label: "Tarif de la formation", group: "session", href: GROUP_HREF.session });
@@ -118,4 +128,27 @@ export function getMissingRequiredFields(
   }
 
   return missing;
+}
+
+// Champs sous-traitant/partenaire (table partners, migration 0032) qui
+// s'affichent en "[... à compléter]" dans le Contrat de sous-traitance et la
+// Convention de partenariat (cf. lib/engine/document-variables.ts, variables
+// partner_*) si non renseignés. Volontairement PAS dans
+// getMissingRequiredFields() : contrairement aux référents ou à la session,
+// un organisme qui ne travaille jamais avec de sous-traitant ou de
+// partenaire n'a simplement pas de fiche à créer — l'afficher dans la
+// bannière générale serait une alerte permanente et non pertinente pour la
+// majorité des organismes. Affiché à la place directement sur la carte du
+// document concerné (cf. app/(app)/documents/page.tsx), seulement quand
+// l'organisme a commencé à générer ce document précis.
+export function isPartnerInfoComplete(partner: Partner | null): boolean {
+  if (!partner) return false;
+  return (
+    !isEmpty(partner.full_name) &&
+    !isEmpty(partner.siret) &&
+    !isEmpty(partner.address) &&
+    !isEmpty(partner.legal_representative_name) &&
+    !isEmpty(partner.tutor_name) &&
+    partner.hourly_rate != null
+  );
 }

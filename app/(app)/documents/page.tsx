@@ -6,9 +6,11 @@ import { requireActiveSubscription } from "@/lib/actions/billing";
 import { getMyFirstTraining } from "@/lib/actions/training";
 import { getMyFirstSession, getMyFirstBeneficiary, listMyBeneficiaries } from "@/lib/actions/session";
 import { listDocumentTemplatesWithStatus } from "@/lib/actions/documents";
+import { getMyFirstPartner } from "@/lib/actions/partners";
 import { STUDENT_SCOPED_TEMPLATE_IDS } from "@/lib/engine/document-variables";
 import {
   getMissingRequiredFields,
+  isPartnerInfoComplete,
   MISSING_FIELD_GROUP_LABELS,
   type MissingField,
   type MissingFieldGroup,
@@ -53,11 +55,23 @@ export default async function DocumentsPage() {
 
   const templates = await listDocumentTemplatesWithStatus();
 
-  // Alerte "informations manquantes" (demande de Nora, 24/08/2026) : ces
+  // Alerte "informations manquantes" (demande de Nora, 24/08/2026, reprise
+  // le 25/08/2026 : "je veux bien renseigner les informations manquantes,
+  // mais il faut que le système me dise qu'elles sont manquantes") : ces
   // champs apparaîtront comme "[... à compléter]" dans les documents
   // générés — cf. lib/engine/data-completeness.ts pour le détail exact des
   // vérifications, qui reflètent lib/engine/document-variables.ts.
   const missingFields = getMissingRequiredFields(org, session, principalBeneficiary);
+
+  // Sous-traitant / partenaire (cf. isPartnerInfoComplete) : volontairement
+  // pas dans missingFields (un organisme sans sous-traitant/partenaire n'a
+  // rien à y renseigner) — signalé directement sur les 2 cartes concernées.
+  const [subcontractorPartner, businessPartner] = await Promise.all([
+    getMyFirstPartner("sous_traitant"),
+    getMyFirstPartner("partenaire"),
+  ]);
+  const subcontractorComplete = isPartnerInfoComplete(subcontractorPartner);
+  const businessPartnerComplete = isPartnerInfoComplete(businessPartner);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
@@ -116,14 +130,14 @@ export default async function DocumentsPage() {
                             {doc.linked_indicator_numbers.join(", ")}
                           </p>
                         )}
-                        {doc.id === "contrat_sous_traitance" && (
-                          <a href="/parametres/sous-traitant" className="text-xs text-blue-900 underline">
-                            Renseigner le sous-traitant →
+                        {doc.id === "contrat_sous_traitance" && !subcontractorComplete && (
+                          <a href="/parametres/sous-traitant" className="text-xs font-medium text-amber-700 underline">
+                            ⚠️ Informations du sous-traitant à compléter →
                           </a>
                         )}
-                        {doc.id === "convention_partenariat" && (
-                          <a href="/parametres/partenaire" className="text-xs text-blue-900 underline">
-                            Renseigner le partenaire →
+                        {doc.id === "convention_partenariat" && !businessPartnerComplete && (
+                          <a href="/parametres/partenaire" className="text-xs font-medium text-amber-700 underline">
+                            ⚠️ Informations du partenaire à compléter →
                           </a>
                         )}
                       </div>
