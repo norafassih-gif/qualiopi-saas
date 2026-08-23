@@ -5,7 +5,7 @@ import { getMyOrganization, type Organization } from "@/lib/actions/organization
 import { getMyBilling } from "@/lib/actions/billing";
 import { isPlatformAdmin } from "@/lib/actions/admin";
 import { getMyFirstTraining } from "@/lib/actions/training";
-import { getMyFirstSession } from "@/lib/actions/session";
+import { getMyFirstSession, getMyFirstBeneficiary } from "@/lib/actions/session";
 import { getMyFirstPartner, type PartnerType } from "@/lib/actions/partners";
 import { resolveDocumentVariables } from "./document-variables";
 import { EVALUATION_PHASE_DOCUMENT_TEMPLATE, type EvaluationPhase } from "./evaluation-phases";
@@ -169,35 +169,36 @@ export async function buildDocumentHtml(
   let beneficiaryScheduleConstraints: string | null = null;
   let beneficiaryHasDisability: boolean | null = null;
   if (session) {
-    const [{ data: beneficiaries }, { count }] = await Promise.all([
-      supabase
-        .from("beneficiaries")
-        .select(
-          "full_name, company, email, role, signature_name, signature_accepted, signature_date, experience_level, current_difficulties, personal_expectations, priority_skills, professional_context, expected_results, preferred_modality, preferred_rhythm, schedule_constraints, has_disability"
-        )
-        .eq("session_id", session.id)
-        .order("id")
-        .limit(1),
+    // getMyFirstBeneficiary() (lib/actions/session.ts) plutôt qu'une requête
+    // ".order('id').limit(1)" locale : cette dernière était une 3e variante,
+    // légèrement différente, de la même logique "premier bénéficiaire" déjà
+    // dupliquée ailleurs — source du bug Phase 32bis (24/08/2026, Nora :
+    // "j'ai toujours treize trucs à rajouter alors que je les ai déjà
+    // rajoutés") où un document pouvait piocher une fiche vide plutôt que
+    // celle réellement complétée par l'organisme, surtout après un doublon
+    // historique de bénéficiaires sur une même session.
+    const [beneficiary, { count }] = await Promise.all([
+      getMyFirstBeneficiary(session.id),
       supabase.from("beneficiaries").select("id", { count: "exact", head: true }).eq("session_id", session.id),
     ]);
-    if (beneficiaries && beneficiaries.length > 0) {
-      beneficiaryName = beneficiaries[0].full_name;
-      beneficiaryCompany = beneficiaries[0].company;
-      beneficiaryEmail = beneficiaries[0].email;
-      beneficiaryRole = beneficiaries[0].role;
-      beneficiarySignatureName = beneficiaries[0].signature_name;
-      beneficiarySignatureAccepted = beneficiaries[0].signature_accepted;
-      beneficiarySignatureDate = beneficiaries[0].signature_date;
-      beneficiaryExperienceLevel = beneficiaries[0].experience_level;
-      beneficiaryCurrentDifficulties = beneficiaries[0].current_difficulties;
-      beneficiaryPersonalExpectations = beneficiaries[0].personal_expectations;
-      beneficiaryPrioritySkills = beneficiaries[0].priority_skills;
-      beneficiaryProfessionalContext = beneficiaries[0].professional_context;
-      beneficiaryExpectedResults = beneficiaries[0].expected_results;
-      beneficiaryPreferredModality = beneficiaries[0].preferred_modality;
-      beneficiaryPreferredRhythm = beneficiaries[0].preferred_rhythm;
-      beneficiaryScheduleConstraints = beneficiaries[0].schedule_constraints;
-      beneficiaryHasDisability = beneficiaries[0].has_disability;
+    if (beneficiary) {
+      beneficiaryName = beneficiary.full_name;
+      beneficiaryCompany = beneficiary.company;
+      beneficiaryEmail = beneficiary.email;
+      beneficiaryRole = beneficiary.role;
+      beneficiarySignatureName = beneficiary.signature_name;
+      beneficiarySignatureAccepted = beneficiary.signature_accepted;
+      beneficiarySignatureDate = beneficiary.signature_date;
+      beneficiaryExperienceLevel = beneficiary.experience_level;
+      beneficiaryCurrentDifficulties = beneficiary.current_difficulties;
+      beneficiaryPersonalExpectations = beneficiary.personal_expectations;
+      beneficiaryPrioritySkills = beneficiary.priority_skills;
+      beneficiaryProfessionalContext = beneficiary.professional_context;
+      beneficiaryExpectedResults = beneficiary.expected_results;
+      beneficiaryPreferredModality = beneficiary.preferred_modality;
+      beneficiaryPreferredRhythm = beneficiary.preferred_rhythm;
+      beneficiaryScheduleConstraints = beneficiary.schedule_constraints;
+      beneficiaryHasDisability = beneficiary.has_disability;
     }
     beneficiaryCount = count ?? 0;
   }

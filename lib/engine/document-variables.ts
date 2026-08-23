@@ -116,6 +116,25 @@ function required(value: string | null | undefined, label: string): string {
   return value && value.trim().length > 0 ? value : `[${label} à compléter]`;
 }
 
+// Rend une rangée de cases à cocher "☐ Option A &nbsp; ☑ Option B ..." pour
+// un modèle de document (ex. dossier_admission) — remplace des cases vides
+// destinées à être cochées à la main sur le PDF imprimé, par une case déjà
+// cochée d'après une donnée déjà saisie ailleurs dans le logiciel (demande
+// de Nora, 25/08/2026 : "il manque toutes ces informations sur cette
+// page" — le recueil des besoins et la situation de handicap sont déjà
+// digitalisés depuis /parametres/session, ce document doit les refléter au
+// lieu de les redemander en pointillés).
+function renderCheckboxRow(
+  options: { value: string; label: string }[],
+  selectedValue: string | null
+): string {
+  return options
+    .map((option) =>
+      option.value === selectedValue ? `☑ <strong>${option.label}</strong>` : `☐ ${option.label}`
+    )
+    .join(" &nbsp; ");
+}
+
 /**
  * Construit le contexte de variables "champs de fusion" ({{company_name}},
  * {{training_name}}, etc. — cf. point "SYSTÈME DE VARIABLES" de la
@@ -342,6 +361,41 @@ export function resolveDocumentVariables(input: {
         : beneficiaryHasDisability
         ? "Oui"
         : "Non",
+
+    // Cases à cocher du Dossier d'admission (migration 0019) — demande de
+    // Nora, 25/08/2026 : "il manque toutes ces informations sur cette
+    // page" en parlant des 3 lignes ☐☐☐ à cocher à la main. Les 2 premières
+    // reflètent des données déjà saisies dans "Recueil des besoins"
+    // (/parametres/session) ; les valeurs de needs_experience_level_options
+    // doivent rester synchronisées avec les <option> du RadioGroup
+    // "experience_level" de ce formulaire.
+    needs_experience_level_checkboxes: renderCheckboxRow(
+      [
+        { value: "Aucune", label: "Aucune expérience" },
+        { value: "Débutant", label: "Débutant" },
+        { value: "Intermédiaire", label: "Intermédiaire" },
+        { value: "Avancé", label: "Avancé" },
+      ],
+      beneficiaryExperienceLevel
+    ),
+    needs_disability_checkboxes: renderCheckboxRow(
+      [
+        { value: "oui", label: "Oui" },
+        { value: "non", label: "Non" },
+      ],
+      beneficiaryHasDisability == null ? null : beneficiaryHasDisability ? "oui" : "non"
+    ),
+    // Pas de vérification formelle des prérequis suivie séparément dans le
+    // logiciel aujourd'hui — demande explicite de Nora : "il faut que ce
+    // soit oui à chaque fois", plutôt que 3 cases vides à cocher à la main.
+    prerequisites_verified_checkboxes: renderCheckboxRow(
+      [
+        { value: "oui", label: "Oui" },
+        { value: "non", label: "Non" },
+        { value: "na", label: "Non applicable" },
+      ],
+      "oui"
+    ),
 
     // Tarif / financement (cf. migration 0012) — utilisés par le devis, la
     // convention et le contrat de formation. Un placeholder visible plutôt
