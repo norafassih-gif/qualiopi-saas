@@ -351,12 +351,18 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
     redirect("/onboarding/session");
   }
 
+  const beneficiary = await getMyFirstBeneficiary(session.id);
+
   const trainer_name = String(formData.get("trainer_name") || "").trim();
   const start_date = String(formData.get("start_date") || "");
   const end_date = String(formData.get("end_date") || "");
   const start_time = String(formData.get("start_time") || "").trim();
   const end_time = String(formData.get("end_time") || "").trim();
   const location = String(formData.get("location") || "").trim();
+  const beneficiary_name = String(formData.get("beneficiary_name") || "").trim();
+  const beneficiary_company = String(formData.get("beneficiary_company") || "").trim();
+  const beneficiary_email = String(formData.get("beneficiary_email") || "").trim();
+  const beneficiary_role = String(formData.get("beneficiary_role") || "").trim();
 
   const price_unit = String(formData.get("price_unit") || "total_ttc").trim();
   const price_amount_raw = String(formData.get("price_amount") || "").trim();
@@ -371,6 +377,9 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
   }
   if (!start_date || !end_date) {
     return { error: "Les dates de début et de fin sont requises." };
+  }
+  if (!beneficiary_name) {
+    return { error: "Le nom du bénéficiaire est requis." };
   }
   if (price_unit !== "gratuit" && price_amount_raw && Number.isNaN(price_amount)) {
     return { error: "Le tarif doit être un nombre." };
@@ -401,6 +410,34 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
 
   if (sessionError) {
     return { error: "Une erreur est survenue : " + sessionError.message };
+  }
+
+  if (beneficiary) {
+    const { error: beneficiaryError } = await supabase
+      .from("beneficiaries")
+      .update({
+        full_name: beneficiary_name,
+        company: beneficiary_company || null,
+        email: beneficiary_email || null,
+        role: beneficiary_role || null,
+      })
+      .eq("id", beneficiary.id);
+
+    if (beneficiaryError) {
+      return { error: "Une erreur est survenue : " + beneficiaryError.message };
+    }
+  } else {
+    const { error: beneficiaryError } = await supabase.from("beneficiaries").insert({
+      session_id: session.id,
+      full_name: beneficiary_name,
+      company: beneficiary_company || null,
+      email: beneficiary_email || null,
+      role: beneficiary_role || null,
+    });
+
+    if (beneficiaryError) {
+      return { error: "Une erreur est survenue : " + beneficiaryError.message };
+    }
   }
 
   redirect("/parametres/session?saved=1");

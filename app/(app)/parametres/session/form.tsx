@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { updateSession, type SessionFormState, type TrainingSession } from "@/lib/actions/session";
+import { updateSession, type SessionFormState, type TrainingSession, type Beneficiary } from "@/lib/actions/session";
 
 const initialState: SessionFormState = { error: null };
 
@@ -79,7 +79,13 @@ function Select({
   );
 }
 
-export function EditSessionForm({ session }: { session: TrainingSession }) {
+export function EditSessionForm({
+  session,
+  beneficiary,
+}: {
+  session: TrainingSession;
+  beneficiary: Beneficiary | null;
+}) {
   const [state, formAction, pending] = useActionState(updateSession, initialState);
   const [isFree, setIsFree] = useState(session.price_unit === "gratuit");
 
@@ -103,6 +109,36 @@ export function EditSessionForm({ session }: { session: TrainingSession }) {
         <Field label="Lieu (adresse ou 'À distance')" name="location" defaultValue={session.location ?? ""} />
 
         <Select label="Statut de la session" name="status" defaultValue={session.status} options={STATUS_OPTIONS} />
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-3 border-t border-gray-200 pt-4">
+        <legend className="mb-1 text-sm font-semibold text-gray-900">Bénéficiaire</legend>
+        <p className="text-xs text-gray-500">
+          Seul le bénéficiaire principal de cette session peut être modifié ici pour l&apos;instant.
+        </p>
+
+        <Field
+          label="Nom complet du bénéficiaire"
+          name="beneficiary_name"
+          required
+          defaultValue={beneficiary?.full_name ?? ""}
+        />
+        <Field
+          label="Entreprise du bénéficiaire (optionnel)"
+          name="beneficiary_company"
+          defaultValue={beneficiary?.company ?? ""}
+        />
+        <Field
+          label="Email du bénéficiaire (optionnel)"
+          name="beneficiary_email"
+          type="email"
+          defaultValue={beneficiary?.email ?? ""}
+        />
+        <Field
+          label="Poste occupé / statut actuel du bénéficiaire (optionnel)"
+          name="beneficiary_role"
+          defaultValue={beneficiary?.role ?? ""}
+        />
       </fieldset>
 
       <fieldset className="flex flex-col gap-3 border-t border-gray-200 pt-4">
