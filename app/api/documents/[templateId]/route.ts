@@ -81,18 +81,45 @@ export async function GET(
     await supabase.storage
       .from("generated-documents")
       .upload(storagePath, pdfBuffer, { upsert: true, contentType: "application/pdf" });
-    await supabase.from("documents").upsert(
-      {
-        organization_id: org.id,
-        training_id: training?.id ?? null,
-        session_id: session?.id ?? null,
-        document_template_id: templateId,
-        status: "generated",
-        pdf_url: storagePath,
-        generated_at: new Date().toISOString(),
-      },
-      { onConflict: "organization_id,training_id,document_template_id" }
-    );
+    // Le upsert() avec onConflict ne fonctionne plus depuis la migration
+    // multi-beneficiaires (0044, Phase 29) : l'ancienne contrainte unique
+    // "plate" a ete remplacee par deux index uniques PARTIELS (un pour les
+    // documents "de session", beneficiary_id IS NULL ; un pour les
+    // documents "par apprenant", beneficiary_id IS NOT NULL). Postgres ne
+    // fait pas correspondre un ON CONFLICT sans clause WHERE a un index
+    // partiel (erreur 42P10) : l'upsert echouait donc silencieusement a
+    // chaque appel, et le tableau de bord restait bloque a "0 document
+    // genere" (cf. journal, Phase 31 point 4). Remplace par un
+    // select-puis-insert/update explicite, qui n'a pas besoin de cibler un
+    // index precis. Cette route ne gere jamais beneficiary_id : on ne
+    // touche donc que la ligne "de session" (beneficiary_id IS NULL).
+    const trainingId = training?.id ?? null;
+    let existingQuery = supabase
+      .from("documents")
+      .select("id")
+      .eq("organization_id", org.id)
+      .eq("document_template_id", templateId)
+      .is("beneficiary_id", null);
+    existingQuery = trainingId
+      ? existingQuery.eq("training_id", trainingId)
+      : existingQuery.is("training_id", null);
+    const { data: existingDoc } = await existingQuery.maybeSingle();
+
+    const documentFields = {
+      organization_id: org.id,
+      training_id: trainingId,
+      session_id: session?.id ?? null,
+      document_template_id: templateId,
+      status: "generated",
+      pdf_url: storagePath,
+      generated_at: new Date().toISOString(),
+    };
+
+    if (existingDoc) {
+      await supabase.from("documents").update(documentFields).eq("id", existingDoc.id);
+    } else {
+      await supabase.from("documents").insert(documentFields);
+    }
   } catch (e) {
     console.error("documents upsert/storage failed (non bloquant)", e);
   }
