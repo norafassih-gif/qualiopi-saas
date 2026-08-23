@@ -191,6 +191,13 @@ export default async function DashboardPage() {
                 <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
                 Créée
               </Badge>
+              <Link
+                href="/parametres/formation"
+                className="mt-2 inline-flex items-center gap-1 text-sm text-blue-900 underline"
+              >
+                Modifier
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </Link>
               {themesApplicable && (
                 <div className="mt-2">
                   {themesAnswered ? (

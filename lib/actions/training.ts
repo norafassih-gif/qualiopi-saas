@@ -143,3 +143,55 @@ export async function createTraining(
 
   redirect("/dashboard");
 }
+
+export type UpdateTrainingFormState = { error: string | null };
+
+/**
+ * "Ma formation" n'était éditable qu'une seule fois, à l'onboarding
+ * (createTraining) : aucune page ne permettait ensuite de corriger le nom,
+ * la durée, la modalité ou le public visé — bug remonté par Nora le
+ * 23/08/2026 ("je n'arrive pas à modifier que l'apprenant n'est pas
+ * demandeur d'emploi"). Le domaine de formation (category_id) n'est
+ * volontairement PAS modifiable ici : il conditionne les thématiques et le
+ * programme déjà construits (/onboarding/themes, /onboarding/programme) —
+ * le changer après coup désynchroniserait le programme existant.
+ */
+export async function updateTraining(
+  _prevState: UpdateTrainingFormState,
+  formData: FormData
+): Promise<UpdateTrainingFormState> {
+  const training = await getMyFirstTraining();
+  if (!training) {
+    redirect("/onboarding/activite");
+  }
+
+  const name = String(formData.get("name") || "").trim();
+  if (!name) {
+    return { error: "Le nom de la formation est requis." };
+  }
+
+  const modality = String(formData.get("modality") || "");
+  if (!VALID_MODALITIES.includes(modality as (typeof VALID_MODALITIES)[number])) {
+    return { error: "Choisissez une modalité (présentiel, distanciel ou hybride)." };
+  }
+
+  const durationRaw = String(formData.get("duration_hours") || "");
+  const duration_hours = durationRaw ? Number(durationRaw) : null;
+  if (durationRaw && (Number.isNaN(duration_hours) || (duration_hours ?? 0) <= 0)) {
+    return { error: "Durée invalide." };
+  }
+
+  const target_audience = formData.getAll("target_audience").map(String);
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("trainings")
+    .update({ name, duration_hours, modality, target_audience })
+    .eq("id", training.id);
+
+  if (error) {
+    return { error: "Une erreur est survenue : " + error.message };
+  }
+
+  redirect("/parametres/formation?saved=1");
+}
