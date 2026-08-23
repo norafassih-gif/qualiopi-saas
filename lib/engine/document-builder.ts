@@ -376,9 +376,22 @@ function renderSection(
       // 0029_cachet_signature.sql), injectés automatiquement dès qu'ils sont
       // renseignés sur /parametres/identite-visuelle — sans ça, une simple
       // ligne "Signature" à remplir à la main, comme avant cette phase.
+      //
+      // {{director_name}} ajouté ici (Phase 32quater, 25/08/2026, Nora :
+      // "il faudrait que tous les documents [...] la signature du dirigeant
+      // en bas, surtout quand son nom apparaît. Sinon on a un décalage") :
+      // plusieurs documents (attestation, convocation, résultats
+      // d'évaluation...) nomment déjà le dirigeant plus haut dans le texte
+      // ("Je soussigné(e) {{director_name}}...") mais le bloc signature en
+      // bas de page n'affichait que le nom de l'organisme, jamais le nom de
+      // la personne — d'où l'impression de décalage entre le texte et la
+      // signature. Cohérent avec les documents contractuels
+      // (convention_formation, contrat_formation_particulier...) qui
+      // affichaient déjà nom + signature + cachet ensemble.
       const visuals = (vars.org_signature_image ?? "") + (vars.org_stamp_image ?? "");
       body = `<div class="signature">
         <div>${vars.company_name ?? ""}</div>
+        ${vars.director_name ? `<div>${vars.director_name}</div>` : ""}
         ${visuals ? `<div class="signature-visuals">${visuals}</div>` : ""}
         <div class="signature-line">Signature</div>
       </div>`;

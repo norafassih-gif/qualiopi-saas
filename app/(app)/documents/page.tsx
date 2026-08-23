@@ -14,6 +14,7 @@ import {
   type MissingFieldGroup,
 } from "@/lib/engine/data-completeness";
 import { DocumentDownloadForm } from "./download-form";
+import { GenerateAllButton } from "./generate-all-button";
 
 const FOLDER_LABELS: Record<string, string> = {
   "03_Avant_formation": "Avant la formation",
@@ -69,13 +70,23 @@ export default async function DocumentsPage() {
 
       <MissingFieldsBanner missing={missingFields} />
 
+      {!("error" in templates) && templates.length > 0 && (
+        <div className="mb-6">
+          <GenerateAllButton templateIds={templates.map((t) => t.id)} />
+          <p className="text-xs text-gray-500">
+            Génère (ou régénère) chaque document, puis télécharge automatiquement le ZIP complet — utile
+            après avoir complété des informations, ou après une mise à jour du logiciel.
+          </p>
+        </div>
+      )}
+
       {!("error" in templates) && templates.some((t) => t.generated) && (
         // eslint-disable-next-line @next/next/no-html-link-for-pages
         <a
           href="/api/documents/zip"
-          className="mb-6 inline-block rounded-md bg-blue-900 px-4 py-2 text-sm text-white"
+          className="mb-6 inline-block rounded-md border border-blue-900 px-4 py-2 text-sm text-blue-900"
         >
-          Télécharger mon dossier (ZIP)
+          Télécharger mon dossier tel quel (ZIP)
         </a>
       )}
 
