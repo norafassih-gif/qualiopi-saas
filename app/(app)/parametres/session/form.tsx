@@ -50,6 +50,54 @@ function Field({
   );
 }
 
+function Textarea({
+  label,
+  name,
+  defaultValue,
+}: {
+  label: string;
+  name: string;
+  defaultValue?: string;
+}) {
+  return (
+    <label className="flex flex-col gap-1 text-sm">
+      {label}
+      <textarea
+        name={name}
+        defaultValue={defaultValue}
+        rows={2}
+        className="rounded-md border border-gray-300 px-3 py-2"
+      />
+    </label>
+  );
+}
+
+function RadioGroup({
+  label,
+  name,
+  options,
+  defaultValue,
+}: {
+  label: string;
+  name: string;
+  options: { value: string; label: string }[];
+  defaultValue?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-1 text-sm">
+      <span>{label}</span>
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
+        {options.map((o) => (
+          <label key={o.value} className="flex items-center gap-1.5">
+            <input type="radio" name={name} value={o.value} defaultChecked={defaultValue === o.value} />
+            {o.label}
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Select({
   label,
   name,
@@ -157,6 +205,87 @@ export function EditSessionForm({
             ) : null}
           </span>
         </label>
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-3 border-t border-gray-200 pt-4">
+        <legend className="mb-1 text-sm font-semibold text-gray-900">Recueil des besoins du bénéficiaire</legend>
+        <p className="text-xs text-gray-500">
+          Ces informations remplacent les lignes à remplir à la main dans le questionnaire de recueil des besoins :
+          le document PDF les affiche directement, plutôt que des pointillés à faire remplir sur papier.
+        </p>
+
+        <RadioGroup
+          label="Expérience dans le domaine de la formation"
+          name="experience_level"
+          defaultValue={beneficiary?.experience_level ?? ""}
+          options={[
+            { value: "Aucune", label: "Aucune" },
+            { value: "Débutant", label: "Débutant" },
+            { value: "Intermédiaire", label: "Intermédiaire" },
+            { value: "Avancé", label: "Avancé" },
+          ]}
+        />
+        <Textarea
+          label="Difficultés rencontrées actuellement en lien avec ce domaine (optionnel)"
+          name="current_difficulties"
+          defaultValue={beneficiary?.current_difficulties ?? ""}
+        />
+        <Textarea
+          label="Qu'attend le bénéficiaire personnellement de cette formation ? (optionnel)"
+          name="personal_expectations"
+          defaultValue={beneficiary?.personal_expectations ?? ""}
+        />
+        <Textarea
+          label="Compétences à acquérir ou renforcer en priorité (optionnel)"
+          name="priority_skills"
+          defaultValue={beneficiary?.priority_skills ?? ""}
+        />
+        <Textarea
+          label="Contexte professionnel ayant motivé cette formation (optionnel)"
+          name="professional_context"
+          defaultValue={beneficiary?.professional_context ?? ""}
+        />
+        <Textarea
+          label="Résultats attendus par l'employeur ou le financeur (optionnel)"
+          name="expected_results"
+          defaultValue={beneficiary?.expected_results ?? ""}
+        />
+        <RadioGroup
+          label="Modalité préférée"
+          name="preferred_modality"
+          defaultValue={beneficiary?.preferred_modality ?? ""}
+          options={[
+            { value: "Présentiel", label: "Présentiel" },
+            { value: "Distanciel", label: "Distanciel" },
+            { value: "Hybride", label: "Hybride" },
+          ]}
+        />
+        <RadioGroup
+          label="Rythme souhaité"
+          name="preferred_rhythm"
+          defaultValue={beneficiary?.preferred_rhythm ?? ""}
+          options={[
+            { value: "Journées complètes", label: "Journées complètes" },
+            { value: "Demi-journées", label: "Demi-journées" },
+            { value: "Sur plusieurs semaines", label: "Sur plusieurs semaines" },
+          ]}
+        />
+        <Textarea
+          label="Contraintes d'emploi du temps à prendre en compte (optionnel)"
+          name="schedule_constraints"
+          defaultValue={beneficiary?.schedule_constraints ?? ""}
+        />
+        <RadioGroup
+          label="Situation de handicap ou besoin d'aménagement particulier"
+          name="has_disability"
+          defaultValue={
+            beneficiary?.has_disability === true ? "oui" : beneficiary?.has_disability === false ? "non" : ""
+          }
+          options={[
+            { value: "non", label: "Non" },
+            { value: "oui", label: "Oui" },
+          ]}
+        />
       </fieldset>
 
       <fieldset className="flex flex-col gap-3 border-t border-gray-200 pt-4">

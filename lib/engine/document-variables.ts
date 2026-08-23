@@ -144,6 +144,21 @@ export function resolveDocumentVariables(input: {
   beneficiaryEmail?: string | null;
   beneficiaryRole?: string | null;
   beneficiaryCount?: number;
+  // Recueil des besoins digitalisé (demande de Nora, 24/08/2026 : "on ne
+  // doit rien demander aux clients de remplir à la main, tout doit être
+  // digitalisé") — saisi sur /parametres/session, alimente les variables
+  // {{needs_*}} ci-dessous pour remplacer les lignes en pointillés du
+  // questionnaire de recueil des besoins.
+  beneficiaryExperienceLevel?: string | null;
+  beneficiaryCurrentDifficulties?: string | null;
+  beneficiaryPersonalExpectations?: string | null;
+  beneficiaryPrioritySkills?: string | null;
+  beneficiaryProfessionalContext?: string | null;
+  beneficiaryExpectedResults?: string | null;
+  beneficiaryPreferredModality?: string | null;
+  beneficiaryPreferredRhythm?: string | null;
+  beneficiaryScheduleConstraints?: string | null;
+  beneficiaryHasDisability?: boolean | null;
   beneficiarySignatureName?: string | null;
   beneficiarySignatureAccepted?: boolean;
   beneficiarySignatureDate?: string | null;
@@ -169,6 +184,16 @@ export function resolveDocumentVariables(input: {
     beneficiaryEmail = null,
     beneficiaryRole = null,
     beneficiaryCount = 0,
+    beneficiaryExperienceLevel = null,
+    beneficiaryCurrentDifficulties = null,
+    beneficiaryPersonalExpectations = null,
+    beneficiaryPrioritySkills = null,
+    beneficiaryProfessionalContext = null,
+    beneficiaryExpectedResults = null,
+    beneficiaryPreferredModality = null,
+    beneficiaryPreferredRhythm = null,
+    beneficiaryScheduleConstraints = null,
+    beneficiaryHasDisability = null,
     beneficiarySignatureName = null,
     beneficiarySignatureAccepted = false,
     beneficiarySignatureDate = null,
@@ -296,6 +321,27 @@ export function resolveDocumentVariables(input: {
       ? `le ${formatDate(beneficiarySignatureDate)}, par ${beneficiarySignatureName} (« Lu et approuvé »)`
       : "……………………",
     participant_count: beneficiaryCount > 0 ? String(beneficiaryCount) : "1",
+
+    // Recueil des besoins digitalisé (cf. type Beneficiary,
+    // lib/actions/session.ts, et migration digitize_needs_assessment) —
+    // remplace les lignes en pointillés du questionnaire de recueil des
+    // besoins ("Poste occupé : ……………", etc.). {{student_role}} existant sert
+    // déjà pour "Poste occupé / statut actuel", donc pas de doublon ici.
+    needs_experience_level: required(beneficiaryExperienceLevel, "Expérience à préciser"),
+    needs_difficulties: required(beneficiaryCurrentDifficulties, "Difficultés à préciser"),
+    needs_personal_expectations: required(beneficiaryPersonalExpectations, "Attentes à préciser"),
+    needs_priority_skills: required(beneficiaryPrioritySkills, "Compétences visées à préciser"),
+    needs_professional_context: required(beneficiaryProfessionalContext, "Contexte à préciser"),
+    needs_expected_results: required(beneficiaryExpectedResults, "Résultats attendus à préciser"),
+    needs_preferred_modality: required(beneficiaryPreferredModality, "Modalité préférée à préciser"),
+    needs_preferred_rhythm: required(beneficiaryPreferredRhythm, "Rythme souhaité à préciser"),
+    needs_schedule_constraints: required(beneficiaryScheduleConstraints, "Contraintes à préciser"),
+    needs_disability_status:
+      beneficiaryHasDisability == null
+        ? "[Situation de handicap à préciser]"
+        : beneficiaryHasDisability
+        ? "Oui"
+        : "Non",
 
     // Tarif / financement (cf. migration 0012) — utilisés par le devis, la
     // convention et le contrat de formation. Un placeholder visible plutôt

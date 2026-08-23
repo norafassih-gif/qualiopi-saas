@@ -156,11 +156,25 @@ export async function buildDocumentHtml(
   let beneficiarySignatureName: string | null = null;
   let beneficiarySignatureAccepted = false;
   let beneficiarySignatureDate: string | null = null;
+  // Recueil des besoins digitalisé (demande de Nora, 24/08/2026) — cf.
+  // lib/actions/session.ts (type Beneficiary) et lib/engine/document-variables.ts.
+  let beneficiaryExperienceLevel: string | null = null;
+  let beneficiaryCurrentDifficulties: string | null = null;
+  let beneficiaryPersonalExpectations: string | null = null;
+  let beneficiaryPrioritySkills: string | null = null;
+  let beneficiaryProfessionalContext: string | null = null;
+  let beneficiaryExpectedResults: string | null = null;
+  let beneficiaryPreferredModality: string | null = null;
+  let beneficiaryPreferredRhythm: string | null = null;
+  let beneficiaryScheduleConstraints: string | null = null;
+  let beneficiaryHasDisability: boolean | null = null;
   if (session) {
     const [{ data: beneficiaries }, { count }] = await Promise.all([
       supabase
         .from("beneficiaries")
-        .select("full_name, company, email, role, signature_name, signature_accepted, signature_date")
+        .select(
+          "full_name, company, email, role, signature_name, signature_accepted, signature_date, experience_level, current_difficulties, personal_expectations, priority_skills, professional_context, expected_results, preferred_modality, preferred_rhythm, schedule_constraints, has_disability"
+        )
         .eq("session_id", session.id)
         .order("id")
         .limit(1),
@@ -174,6 +188,16 @@ export async function buildDocumentHtml(
       beneficiarySignatureName = beneficiaries[0].signature_name;
       beneficiarySignatureAccepted = beneficiaries[0].signature_accepted;
       beneficiarySignatureDate = beneficiaries[0].signature_date;
+      beneficiaryExperienceLevel = beneficiaries[0].experience_level;
+      beneficiaryCurrentDifficulties = beneficiaries[0].current_difficulties;
+      beneficiaryPersonalExpectations = beneficiaries[0].personal_expectations;
+      beneficiaryPrioritySkills = beneficiaries[0].priority_skills;
+      beneficiaryProfessionalContext = beneficiaries[0].professional_context;
+      beneficiaryExpectedResults = beneficiaries[0].expected_results;
+      beneficiaryPreferredModality = beneficiaries[0].preferred_modality;
+      beneficiaryPreferredRhythm = beneficiaries[0].preferred_rhythm;
+      beneficiaryScheduleConstraints = beneficiaries[0].schedule_constraints;
+      beneficiaryHasDisability = beneficiaries[0].has_disability;
     }
     beneficiaryCount = count ?? 0;
   }
@@ -215,6 +239,16 @@ export async function buildDocumentHtml(
     beneficiarySignatureName,
     beneficiarySignatureAccepted,
     beneficiarySignatureDate,
+    beneficiaryExperienceLevel,
+    beneficiaryCurrentDifficulties,
+    beneficiaryPersonalExpectations,
+    beneficiaryPrioritySkills,
+    beneficiaryProfessionalContext,
+    beneficiaryExpectedResults,
+    beneficiaryPreferredModality,
+    beneficiaryPreferredRhythm,
+    beneficiaryScheduleConstraints,
+    beneficiaryHasDisability,
     partner,
     generatedDate: customDate ?? null,
     evaluationResult:

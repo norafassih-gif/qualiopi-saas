@@ -37,6 +37,22 @@ export type Beneficiary = {
   signature_name: string | null;
   signature_accepted: boolean;
   signature_date: string | null;
+  // Recueil des besoins digitalisé (demande de Nora, 24/08/2026 : "on ne
+  // doit rien demander aux clients de remplir à la main, tout doit être
+  // digitalisé") — remplace les lignes en pointillés du document
+  // "Questionnaire de recueil des besoins" (cf. migration
+  // digitize_needs_assessment). Saisi sur /parametres/session, comme le
+  // reste du bénéficiaire.
+  experience_level: string | null;
+  current_difficulties: string | null;
+  personal_expectations: string | null;
+  priority_skills: string | null;
+  professional_context: string | null;
+  expected_results: string | null;
+  preferred_modality: string | null;
+  preferred_rhythm: string | null;
+  schedule_constraints: string | null;
+  has_disability: boolean | null;
 };
 
 /**
@@ -367,6 +383,23 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
   const beneficiary_email = String(formData.get("beneficiary_email") || "").trim();
   const beneficiary_role = String(formData.get("beneficiary_role") || "").trim();
 
+  // Recueil des besoins digitalisé (demande de Nora, 24/08/2026 : "on ne
+  // doit rien demander aux clients de remplir à la main, tout doit être
+  // digitalisé") — remplace les lignes en pointillés du document
+  // "Questionnaire de recueil des besoins" (cf. type Beneficiary ci-dessus
+  // et migration digitize_needs_assessment).
+  const experience_level = String(formData.get("experience_level") || "").trim();
+  const current_difficulties = String(formData.get("current_difficulties") || "").trim();
+  const personal_expectations = String(formData.get("personal_expectations") || "").trim();
+  const priority_skills = String(formData.get("priority_skills") || "").trim();
+  const professional_context = String(formData.get("professional_context") || "").trim();
+  const expected_results = String(formData.get("expected_results") || "").trim();
+  const preferred_modality = String(formData.get("preferred_modality") || "").trim();
+  const preferred_rhythm = String(formData.get("preferred_rhythm") || "").trim();
+  const schedule_constraints = String(formData.get("schedule_constraints") || "").trim();
+  const has_disability_raw = String(formData.get("has_disability") || "").trim();
+  const has_disability = has_disability_raw === "" ? null : has_disability_raw === "oui";
+
   const price_unit = String(formData.get("price_unit") || "total_ttc").trim();
   const price_amount_raw = String(formData.get("price_amount") || "").trim();
   const price_amount = price_unit === "gratuit" || !price_amount_raw ? null : Number(price_amount_raw.replace(",", "."));
@@ -435,6 +468,16 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
         signature_name,
         signature_accepted,
         signature_date,
+        experience_level: experience_level || null,
+        current_difficulties: current_difficulties || null,
+        personal_expectations: personal_expectations || null,
+        priority_skills: priority_skills || null,
+        professional_context: professional_context || null,
+        expected_results: expected_results || null,
+        preferred_modality: preferred_modality || null,
+        preferred_rhythm: preferred_rhythm || null,
+        schedule_constraints: schedule_constraints || null,
+        has_disability,
       })
       .eq("id", beneficiary.id);
 
@@ -451,6 +494,16 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
       signature_name,
       signature_accepted,
       signature_date,
+      experience_level: experience_level || null,
+      current_difficulties: current_difficulties || null,
+      personal_expectations: personal_expectations || null,
+      priority_skills: priority_skills || null,
+      professional_context: professional_context || null,
+      expected_results: expected_results || null,
+      preferred_modality: preferred_modality || null,
+      preferred_rhythm: preferred_rhythm || null,
+      schedule_constraints: schedule_constraints || null,
+      has_disability,
     });
 
     if (beneficiaryError) {
