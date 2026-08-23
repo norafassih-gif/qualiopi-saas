@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getMyFirstTraining } from "@/lib/actions/training";
 
@@ -95,14 +96,42 @@ export async function getMyFirstBeneficiary(sessionId: string): Promise<Benefici
     .select("*")
     .eq("session_id", sessionId)
     .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+    .order("id", { ascending: true });
 
   if (error) {
     console.error("getMyFirstBeneficiary", error);
     return null;
   }
-  return data as Beneficiary | null;
+  if (!data || data.length === 0) return null;
+  if (data.length === 1) return data[0] as Beneficiary;
+
+  // Plusieurs lignes existent pour cette session (cas normal depuis la
+  // Phase 29 multi-apprenants, mais aussi d'anciens doublons créés par un
+  // bug aujourd'hui corrigé — cf. Phase 32bis, 24/08/2026 : "j'ai toujours
+  // treize trucs à rajouter alors que je les ai déjà rajoutés"). On ne peut
+  // pas se fier à un simple LIMIT 1 quand plusieurs lignes partagent le
+  // même created_at (ex. backfill de migration) : on choisit la ligne la
+  // plus renseignée plutôt que la première trouvée dans un ordre arbitraire,
+  // pour ne jamais perdre de vue des réponses déjà saisies.
+  return (data as Beneficiary[]).reduce((best, current) =>
+    beneficiaryCompleteness(current) > beneficiaryCompleteness(best) ? current : best
+  );
+}
+
+function beneficiaryCompleteness(b: Beneficiary): number {
+  const textFields = [
+    b.experience_level,
+    b.current_difficulties,
+    b.personal_expectations,
+    b.priority_skills,
+    b.professional_context,
+    b.expected_results,
+    b.preferred_modality,
+    b.preferred_rhythm,
+    b.schedule_constraints,
+  ];
+  const filled = textFields.filter((v) => v && v.trim().length > 0).length;
+  return filled + (b.has_disability != null ? 1 : 0);
 }
 
 /**
@@ -170,6 +199,7 @@ export async function addBeneficiary(
     return { error: "Une erreur est survenue : " + error.message };
   }
 
+  revalidatePath("/", "layout");
   redirect("/parametres/session?saved=1");
 }
 
@@ -217,6 +247,7 @@ export async function updateBeneficiary(
     return { error: "Une erreur est survenue : " + error.message };
   }
 
+  revalidatePath("/", "layout");
   redirect("/parametres/session?saved=1");
 }
 
@@ -253,6 +284,7 @@ export async function deleteBeneficiary(
     return { error: "Une erreur est survenue : " + error.message };
   }
 
+  revalidatePath("/", "layout");
   redirect("/parametres/session?saved=1");
 }
 
@@ -343,6 +375,7 @@ export async function createSession(
     return { error: "Une erreur est survenue : " + beneficiaryError.message };
   }
 
+  revalidatePath("/", "layout");
   redirect("/dashboard");
 }
 
@@ -511,5 +544,6 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
     }
   }
 
+  revalidatePath("/", "layout");
   redirect("/parametres/session?saved=1");
 }

@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
 export type Organization = {
@@ -170,6 +171,7 @@ export async function createOrganization(
     if (error) {
       return { error: "Une erreur est survenue : " + error.message };
     }
+    revalidatePath("/", "layout");
     redirect("/onboarding/activite");
   }
 
@@ -186,6 +188,7 @@ export async function createOrganization(
     return { error: "Une erreur est survenue : " + error.message };
   }
 
+  revalidatePath("/", "layout");
   redirect("/onboarding/activite");
 }
 
@@ -285,6 +288,13 @@ export async function updateOrganization(
     return { error: "Une erreur est survenue : " + error.message };
   }
 
+  // Sans revalidatePath, les pages qui lisent l'organisme (barre latérale,
+  // /documents, /dashboard...) continuaient d'afficher les anciennes
+  // valeurs après un enregistrement réussi (Phase 32bis, 24/08/2026 :
+  // "j'ai toujours treize trucs à rajouter alors que je les ai déjà
+  // rajoutés") — le Router Cache de Next.js n'était jamais invalidé pour
+  // les autres routes que celle du formulaire lui-même.
+  revalidatePath("/", "layout");
   redirect("/parametres/qualite?saved=1");
 }
 

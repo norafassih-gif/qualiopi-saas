@@ -105,13 +105,16 @@ export function QualiteSettingsForm({ org }: { org: Organization }) {
       <input type="hidden" name="company_name" value={org.company_name} />
 
       <Section title="Référents complémentaires">
+        <Field label="Référent pédagogique" name="pedagogical_referent" defaultValue={org.pedagogical_referent} />
+        <Field label="Email référent pédagogique" name="pedagogical_referent_email" type="email" defaultValue={org.pedagogical_referent_email} />
+        <Field label="Téléphone référent pédagogique" name="pedagogical_referent_phone" defaultValue={org.pedagogical_referent_phone} />
+        <Field label="Référent qualité" name="quality_referent" defaultValue={org.quality_referent} />
+        <Field label="Référent handicap" name="disability_referent" defaultValue={org.disability_referent} />
+        <Field label="Email référent handicap" name="disability_referent_email" type="email" defaultValue={org.disability_referent_email} />
+        <Field label="Téléphone référent handicap" name="disability_referent_phone" defaultValue={org.disability_referent_phone} />
         <Field label="Référent administratif" name="administrative_referent" defaultValue={org.administrative_referent} />
         <Field label="Email référent administratif" name="administrative_referent_email" type="email" defaultValue={org.administrative_referent_email} />
         <Field label="Téléphone référent administratif" name="administrative_referent_phone" defaultValue={org.administrative_referent_phone} />
-        <Field label="Email référent pédagogique" name="pedagogical_referent_email" type="email" defaultValue={org.pedagogical_referent_email} />
-        <Field label="Téléphone référent pédagogique" name="pedagogical_referent_phone" defaultValue={org.pedagogical_referent_phone} />
-        <Field label="Email référent handicap" name="disability_referent_email" type="email" defaultValue={org.disability_referent_email} />
-        <Field label="Téléphone référent handicap" name="disability_referent_phone" defaultValue={org.disability_referent_phone} />
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" name="is_sole_practitioner" defaultChecked={org.is_sole_practitioner} />
           Je suis seul(e) à assurer toutes les fonctions (organisme individuel)
