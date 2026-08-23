@@ -2,7 +2,10 @@ import { redirect } from "next/navigation";
 import { getMyOrganization } from "@/lib/actions/organization";
 import { requireActiveSubscription } from "@/lib/actions/billing";
 import { getMyFirstTraining } from "@/lib/actions/training";
+import { getMyFirstSession, listMyBeneficiaries } from "@/lib/actions/session";
 import { listDocumentTemplatesWithStatus } from "@/lib/actions/documents";
+import { STUDENT_SCOPED_TEMPLATE_IDS } from "@/lib/engine/document-variables";
+import { DocumentDownloadForm } from "./download-form";
 
 const FOLDER_LABELS: Record<string, string> = {
   "03_Avant_formation": "Avant la formation",
@@ -23,7 +26,6 @@ const FOLDER_ORDER = [
 ];
 
 export default async function DocumentsPage() {
-  // Paiement obligatoire avant d'utiliser le logiciel (décision de Nora, 21/08/2026).
   await requireActiveSubscription();
 
   const org = await getMyOrganization();
@@ -34,6 +36,10 @@ export default async function DocumentsPage() {
   if (!training) {
     redirect("/onboarding/activite");
   }
+
+  const session = await getMyFirstSession();
+  const beneficiaries = session ? await listMyBeneficiaries(session.id) : [];
+  const studentScopedIds: readonly string[] = STUDENT_SCOPED_TEMPLATE_IDS;
 
   const templates = await listDocumentTemplatesWithStatus();
 
@@ -47,9 +53,8 @@ export default async function DocumentsPage() {
       </p>
 
       {!("error" in templates) && templates.some((t) => t.generated) && (
-        // Lien de téléchargement de fichier (pas une page interne) : <a> natif est volontaire ici, pas next/link.
         // eslint-disable-next-line @next/next/no-html-link-for-pages
-        <a
+        
           href="/api/documents/zip"
           className="mb-6 inline-block rounded-md bg-blue-900 px-4 py-2 text-sm text-white"
         >
@@ -83,9 +88,6 @@ export default async function DocumentsPage() {
                             {doc.linked_indicator_numbers.join(", ")}
                           </p>
                         )}
-                        {/* Ces deux documents ont des champs auto-complétés depuis une
-                            fiche dédiée (cf. migration 0032/0033) plutôt que des blancs à
-                            remplir à la main — lien discret vers cette fiche. */}
                         {doc.id === "contrat_sous_traitance" && (
                           <a href="/parametres/sous-traitant" className="text-xs text-blue-900 underline">
                             Renseigner le sous-traitant →
@@ -101,36 +103,10 @@ export default async function DocumentsPage() {
                         <span className="text-xs text-gray-500">
                           {doc.generated ? "✅ Généré" : "❌ Non généré"}
                         </span>
-                        {/*
-                          Formulaire GET (pas un <a> simple) : demande de Nora
-                          (24/08/2026) "il faut que les organismes puissent
-                          mettre les dates qu'ils veulent sur les documents" —
-                          un <input type="date"> dans un <form method="get">
-                          se sérialise nativement en ?date=... au clic sur
-                          "Télécharger", sans JavaScript côté client, cohérent
-                          avec le reste du projet (route API en téléchargement
-                          de fichier réel, pas une Server Action). Champ vide
-                          = date du jour (comportement inchangé), cf.
-                          app/api/documents/[templateId]/route.ts.
-                        */}
-                        <form
-                          method="get"
-                          action={`/api/documents/${doc.id}`}
-                          className="flex items-center gap-2"
-                        >
-                          <input
-                            type="date"
-                            name="date"
-                            aria-label="Date à afficher sur le document (optionnel — aujourd'hui par défaut)"
-                            className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700"
-                          />
-                          <button
-                            type="submit"
-                            className="rounded-md bg-blue-900 px-3 py-1.5 text-xs text-white"
-                          >
-                            Télécharger le PDF
-                          </button>
-                        </form>
+                        <DocumentDownloadForm
+                          templateId={doc.id}
+                          beneficiaries={studentScopedIds.includes(doc.id) ? beneficiaries : []}
+                        />
                       </div>
                     </div>
                   ))}

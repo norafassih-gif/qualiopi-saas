@@ -3,6 +3,29 @@ import type { Training } from "@/lib/actions/training";
 import type { TrainingSession } from "@/lib/actions/session";
 import type { Partner } from "@/lib/actions/partners";
 
+// Modèles de document qui utilisent les variables {{student_*}} — donc "par
+// apprenant" plutôt que "de session" (cf. Phase 29, 24/08/2026 : une session
+// peut désormais avoir plusieurs apprenants, lib/actions/session.ts). Génère
+// un document distinct par bénéficiaire choisi (paramètre beneficiaryId de
+// buildDocumentHtml, lib/engine/document-builder.ts) plutôt qu'un seul
+// document mélangeant tout le monde. La feuille d'émargement N'EN FAIT PAS
+// PARTIE : c'est un document "de session" qui liste TOUS les bénéficiaires à
+// la fois (grille, cf. renderAttendanceGrid dans document-builder.ts), pas
+// un document par apprenant. Vit ici plutôt que dans document-builder.ts
+// (qui a la directive "use server" — un fichier "use server" ne peut
+// exporter que des fonctions async, pas une simple constante).
+export const STUDENT_SCOPED_TEMPLATE_IDS = [
+  "devis",
+  "convention_formation",
+  "contrat_formation_particulier",
+  "convocation",
+  "dossier_admission",
+  "resultat_positionnement",
+  "resultat_evaluation_cours",
+  "resultat_evaluation",
+  "attestation_fin_formation",
+] as const;
+
 const MODALITY_LABELS: Record<string, string> = {
   presentiel: "présentiel",
   distanciel: "à distance",
@@ -38,6 +61,41 @@ function formatDate(value: string | null): string {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
   return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+// Horaires (cf. migration 0046) : simple concaténation "9h00 – 17h00" —
+// chaîne vide si l'un des deux horaires n'est pas renseigné, plutôt que
+// d'afficher un horaire à moitié rempli.
+function formatHours(startTime: string | null, endTime: string | null): string {
+  if (!startTime || !endTime) return "";
+  return `${startTime} – ${endTime}`;
+}
+
+// Phrase prête à l'emploi pour le programme de formation (section
+// "presentation", cf. migration 0047) : dates + horaires de la session, ou
+// chaîne vide tant qu'aucune session n'existe — pour ne pas laisser une
+// phrase à trous ("La session se déroule du au .") dans le document.
+function formatScheduleSentence(
+  startDate: string | null,
+  endDate: string | null,
+  hours: string
+): string {
+  if (!startDate || !endDate) return "";
+  const range =
+    startDate === endDate
+      ? `le ${formatDate(startDate)}`
+      : `du ${formatDate(startDate)} au ${formatDate(endDate)}`;
+  return ` La session se déroule ${range}${hours ? `, horaires : ${hours}` : ""}.`;
+}
+
+// Même logique que escapeHtml dans document-builder.ts (non exportée de
+// là-bas) : nécessaire ici car schedule_table_row (cf. plus bas) insère
+// directement du HTML brut construit à partir de champs saisis par
+// l'utilisateur (nom de formation, nom du formateur), contrairement au
+// reste de ce fichier qui ne produit que du texte simple substitué via
+// {{variable}}.
+function escapeHtmlLite(text: string): string {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 // Garde-fou pour generated_date (cf. plus bas) : une valeur venant d'un
@@ -116,13 +174,18 @@ export function resolveDocumentVariables(input: {
   return {
     company_name: org.company_name ?? "",
     commercial_name: org.commercial_name ?? org.company_name ?? "",
-    siret: org.siret ?? "",
-    address: org.address ?? "",
+    // required() plutôt que "" (comme director_name un peu plus bas) : un
+    // champ SIRET/adresse/téléphone/email vide laissait un trou silencieux
+    // dans le document ("SIRET , ,") au lieu de signaler clairement à
+    // l'organisme qu'il doit compléter "Mon entreprise" — retour de Nora
+    // suite au test client ACP, 23/08/2026.
+    siret: required(org.siret, "SIRET à compléter"),
+    address: required(org.address, "Adresse à compléter"),
     organization_city: required(org.organization_city, "Ville du siège"),
     region: required(org.region, "Région"),
     jurisdiction: org.jurisdiction ?? "Tribunal de Commerce du lieu du siège social",
-    phone: org.phone ?? "",
-    email: org.email ?? "",
+    phone: required(org.phone, "Téléphone à compléter"),
+    email: required(org.email, "Email à compléter"),
     company_website: org.website ?? "",
     manager_name: org.manager_name ?? "",
     director_name: required(org.manager_name, "Nom du dirigeant"),
@@ -195,6 +258,20 @@ export function resolveDocumentVariables(input: {
     trainer_name: session?.trainer_name ?? "",
     training_start_date: formatDate(session?.start_date ?? null),
     training_end_date: formatDate(session?.end_date ?? null),
+    // Horaires de la session (cf. migration 0046, retour de Nora suite au
+    // test client ACP, 23/08/2026 : "il faut pouvoir mettre... les
+    // horaires"). Chaîne vide tant que l'organisme n'a pas renseigné les
+    // deux champs sur /parametres/session.
+    training_hours: formatHours(session?.start_time ?? null, session?.end_time ?? null),
+    // Phrase toute faite injectée dans le programme de formation (cf.
+    // migration 0047) — regroupe dates + horaires en une seule variable
+    // pour ne pas avoir à gérer les cas "session absente"/"horaires
+    // absents" directement dans le html_template stocké en base.
+    training_schedule_sentence: formatScheduleSentence(
+      session?.start_date ?? null,
+      session?.end_date ?? null,
+      formatHours(session?.start_time ?? null, session?.end_time ?? null)
+    ),
     training_location: session?.location ?? "",
 
     student_name: beneficiaryName ?? "",
@@ -218,6 +295,25 @@ export function resolveDocumentVariables(input: {
       session?.convention_reference || `CONV-${(session?.id ?? "").slice(0, 8).toUpperCase() || "XXXXXXXX"}`,
 
     generated_date: formatDate(isValidIsoDate(generatedDate) ? generatedDate : new Date().toISOString()),
+
+    // Ligne pré-remplie du tableau "calendrier détaillé" de la convention et
+    // du contrat de formation (cf. migration 0047, retour de Nora suite au
+    // test client ACP, 23/08/2026 : "le tableau... doit être renseigné au
+    // préalable"). Une seule ligne résumant toute la session (l'app ne suit
+    // pas encore un calendrier jour par jour) — chaîne vide tant qu'aucune
+    // session n'existe, pour laisser le tableau vide comme avant plutôt que
+    // d'insérer une ligne à moitié remplie.
+    schedule_table_row: session?.start_date
+      ? `<tr><td>${
+          session.start_date === session.end_date
+            ? formatDate(session.start_date)
+            : `Du ${formatDate(session.start_date)} au ${formatDate(session.end_date)}`
+        }</td><td>${formatHours(session.start_time ?? null, session.end_time ?? null)}</td><td>${
+          escapeHtmlLite(training.name ?? "")
+        }</td><td>${escapeHtmlLite(session.trainer_name ?? "")}</td><td>${
+          MODALITY_LABELS[training.modality ?? ""] ?? training.modality ?? ""
+        }</td></tr>`
+      : "",
 
     // Résultat d'évaluation (QCM, cf. migration 0024/0025 — moteur
     // d'évaluation) : placeholders explicites tant qu'aucune tentative n'a

@@ -71,6 +71,11 @@ export function OnboardingSessionForm() {
         <Field label="Date de fin" name="end_date" type="date" required />
       </div>
 
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Horaire de début (optionnel — ex. 9h00)" name="start_time" />
+        <Field label="Horaire de fin (optionnel — ex. 17h00)" name="end_time" />
+      </div>
+
       <Field label="Lieu (adresse ou 'À distance')" name="location" />
 
       <div className="mt-2 rounded-md bg-gray-50 p-3 text-sm text-gray-600">
