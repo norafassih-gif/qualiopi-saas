@@ -268,7 +268,9 @@ export async function updateOrganization(
   const payload: Record<string, string | boolean | null> = { company_name };
 
   for (const field of OPTIONAL_TEXT_FIELDS) {
-    payload[field] = String(formData.get(field) || "") || null;
+    if (formData.has(field)) {
+      payload[field] = String(formData.get(field) || "") || null;
+    }
   }
   for (const field of defaultedFieldsFromForm(formData)) {
     payload[field.name] = field.value;

@@ -291,6 +291,13 @@ export default async function DashboardPage() {
             Mes documents
           </Link>
           <Link
+            href="/parametres/entreprise"
+            className="inline-flex items-center gap-1.5 text-blue-900 underline"
+          >
+            <Building2 className="h-4 w-4" aria-hidden="true" />
+            Mon entreprise
+          </Link>
+          <Link
             href="/parametres/qualite"
             className="inline-flex items-center gap-1.5 text-blue-900 underline"
           >
