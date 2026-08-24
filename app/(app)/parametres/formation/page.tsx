@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { getMyFirstTraining, listTrainingCategories } from "@/lib/actions/training";
-import { requireActiveSubscription } from "@/lib/actions/billing";
 import { FormationSettingsForm } from "./form";
 
 /**
@@ -16,8 +15,6 @@ export default async function ParametresFormationPage({
 }: {
   searchParams: Promise<{ saved?: string }>;
 }) {
-  await requireActiveSubscription();
-
   const training = await getMyFirstTraining();
   if (!training) {
     redirect("/onboarding/activite");

@@ -31,6 +31,15 @@ export function DocumentDownloadForm({
     try {
       const response = await fetch(url);
       if (!response.ok) {
+        // Paywall "à l'usage" (décision de Nora, 24/08/2026) : cliquer sur
+        // "Télécharger" sans abonnement actif amène directement vers la
+        // page de paiement, plutôt que d'afficher un simple message
+        // d'erreur inerte — c'est le moment "il clique quelque part, ça lui
+        // fait payer" qu'elle a explicitement demandé.
+        if (response.status === 402) {
+          router.push("/onboarding/abonnement");
+          return;
+        }
         const body = await response.json().catch(() => null);
         setError(body?.error ?? "La génération du document a échoué.");
         return;

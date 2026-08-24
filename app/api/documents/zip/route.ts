@@ -1,5 +1,6 @@
 import JSZip from "jszip";
 import { NextResponse } from "next/server";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMyOrganization } from "@/lib/actions/organization";
 import { isSubscriptionActiveForOrg } from "@/lib/actions/billing";
@@ -45,13 +46,15 @@ export async function GET() {
     return NextResponse.json({ error: "Non authentifié ou organisme introuvable." }, { status: 401 });
   }
 
-  // Paiement obligatoire avant de télécharger le dossier (décision de Nora,
-  // 21/08/2026).
+  // Paiement obligatoire pour télécharger le dossier (décision de Nora,
+  // 21/08/2026, paywall "à l'usage" révisé le 24/08/2026). Cette route est
+  // atteinte par une vraie navigation de page (lien <a href> et
+  // window.location.href, jamais un fetch() — cf. documents/page.tsx et
+  // generate-all-button.tsx), donc une redirection plutôt qu'un JSON 402 :
+  // sinon le navigateur affiche le JSON brut à l'écran au lieu d'amener
+  // l'utilisateur vers la page de paiement.
   if (!(await isSubscriptionActiveForOrg(org.id))) {
-    return NextResponse.json(
-      { error: "Un abonnement actif est requis pour télécharger votre dossier." },
-      { status: 402 }
-    );
+    redirect("/onboarding/abonnement");
   }
 
   const docs = await getGeneratedDocumentsForZip();

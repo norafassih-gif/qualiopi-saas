@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { requireActiveSubscription } from "@/lib/actions/billing";
 import { getEvaluationAttemptResult } from "@/lib/actions/evaluation";
 import { EVALUATION_PHASE_LABELS, EVALUATION_PHASE_DOCUMENT_TEMPLATE } from "@/lib/engine/evaluation-phases";
 
@@ -8,9 +7,6 @@ export default async function EvaluationResultPage({
 }: {
   params: Promise<{ attemptId: string }>;
 }) {
-  // Paiement obligatoire avant d'utiliser le logiciel (décision de Nora, 21/08/2026).
-  await requireActiveSubscription();
-
   const { attemptId } = await params;
   const result = await getEvaluationAttemptResult(attemptId);
 

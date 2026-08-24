@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getMyOrganization } from "@/lib/actions/organization";
-import { requireActiveSubscription, getMyBilling } from "@/lib/actions/billing";
+import { getMyBilling } from "@/lib/actions/billing";
 import { getMyFirstTraining } from "@/lib/actions/training";
 import { getMyFirstSession } from "@/lib/actions/session";
 import { listCategoryQuestions, getMyAnswers } from "@/lib/actions/questions";
@@ -28,15 +28,15 @@ import { ProgressBar } from "@/components/ui/progress-bar";
 import { AccessGrantBanner } from "@/components/ui/access-grant-banner";
 
 export default async function DashboardPage() {
-  // Paiement obligatoire avant d'accéder au logiciel (décision de Nora,
-  // 21/08/2026) : redirige vers /onboarding/abonnement si l'abonnement
-  // n'est pas actif (y compris s'il n'existe encore aucun organisme).
-  await requireActiveSubscription();
-
   const org = await getMyOrganization();
 
-  // Garde-fou défensif : ne devrait plus se produire après
-  // requireActiveSubscription() ci-dessus.
+  // Paywall "à l'usage" (décision de Nora, 24/08/2026, révisée le
+  // 24/08/2026 : "il faudrait qu'il arrive sur le site, il crée un compte,
+  // ensuite il puisse voir des fonctionnalités, et dès qu'il clique quelque
+  // part, ça te fait payer") : le logiciel se visite librement une fois
+  // connecté — plus de redirection vers /onboarding/abonnement dès l'entrée.
+  // Le paiement n'est exigé qu'au moment d'une action à valeur (génération
+  // de document, cf. isSubscriptionActiveForOrg dans les routes /api/documents/*).
   if (!org) {
     redirect("/onboarding/entreprise");
   }

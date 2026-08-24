@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { requireActiveSubscription } from "@/lib/actions/billing";
 import { getMyFirstSession, getMyFirstBeneficiary } from "@/lib/actions/session";
 import { EditSessionForm } from "./form";
 
@@ -8,9 +7,6 @@ export default async function ModifierSessionPage({
 }: {
   searchParams: Promise<{ saved?: string }>;
 }) {
-  // Paiement obligatoire avant d'utiliser le logiciel (décision de Nora, 21/08/2026).
-  await requireActiveSubscription();
-
   const session = await getMyFirstSession();
   if (!session) {
     redirect("/onboarding/session");

@@ -59,7 +59,19 @@ export function GenerateAllButton({ templateIds }: { templateIds: string[] }) {
       const id = templateIds[i];
       try {
         const response = await fetch(`/api/documents/${id}${dateParam}`);
-        if (!response.ok) failed.push(id);
+        if (!response.ok) {
+          // Paywall "à l'usage" (décision de Nora, 24/08/2026) : dès qu'un
+          // document échoue faute d'abonnement actif, inutile de continuer
+          // à boucler sur les ~40 autres — on redirige tout de suite vers
+          // la page de paiement plutôt que de terminer la boucle puis
+          // d'afficher un ZIP vide/en erreur.
+          if (response.status === 402) {
+            setPending(false);
+            router.push("/onboarding/abonnement");
+            return;
+          }
+          failed.push(id);
+        }
       } catch {
         failed.push(id);
       }

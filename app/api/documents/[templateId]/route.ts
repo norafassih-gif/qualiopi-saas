@@ -38,10 +38,11 @@ export async function GET(
     return NextResponse.json({ error: "Non authentifié ou organisme introuvable." }, { status: 401 });
   }
 
-  // Paiement obligatoire avant de générer un document (décision de Nora,
-  // 21/08/2026) — même règle que requireActiveSubscription, mais en 402
-  // plutôt qu'une redirection, ce téléchargement n'étant pas une navigation
-  // de page.
+  // Paiement obligatoire pour générer un document (décision de Nora,
+  // 21/08/2026, paywall "à l'usage" révisé le 24/08/2026) — en 402 JSON
+  // plutôt qu'une redirection, cette route étant appelée via fetch() par
+  // download-form.tsx et generate-all-button.tsx, qui gèrent eux-mêmes la
+  // redirection vers /onboarding/abonnement sur ce statut.
   if (!(await isSubscriptionActiveForOrg(org.id))) {
     return NextResponse.json(
       { error: "Un abonnement actif est requis pour générer ce document." },

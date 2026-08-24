@@ -50,17 +50,15 @@ function appUrl(): string {
 }
 
 /**
- * Bloque le tableau de bord et la suite de l'onboarding (formation, thèmes,
- * session, programme) tant que l'abonnement n'est pas actif — décision de
- * Nora du 21/08/2026 : plus personne ne doit pouvoir utiliser le logiciel
- * sans avoir payé. Redirige vers /onboarding/abonnement si l'organisme
- * n'existe pas encore ou si l'abonnement n'est pas "active".
- *
- * Volontairement PAS utilisé sur /onboarding/entreprise : cet écran précis
- * ne doit pas attendre la confirmation du webhook Stripe (qui peut mettre
- * quelques secondes), sous peine de renvoyer l'utilisateur vers le paywall
- * juste après qu'il ait payé. Un organisme n'y existe de toute façon que si
- * un paiement a été initié (cf. startCheckout), donc rien n'est contournable.
+ * Bloque une page entière tant que l'abonnement n'est pas actif. N'est plus
+ * appelé nulle part depuis le 24/08/2026 (décision de Nora, révisant celle
+ * du 21/08/2026) : le paywall "à l'entrée" a été remplacé par un paywall "à
+ * l'usage" — l'utilisateur navigue librement une fois connecté, et le
+ * paiement n'est vérifié qu'au moment d'une action à valeur (génération de
+ * document), via isSubscriptionActiveForOrg ci-dessous. Conservée telle
+ * quelle (fonction encore correcte) au cas où une page devrait un jour
+ * redevenir bloquante d'entrée — ne pas la re-brancher sans une décision
+ * explicite de Nora.
  */
 export async function requireActiveSubscription(): Promise<void> {
   // Un administrateur plateforme n'est jamais bloqué par le paywall (même
@@ -87,11 +85,13 @@ export async function requireActiveSubscription(): Promise<void> {
 }
 
 /**
- * Variante sans redirection, pour les routes API de génération de documents
- * (app/api/documents/*) qui doivent renvoyer une erreur JSON plutôt que
- * rediriger un téléchargement de fichier — même règle que
- * requireActiveSubscription : paiement obligatoire (décision de Nora,
- * 21/08/2026).
+ * Le vrai point de blocage du paywall depuis le 24/08/2026 (décision de
+ * Nora) : le logiciel se visite librement, mais générer un document PDF ou
+ * télécharger le dossier ZIP exige un abonnement actif. Utilisée par
+ * app/api/documents/[templateId]/route.ts (retourne un 402 JSON, cette
+ * route étant appelée en fetch()) et app/api/documents/zip/route.ts (qui
+ * redirige directement vers /onboarding/abonnement, cette route étant
+ * atteinte par une vraie navigation de page).
  */
 export async function isSubscriptionActiveForOrg(organizationId: string): Promise<boolean> {
   // Même exemption que requireActiveSubscription pour les administrateurs

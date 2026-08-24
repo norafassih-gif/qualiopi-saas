@@ -36,10 +36,12 @@ export async function signUp(_prevState: AuthState, formData: FormData): Promise
   const { error } = await supabase.auth.signUp({
     email,
     password,
-    // /dashboard est désormais le point d'entrée unique après connexion : il
-    // renvoie lui-même vers /onboarding/abonnement (paiement obligatoire,
-    // décision de Nora du 21/08/2026) ou /onboarding/entreprise selon l'état
-    // du compte — cf. lib/actions/billing.ts requireActiveSubscription.
+    // /dashboard est le point d'entrée unique après connexion : il renvoie
+    // vers /onboarding/entreprise tant que l'organisme n'existe pas encore.
+    // Le paiement n'est plus exigé dès l'inscription (décision de Nora du
+    // 24/08/2026, révisant celle du 21/08/2026) — il n'est demandé qu'au
+    // moment d'une action à valeur (génération de document), via
+    // isSubscriptionActiveForOrg dans app/api/documents/*.
     options: { emailRedirectTo: `${origin}/auth/callback?next=/dashboard` },
   });
 

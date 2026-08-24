@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { getMyOrganization } from "@/lib/actions/organization";
-import { requireActiveSubscription } from "@/lib/actions/billing";
 import { getMyFirstTraining } from "@/lib/actions/training";
 import { getMyFirstSession, getSessionBeneficiaries } from "@/lib/actions/session";
 import { dedupeBeneficiaries } from "@/lib/actions/beneficiary-dedup";
@@ -19,8 +18,6 @@ import { AttendanceSheet } from "./attendance-sheet";
  * section "attendance_grid").
  */
 export default async function EmargementPage() {
-  await requireActiveSubscription();
-
   const org = await getMyOrganization();
   if (!org) {
     redirect("/onboarding/entreprise");

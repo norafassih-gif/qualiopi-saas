@@ -2,7 +2,6 @@ import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getMyOrganization } from "@/lib/actions/organization";
-import { requireActiveSubscription } from "@/lib/actions/billing";
 import { getMyFirstTraining } from "@/lib/actions/training";
 import { getMyFirstSession, getMyFirstBeneficiary, listMyBeneficiaries } from "@/lib/actions/session";
 import { listDocumentTemplatesWithStatus } from "@/lib/actions/documents";
@@ -37,8 +36,6 @@ const FOLDER_ORDER = [
 ];
 
 export default async function DocumentsPage() {
-  await requireActiveSubscription();
-
   const org = await getMyOrganization();
   if (!org) {
     redirect("/onboarding/entreprise");

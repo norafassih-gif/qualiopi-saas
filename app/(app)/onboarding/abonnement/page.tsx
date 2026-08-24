@@ -8,14 +8,18 @@ import { PageIllustration } from "@/components/marketing/page-illustration";
 import { MarketingFooter } from "@/components/marketing/footer";
 
 /**
- * Paywall obligatoire avant de renseigner l'entreprise — décision de Nora du
- * 21/08/2026 : plus personne ne doit pouvoir utiliser le logiciel sans avoir
- * payé. C'est la toute première étape après la création du compte (voir
- * lib/actions/auth.ts, qui envoie désormais tout le monde vers /dashboard,
- * lequel renvoie ici via requireActiveSubscription tant qu'aucun abonnement
- * actif n'existe). Le paiement crée automatiquement un organisme
- * "placeholder" (cf. lib/actions/billing.ts startCheckout) que l'étape
- * suivante (/onboarding/entreprise) complète avec les vraies informations.
+ * Page de paiement — revue en profondeur le 24/08/2026 (décision de Nora) :
+ * le logiciel n'exige plus le paiement dès l'arrivée sur /dashboard. Un
+ * nouvel utilisateur peut désormais créer son compte et se promener
+ * librement dans les écrans (entreprise, formation, session...) ; c'est
+ * uniquement au moment d'une action à valeur — générer un document PDF ou
+ * télécharger le dossier ZIP — que l'abonnement est vérifié
+ * (isSubscriptionActiveForOrg dans app/api/documents/*) et qu'on atterrit
+ * ici. Reste également accessible depuis /parametres/abonnement pour un
+ * client qui veut changer de plan de lui-même. Le paiement crée
+ * automatiquement un organisme "placeholder" (cf. lib/actions/billing.ts
+ * startCheckout) si aucun n'existe encore ; sinon il active simplement
+ * l'abonnement de l'organisme déjà en cours de remplissage.
  *
  * Habillage refait en Phase 21 (21/08/2026) : Nora a signalé, en testant le
  * tout premier parcours réel via Google, que cette page — le tout premier
