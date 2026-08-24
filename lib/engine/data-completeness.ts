@@ -1,6 +1,6 @@
 import type { Organization } from "@/lib/actions/organization";
 import type { TrainingSession, Beneficiary } from "@/lib/actions/session";
-import type { Partner } from "@/lib/actions/partners";
+import type { Partner, PartnerType } from "@/lib/actions/partners";
 
 export type MissingFieldGroup = "entreprise" | "qualite" | "session";
 
@@ -141,14 +141,24 @@ export function getMissingRequiredFields(
 // majorité des organismes. Affiché à la place directement sur la carte du
 // document concerné (cf. app/(app)/documents/page.tsx), seulement quand
 // l'organisme a commencé à générer ce document précis.
-export function isPartnerInfoComplete(partner: Partner | null): boolean {
+//
+// IMPORTANT — spécifique au type (bug corrigé le 25/08/2026, Nora : "j'ai
+// bien mis mes coordonnées [...] mais ça me met toujours en orange") : le
+// Contrat de sous-traitance (indicateur 27) n'utilise NULLE PART
+// {{partner_legal_representative_name}} ni {{partner_tutor_name}} — et le
+// formulaire (app/(app)/parametres/_components/partner-form.tsx) ne montre
+// même pas ces 2 champs pour un sous-traitant, seulement pour un
+// partenaire. Les exiger pour le type "sous_traitant" rendait la fiche
+// impossible à compléter. Seule la Convention de partenariat (indicateur
+// 28) les utilise réellement — et n'utilise jamais hourly_rate.
+export function isPartnerInfoComplete(partner: Partner | null, partnerType: PartnerType): boolean {
   if (!partner) return false;
-  return (
-    !isEmpty(partner.full_name) &&
-    !isEmpty(partner.siret) &&
-    !isEmpty(partner.address) &&
-    !isEmpty(partner.legal_representative_name) &&
-    !isEmpty(partner.tutor_name) &&
-    partner.hourly_rate != null
-  );
+  const hasCoreIdentity =
+    !isEmpty(partner.full_name) && !isEmpty(partner.siret) && !isEmpty(partner.address);
+  if (!hasCoreIdentity) return false;
+
+  if (partnerType === "sous_traitant") {
+    return partner.hourly_rate != null;
+  }
+  return !isEmpty(partner.legal_representative_name) && !isEmpty(partner.tutor_name);
 }

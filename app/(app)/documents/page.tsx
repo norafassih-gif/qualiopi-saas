@@ -70,8 +70,8 @@ export default async function DocumentsPage() {
     getMyFirstPartner("sous_traitant"),
     getMyFirstPartner("partenaire"),
   ]);
-  const subcontractorComplete = isPartnerInfoComplete(subcontractorPartner);
-  const businessPartnerComplete = isPartnerInfoComplete(businessPartner);
+  const subcontractorComplete = isPartnerInfoComplete(subcontractorPartner, "sous_traitant");
+  const businessPartnerComplete = isPartnerInfoComplete(businessPartner, "partenaire");
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
