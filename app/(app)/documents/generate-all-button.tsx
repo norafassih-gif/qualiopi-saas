@@ -23,21 +23,42 @@ import { useRouter } from "next/navigation";
  * budget de 60s (maxDuration) — un seul gros appel qui générerait tout
  * risquerait le timeout avec ~40 modèles.
  */
+/**
+ * Date commune à appliquer à tous les documents en un clic — demande de
+ * Nora (25/08/2026) : "des fois c'est différé [...] proposer de pouvoir
+ * mettre la même date partout. Et après si on doit la corriger, on la
+ * corrige sur certains documents. Mais sur 41 documents, devoir mettre la
+ * date à chaque fois, c'est pas faciliter la vie aux gens, c'est la
+ * compliquer." Champ pré-rempli à la date du jour (comportement inchangé si
+ * on ne le touche pas), modifiable avant de lancer la génération groupée ;
+ * chaque carte de document garde en plus son propre champ date individuel
+ * (cf. download-form.tsx) pour corriger un document précis après coup sans
+ * tout regénérer.
+ */
+function todayIsoDate(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
 export function GenerateAllButton({ templateIds }: { templateIds: string[] }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [done, setDone] = useState(0);
   const [failedLabels, setFailedLabels] = useState<string[]>([]);
+  const [date, setDate] = useState(() => todayIsoDate());
 
   async function handleClick() {
     setPending(true);
     setDone(0);
     const failed: string[] = [];
+    const dateParam = date ? `?date=${encodeURIComponent(date)}` : "";
 
     for (let i = 0; i < templateIds.length; i++) {
       const id = templateIds[i];
       try {
-        const response = await fetch(`/api/documents/${id}`);
+        const response = await fetch(`/api/documents/${id}${dateParam}`);
         if (!response.ok) failed.push(id);
       } catch {
         failed.push(id);
@@ -62,6 +83,18 @@ export function GenerateAllButton({ templateIds }: { templateIds: string[] }) {
 
   return (
     <div className="mb-3 flex flex-col items-start gap-1.5">
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="flex items-center gap-1.5 text-xs text-gray-600">
+          Date à appliquer à tous les documents
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            disabled={pending}
+            className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 disabled:opacity-50"
+          />
+        </label>
+      </div>
       <button
         type="button"
         onClick={handleClick}
@@ -72,6 +105,10 @@ export function GenerateAllButton({ templateIds }: { templateIds: string[] }) {
           ? `Génération en cours… ${done}/${templateIds.length}`
           : "Générer tous mes documents puis télécharger le ZIP"}
       </button>
+      <p className="text-xs text-gray-500">
+        Vous pourrez toujours corriger la date d&apos;un document précis ensuite, individuellement, sur sa
+        propre carte ci-dessous.
+      </p>
       {pending && (
         <div className="h-1.5 w-64 overflow-hidden rounded-full bg-gray-200">
           <div
