@@ -116,6 +116,25 @@ function required(value: string | null | undefined, label: string): string {
   return value && value.trim().length > 0 ? value : `[${label} à compléter]`;
 }
 
+// Repli automatique référent → dirigeant pour un organisme individuel —
+// demande explicite de Nora (25/08/2026) : "quand il n'y a qu'un seul
+// dirigeant dans l'entreprise, mettre son nom à chaque fois que l'on parle
+// de référent [...] administratif, pédagogique ou handicap [...] et qu'on
+// n'a pas renseigné [...] on va pouvoir mettre le même nom automatiquement."
+// Résolu dynamiquement à chaque génération de document (pas seulement à la
+// création de l'organisme) : couvre aussi bien un référent jamais rempli
+// qu'un référent vidé après coup, et s'applique rétroactivement aux
+// organismes déjà créés (ex. ACP) sans backfill de données nécessaire.
+// Volontairement limité au NOM du référent — pas à son email/téléphone, que
+// Nora n'a pas mentionnés et qui restent des coordonnées propres au rôle.
+// Même logique dupliquée dans lib/engine/data-completeness.ts
+// (getMissingRequiredFields) pour que la bannière "informations manquantes"
+// ne signale plus un référent que ce repli a déjà résolu.
+function referentOrManager(value: string | null, org: Organization): string | null {
+  if (value && value.trim().length > 0) return value;
+  return org.is_sole_practitioner ? org.manager_name : null;
+}
+
 // Rend une rangée de cases à cocher "☐ Option A &nbsp; ☑ Option B ..." pour
 // un modèle de document (ex. dossier_admission) — remplace des cases vides
 // destinées à être cochées à la main sur le PDF imprimé, par une case déjà
@@ -239,17 +258,23 @@ export function resolveDocumentVariables(input: {
     company_website: org.website ?? "",
     manager_name: org.manager_name ?? "",
     director_name: required(org.manager_name, "Nom du dirigeant"),
-    pedagogical_referent: org.pedagogical_referent ?? "",
-    pedagogical_referent_name: required(org.pedagogical_referent, "Référent pédagogique"),
+    pedagogical_referent: referentOrManager(org.pedagogical_referent, org) ?? "",
+    pedagogical_referent_name: required(
+      referentOrManager(org.pedagogical_referent, org),
+      "Référent pédagogique"
+    ),
     pedagogical_referent_email: required(org.pedagogical_referent_email, "Email référent pédagogique"),
     pedagogical_referent_phone: required(org.pedagogical_referent_phone, "Téléphone référent pédagogique"),
-    quality_referent: org.quality_referent ?? "",
-    quality_referent_name: required(org.quality_referent, "Référent qualité"),
-    administrative_referent_name: required(org.administrative_referent, "Référent administratif"),
+    quality_referent: referentOrManager(org.quality_referent, org) ?? "",
+    quality_referent_name: required(referentOrManager(org.quality_referent, org), "Référent qualité"),
+    administrative_referent_name: required(
+      referentOrManager(org.administrative_referent, org),
+      "Référent administratif"
+    ),
     administrative_referent_email: required(org.administrative_referent_email, "Email référent administratif"),
     administrative_referent_phone: required(org.administrative_referent_phone, "Téléphone référent administratif"),
-    disability_referent: org.disability_referent ?? "non désigné à ce jour",
-    disability_referent_name: required(org.disability_referent, "Référent handicap"),
+    disability_referent: referentOrManager(org.disability_referent, org) ?? "non désigné à ce jour",
+    disability_referent_name: required(referentOrManager(org.disability_referent, org), "Référent handicap"),
     disability_referent_email: required(org.disability_referent_email, "Email référent handicap"),
     disability_referent_phone: required(org.disability_referent_phone, "Téléphone référent handicap"),
     disability_contact_email: org.email ?? "",

@@ -5,9 +5,11 @@ import { getMyOrganization, type Organization } from "@/lib/actions/organization
 import { getMyBilling } from "@/lib/actions/billing";
 import { isPlatformAdmin } from "@/lib/actions/admin";
 import { getMyFirstTraining } from "@/lib/actions/training";
-import { getMyFirstSession, getMyFirstBeneficiary, getSessionBeneficiaries } from "@/lib/actions/session";
-import { countDistinctBeneficiaries } from "@/lib/actions/beneficiary-dedup";
+import { getMyFirstSession, getMyFirstBeneficiary, getSessionBeneficiaries, type Beneficiary } from "@/lib/actions/session";
+import { countDistinctBeneficiaries, dedupeBeneficiaries } from "@/lib/actions/beneficiary-dedup";
 import { getMyFirstPartner, type PartnerType } from "@/lib/actions/partners";
+import { getAttendanceSignatures, type AttendanceSignature } from "@/lib/actions/attendance";
+import { computeAttendancePeriods, formatPeriodLabel, type AttendancePeriod } from "./attendance-periods";
 import { resolveDocumentVariables } from "./document-variables";
 import { EVALUATION_PHASE_DOCUMENT_TEMPLATE, type EvaluationPhase } from "./evaluation-phases";
 import { getFontOption } from "./branding-fonts";
@@ -73,7 +75,14 @@ type TemplateSection = {
   code: string;
   title: string;
   sort_order: number;
-  content_type: "rich_text" | "variable_block" | "table" | "content_block_list" | "checklist" | "signature_block";
+  content_type:
+    | "rich_text"
+    | "variable_block"
+    | "table"
+    | "content_block_list"
+    | "checklist"
+    | "signature_block"
+    | "attendance_grid";
   html_template: string | null;
   source_content_block_type: string | null;
   // "training" (défaut) : blocs réellement retenus pour cette formation via
@@ -169,6 +178,10 @@ export async function buildDocumentHtml(
   let beneficiaryPreferredRhythm: string | null = null;
   let beneficiaryScheduleConstraints: string | null = null;
   let beneficiaryHasDisability: boolean | null = null;
+  // Toutes les lignes bénéficiaires de la session (hors doublons) — utilisé
+  // par la grille d'émargement dynamique (content_type "attendance_grid",
+  // cf. plus bas) qui doit lister TOUS les apprenants, pas un seul.
+  let sessionBeneficiaries: Beneficiary[] = [];
   if (session) {
     // getMyFirstBeneficiary() (lib/actions/session.ts) plutôt qu'une requête
     // ".order('id').limit(1)" locale : cette dernière était une 3e variante,
@@ -208,7 +221,22 @@ export async function buildDocumentHtml(
       beneficiaryHasDisability = beneficiary.has_disability;
     }
     beneficiaryCount = countDistinctBeneficiaries(allBeneficiaries);
+    sessionBeneficiaries = allBeneficiaries;
   }
+
+  // Grille d'émargement (feuille_emargement, section "attendance_grid",
+  // Phase 33, 25/08/2026) : construite dynamiquement — une page par
+  // demi-journée de la session, avec tous les apprenants et, s'ils ont déjà
+  // signé sur /emargement, leur tracé de signature. Ne coûte une requête
+  // supplémentaire QUE pour les modèles qui ont réellement une telle
+  // section — tous les autres documents restent inchangés.
+  const needsAttendanceGrid = sections.some((s) => s.content_type === "attendance_grid");
+  const attendancePeriods = needsAttendanceGrid && session
+    ? computeAttendancePeriods(session.start_date, session.end_date)
+    : [];
+  const attendanceBeneficiaries = needsAttendanceGrid ? dedupeBeneficiaries(sessionBeneficiaries) : [];
+  const attendanceSignatures =
+    needsAttendanceGrid && session ? await getAttendanceSignatures(session.id) : [];
 
   // Dernière évaluation complétée pour cette formation (peu importe la
   // session/le bénéficiaire précis en MVP mono-session) — alimente les
@@ -310,7 +338,13 @@ export async function buildDocumentHtml(
   }
 
   const sectionsHtml = sections
-    .map((section) => renderSection(section, vars, blocksByType, globalBlocksByType, moduleRows))
+    .map((section) =>
+      renderSection(section, vars, blocksByType, globalBlocksByType, moduleRows, {
+        periods: attendancePeriods,
+        beneficiaries: attendanceBeneficiaries,
+        signatures: attendanceSignatures,
+      })
+    )
     .join("\n");
 
   const html = wrapDocument({ org, templateLabel: templateResponse.data.label, sectionsHtml, vars });
@@ -323,7 +357,8 @@ function renderSection(
   vars: Record<string, string>,
   blocksByType: Map<string, string[]>,
   globalBlocksByType: Map<string, string[]>,
-  moduleRows: { duration_hours: number | null; modules: { title: string } | { title: string }[] | null }[]
+  moduleRows: { duration_hours: number | null; modules: { title: string } | { title: string }[] | null }[],
+  attendance: { periods: AttendancePeriod[]; beneficiaries: Beneficiary[]; signatures: AttendanceSignature[] }
 ): string {
   let body: string;
 
@@ -398,11 +433,61 @@ function renderSection(
       break;
     }
 
+    case "attendance_grid":
+      body = renderAttendanceGrid(attendance.periods, attendance.beneficiaries, attendance.signatures);
+      break;
+
     default:
       body = "";
   }
 
   return `<section><h2>${escapeHtml(section.title)}</h2>${body}</section>`;
+}
+
+/**
+ * Grille d'émargement dynamique — une page par demi-journée de la session,
+ * listant tous les apprenants (dédupliqués) avec, s'il existe, le tracé de
+ * signature capturé sur /emargement (cf. lib/actions/attendance.ts). Répond
+ * à la demande de Nora (25/08/2026) : "avoir plusieurs apprenants, pouvoir
+ * leur faire signer directement les émargements sur l'écran" — le PDF généré
+ * reflète alors fidèlement ce qui a déjà été signé, plutôt qu'un tableau
+ * statique à remplir à la main comme avant cette phase.
+ */
+function renderAttendanceGrid(
+  periods: AttendancePeriod[],
+  beneficiaries: Beneficiary[],
+  signatures: AttendanceSignature[]
+): string {
+  if (beneficiaries.length === 0) {
+    return `<p class="empty">Aucun apprenant enregistré pour cette session — complétez d'abord "Ma session".</p>`;
+  }
+  if (periods.length === 0) {
+    return `<p class="empty">Dates de session manquantes — complétez les dates de début/fin sur "Ma session" pour générer la grille d'émargement.</p>`;
+  }
+
+  const signatureByKey = new Map<string, AttendanceSignature>();
+  for (const sig of signatures) {
+    signatureByKey.set(`${sig.beneficiary_id}|${sig.period_date}|${sig.period_slot}`, sig);
+  }
+
+  return periods
+    .map((period) => {
+      const rows = beneficiaries
+        .map((b, index) => {
+          const sig = signatureByKey.get(`${b.id}|${period.date}|${period.slot}`);
+          const cell = sig
+            ? `<img src="${sig.signature_data_url}" alt="Signature" style="max-height:14mm; max-width:40mm;" />`
+            : "";
+          return `<tr><td>${index + 1}</td><td>${escapeHtml(b.full_name)}</td><td>${cell}</td></tr>`;
+        })
+        .join("");
+      return `<div class="attendance-period">
+        <p class="attendance-period-label">${escapeHtml(formatPeriodLabel(period))}</p>
+        <table><thead><tr><th>N°</th><th>Nom et prénom</th><th>Signature</th></tr></thead><tbody>${rows}</tbody></table>
+        <p style="margin-top:8pt;">Signature du formateur / de la formatrice : ……………………………</p>
+      </div>`;
+    })
+    .join("");
 }
 
 function wrapDocument({
@@ -453,6 +538,9 @@ ${fontLinkTag}
   th { color: ${secondary}; font-weight: 600; font-size: 9pt; text-transform: uppercase; }
   .signature-line { margin-top: 24pt; border-top: 1px solid #1f2937; width: 60mm; padding-top: 4pt; }
   .signature-visuals { display: flex; align-items: flex-end; gap: 12pt; margin-top: 10pt; }
+  .attendance-period { page-break-inside: avoid; margin-bottom: 20pt; }
+  .attendance-period + .attendance-period { page-break-before: always; }
+  .attendance-period-label { font-weight: 600; color: ${primary}; margin-bottom: 4pt; }
 </style>
 </head>
 <body>

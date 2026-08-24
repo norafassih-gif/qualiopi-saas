@@ -50,3 +50,51 @@ export function countDistinctBeneficiaries(list: Beneficiary[]): number {
   }
   return seen.size + unnamedCount;
 }
+
+// Score de complétude sommaire — copie volontairement réduite de
+// beneficiaryCompleteness() (lib/actions/session.ts, non exportable depuis un
+// fichier "use server") pour choisir, parmi plusieurs lignes désignant la
+// même personne, celle à conserver.
+function beneficiaryScore(b: Beneficiary): number {
+  const fields = [
+    b.experience_level,
+    b.current_difficulties,
+    b.personal_expectations,
+    b.priority_skills,
+    b.professional_context,
+    b.expected_results,
+    b.preferred_modality,
+    b.preferred_rhythm,
+    b.schedule_constraints,
+    b.company,
+    b.email,
+  ];
+  return fields.filter((v) => v && v.trim().length > 0).length + (b.has_disability != null ? 1 : 0);
+}
+
+/**
+ * Retourne la liste des bénéficiaires réellement DISTINCTS d'une session
+ * (une ligne par personne, la plus renseignée en cas de doublon) plutôt que
+ * les lignes brutes en base — utilisée par la feuille d'émargement à signer
+ * sur l'écran (demande de Nora, 25/08/2026 : "avoir plusieurs apprenants,
+ * pouvoir leur faire signer directement les émargements sur l'écran") :
+ * sans ce filtre, un doublon historique (cf. countDistinctBeneficiaries)
+ * apparaîtrait comme un participant fantôme jamais signé, semant le doute
+ * sur une feuille qui doit rester un justificatif fiable.
+ */
+export function dedupeBeneficiaries(list: Beneficiary[]): Beneficiary[] {
+  const byKey = new Map<string, Beneficiary>();
+  const unnamed: Beneficiary[] = [];
+  for (const b of list) {
+    const key = normalizeBeneficiaryNameKey(b.full_name);
+    if (!key) {
+      unnamed.push(b);
+      continue;
+    }
+    const existing = byKey.get(key);
+    if (!existing || beneficiaryScore(b) > beneficiaryScore(existing)) {
+      byKey.set(key, b);
+    }
+  }
+  return [...byKey.values(), ...unnamed];
+}

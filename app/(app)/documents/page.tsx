@@ -130,6 +130,11 @@ export default async function DocumentsPage() {
                             {doc.linked_indicator_numbers.join(", ")}
                           </p>
                         )}
+                        {doc.id === "feuille_emargement" && (
+                          <a href="/emargement" className="text-xs font-medium text-blue-900 underline">
+                            ✍️ Faire signer les apprenants sur l&apos;écran →
+                          </a>
+                        )}
                         {doc.id === "contrat_sous_traitance" && !subcontractorComplete && (
                           <a href="/parametres/sous-traitant" className="text-xs font-medium text-amber-700 underline">
                             ⚠️ Informations du sous-traitant à compléter →

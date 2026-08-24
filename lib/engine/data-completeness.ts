@@ -26,6 +26,17 @@ function isEmpty(value: string | null | undefined): boolean {
   return !value || value.trim().length === 0;
 }
 
+// Même repli que referentOrManager() dans lib/engine/document-variables.ts
+// (à garder synchronisé avec cette fonction) — demande de Nora (25/08/2026) :
+// pour un organisme individuel, un référent (pédagogique, qualité,
+// administratif, handicap) non renseigné est automatiquement résolu au nom
+// du dirigeant dans les documents générés, donc ne doit plus apparaître dans
+// cette bannière comme "manquant".
+function referentOrManager(value: string | null | undefined, org: Organization): string | null {
+  if (value && value.trim().length > 0) return value;
+  return org.is_sole_practitioner ? org.manager_name : null;
+}
+
 /**
  * Recense les champs qui apparaîtront comme "[... à compléter]" (ou "à
  * préciser") dans les documents générés — demande explicite de Nora
@@ -61,14 +72,14 @@ export function getMissingRequiredFields(
   push("entreprise", "Email", org.email);
   push("entreprise", "Nom du dirigeant", org.manager_name);
 
-  push("qualite", "Référent pédagogique", org.pedagogical_referent);
+  push("qualite", "Référent pédagogique", referentOrManager(org.pedagogical_referent, org));
   push("qualite", "Email du référent pédagogique", org.pedagogical_referent_email);
   push("qualite", "Téléphone du référent pédagogique", org.pedagogical_referent_phone);
-  push("qualite", "Référent qualité", org.quality_referent);
-  push("qualite", "Référent administratif", org.administrative_referent);
+  push("qualite", "Référent qualité", referentOrManager(org.quality_referent, org));
+  push("qualite", "Référent administratif", referentOrManager(org.administrative_referent, org));
   push("qualite", "Email du référent administratif", org.administrative_referent_email);
   push("qualite", "Téléphone du référent administratif", org.administrative_referent_phone);
-  push("qualite", "Référent handicap", org.disability_referent);
+  push("qualite", "Référent handicap", referentOrManager(org.disability_referent, org));
   push("qualite", "Email du référent handicap", org.disability_referent_email);
   push("qualite", "Téléphone du référent handicap", org.disability_referent_phone);
 

@@ -15,6 +15,7 @@ import {
   CreditCard,
   ShieldCheck,
   AlertTriangle,
+  PenLine,
 } from "lucide-react";
 
 /**
@@ -85,6 +86,11 @@ function AppSidebar({ data, pathname }: { data: SidebarData; pathname: string })
       icon: FileText,
       badge: data.documentsTotal > 0 ? `${data.documentsGenerated}/${data.documentsTotal}` : undefined,
       badgeWarning: data.missingFieldsCount > 0,
+    },
+    {
+      href: data.hasSession ? "/emargement" : "/onboarding/session",
+      label: "Émargements",
+      icon: PenLine,
     },
     { href: "/evaluation", label: "Évaluation des acquis", icon: ClipboardList },
     { href: "/parametres/identite-visuelle", label: "Identité visuelle", icon: Palette },
