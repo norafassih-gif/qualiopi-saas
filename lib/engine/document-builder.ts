@@ -10,7 +10,7 @@ import { countDistinctBeneficiaries, dedupeBeneficiaries } from "@/lib/actions/b
 import { getMyFirstPartner, type PartnerType } from "@/lib/actions/partners";
 import { getAttendanceSignatures, type AttendanceSignature } from "@/lib/actions/attendance";
 import { computeAttendancePeriods, formatPeriodLabel, type AttendancePeriod } from "./attendance-periods";
-import { resolveDocumentVariables } from "./document-variables";
+import { resolveDocumentVariables, STUDENT_SCOPED_TEMPLATE_IDS } from "./document-variables";
 import { EVALUATION_PHASE_DOCUMENT_TEMPLATE, type EvaluationPhase } from "./evaluation-phases";
 import { getFontOption } from "./branding-fonts";
 
@@ -187,6 +187,14 @@ export async function buildDocumentHtml(
   }
 
   const sections = (sectionsResponse.data ?? []) as TemplateSection[];
+
+  // Un document "par apprenant" (STUDENT_SCOPED_TEMPLATE_IDS) nomme un
+  // bénéficiaire précis — il doit donc être signé par les DEUX parties
+  // (dirigeant + apprenant), pas seulement l'organisme, cf. section
+  // "signature_block" ci-dessous (demande de Nora, 25/08/2026 : "chaque
+  // document doit être signé par les deux parties [...] on récupère les
+  // signatures qui ont été faites, par le dirigeant et par l'apprenant").
+  const isStudentScopedTemplate = (STUDENT_SCOPED_TEMPLATE_IDS as readonly string[]).includes(documentTemplateId);
 
   let beneficiaryName: string | null = null;
   let beneficiaryCompany: string | null = null;
@@ -385,11 +393,19 @@ export async function buildDocumentHtml(
 
   const sectionsHtml = sections
     .map((section) =>
-      renderSection(section, vars, blocksByType, globalBlocksByType, moduleRows, {
-        periods: attendancePeriods,
-        beneficiaries: attendanceBeneficiaries,
-        signatures: attendanceSignatures,
-      })
+      renderSection(
+        section,
+        vars,
+        blocksByType,
+        globalBlocksByType,
+        moduleRows,
+        {
+          periods: attendancePeriods,
+          beneficiaries: attendanceBeneficiaries,
+          signatures: attendanceSignatures,
+        },
+        isStudentScopedTemplate
+      )
     )
     .join("\n");
 
@@ -404,7 +420,8 @@ function renderSection(
   blocksByType: Map<string, string[]>,
   globalBlocksByType: Map<string, string[]>,
   moduleRows: { duration_hours: number | null; modules: { title: string } | { title: string }[] | null }[],
-  attendance: { periods: AttendancePeriod[]; beneficiaries: Beneficiary[]; signatures: AttendanceSignature[] }
+  attendance: { periods: AttendancePeriod[]; beneficiaries: Beneficiary[]; signatures: AttendanceSignature[] },
+  isStudentScopedTemplate: boolean
 ): string {
   let body: string;
 
@@ -470,12 +487,34 @@ function renderSection(
       // (convention_formation, contrat_formation_particulier...) qui
       // affichaient déjà nom + signature + cachet ensemble.
       const visuals = (vars.org_signature_image ?? "") + (vars.org_stamp_image ?? "");
-      body = `<div class="signature">
-        <div>${vars.company_name ?? ""}</div>
+      const orgColumn = `<div>${vars.company_name ?? ""}</div>
         ${vars.director_name ? `<div>${vars.director_name}</div>` : ""}
         ${visuals ? `<div class="signature-visuals">${visuals}</div>` : ""}
-        <div class="signature-line">Signature</div>
-      </div>`;
+        <div class="signature-line">Signature</div>`;
+
+      if (isStudentScopedTemplate) {
+        // Document "par apprenant" (attestation, convocation, résultats
+        // d'évaluation/positionnement...) : nomme un bénéficiaire précis,
+        // donc les DEUX parties doivent apparaître en bas de page — même
+        // patron à deux colonnes (organisme | apprenant) déjà utilisé pour
+        // la convention/le contrat particulier/le dossier d'admission
+        // (sections "signatures" en base, cf. document_template_sections),
+        // pour que tous les documents "par apprenant" soient visuellement
+        // cohérents entre eux, que leur bloc signature vienne d'ici ou d'un
+        // html_template stocké en base. {{student_signature_block}} reprend
+        // la signature électronique déjà enregistrée par l'apprenant sur
+        // /parametres/session (Phase 30) — jamais ressaisie ici.
+        body = `<table style="width:100%; margin-top:8pt;"><tbody><tr>
+          <td style="width:50%; vertical-align:top;">${orgColumn}</td>
+          <td style="width:50%; vertical-align:top;">
+            <div>Le stagiaire, ${vars.student_name ?? ""}</div>
+            <br/>
+            ${vars.student_signature_block ?? ""}
+          </td>
+        </tr></tbody></table>`;
+      } else {
+        body = `<div class="signature">${orgColumn}</div>`;
+      }
       break;
     }
 

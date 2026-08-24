@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getMyOrganization } from "@/lib/actions/organization";
 import { getMyFirstTraining } from "@/lib/actions/training";
 import { getMyFirstSession, getMyFirstBeneficiary, listMyBeneficiaries } from "@/lib/actions/session";
+import { dedupeBeneficiaries } from "@/lib/actions/beneficiary-dedup";
 import { listDocumentTemplatesWithStatus } from "@/lib/actions/documents";
 import { getMyFirstPartner } from "@/lib/actions/partners";
 import { STUDENT_SCOPED_TEMPLATE_IDS } from "@/lib/engine/document-variables";
@@ -46,7 +47,17 @@ export default async function DocumentsPage() {
   }
 
   const session = await getMyFirstSession();
-  const beneficiaries = session ? await listMyBeneficiaries(session.id) : [];
+  // Dédupliqués (cf. dedupeBeneficiaries, lib/actions/beneficiary-dedup.ts)
+  // AVANT d'alimenter le sélecteur "par apprenant" et la génération groupée
+  // — sinon un doublon historique (même personne saisie deux fois, cf.
+  // Phase 32bis/32ter, ex. "ESQUER David" en 3 exemplaires sur ACP) est
+  // traité comme 3 apprenants distincts et génère 3 fois les mêmes
+  // documents (bug découvert le 25/08/2026 lors du test de ce chantier par
+  // Nora). Les autres usages de listMyBeneficiaries() (gestion des
+  // apprenants sur /parametres/session) continuent d'afficher les lignes
+  // brutes, pour que ces doublons restent visibles et supprimables.
+  const rawBeneficiaries = session ? await listMyBeneficiaries(session.id) : [];
+  const beneficiaries = dedupeBeneficiaries(rawBeneficiaries);
   const principalBeneficiary = session ? await getMyFirstBeneficiary(session.id) : null;
   const studentScopedIds: readonly string[] = STUDENT_SCOPED_TEMPLATE_IDS;
 
