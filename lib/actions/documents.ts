@@ -40,21 +40,37 @@ export async function listDocumentTemplatesWithStatus(): Promise<DocumentTemplat
     return { error: "Erreur lors du chargement des modèles : " + templatesResponse.error.message };
   }
 
-  const statusByTemplateId = new Map<string, { status: string; generated_at: string | null }>();
+  // Un même modèle "par apprenant" (STUDENT_SCOPED_TEMPLATE_IDS, cf.
+  // lib/engine/document-variables.ts) peut désormais avoir PLUSIEURS lignes
+  // en base — une par bénéficiaire de la session (migration 0044, Phase 29)
+  // — alors que cette agrégation ne gardait jusqu'ici que la DERNIÈRE ligne
+  // lue par document_template_id, dans un ordre non garanti (bug découvert
+  // le 25/08/2026 lors du chantier "documents par apprenant"). Un modèle
+  // est désormais marqué "généré" dès qu'AU MOINS UN bénéficiaire a une
+  // ligne "generated", avec la date la plus récente parmi elles — plutôt que
+  // de dépendre de l'ordre de retour de la requête.
+  const aggByTemplateId = new Map<string, { anyGenerated: boolean; latestGeneratedAt: string | null }>();
   for (const row of documentsResponse.data ?? []) {
-    statusByTemplateId.set(row.document_template_id, { status: row.status, generated_at: row.generated_at });
+    const agg = aggByTemplateId.get(row.document_template_id) ?? { anyGenerated: false, latestGeneratedAt: null };
+    if (row.status === "generated") {
+      agg.anyGenerated = true;
+      if (!agg.latestGeneratedAt || (row.generated_at && row.generated_at > agg.latestGeneratedAt)) {
+        agg.latestGeneratedAt = row.generated_at;
+      }
+    }
+    aggByTemplateId.set(row.document_template_id, agg);
   }
 
   return (templatesResponse.data ?? []).map((t) => {
-    const generatedRow = statusByTemplateId.get(t.id);
+    const agg = aggByTemplateId.get(t.id);
     return {
       id: t.id,
       label: t.label,
       folder_group: t.folder_group,
       linked_indicator_numbers: t.linked_indicator_numbers ?? [],
       sort_order: t.sort_order,
-      generated: generatedRow?.status === "generated",
-      generated_at: generatedRow?.generated_at ?? null,
+      generated: agg?.anyGenerated ?? false,
+      generated_at: agg?.latestGeneratedAt ?? null,
     };
   });
 }
@@ -84,7 +100,7 @@ export async function getGeneratedDocumentsForZip(): Promise<GeneratedDocumentFo
 
   const { data: docsData, error: docsError } = await supabase
     .from("documents")
-    .select("document_template_id, pdf_url")
+    .select("document_template_id, pdf_url, beneficiary_id")
     .eq("organization_id", org.id)
     .eq("status", "generated")
     .not("pdf_url", "is", null);
@@ -94,24 +110,54 @@ export async function getGeneratedDocumentsForZip(): Promise<GeneratedDocumentFo
   }
   if (!docsData || docsData.length === 0) return [];
 
-  const pathByTemplateId = new Map(docsData.map((d) => [d.document_template_id, d.pdf_url as string]));
+  // Un même modèle "par apprenant" (STUDENT_SCOPED_TEMPLATE_IDS) peut avoir
+  // PLUSIEURS lignes générées — une par bénéficiaire de la session
+  // (migration 0044, Phase 29). Cette fonction ne gardait jusqu'ici qu'UNE
+  // seule ligne par document_template_id (Map indexée uniquement sur
+  // l'id du modèle), écrasant silencieusement les autres bénéficiaires : le
+  // ZIP ne contenait donc jamais qu'un seul exemplaire des documents "par
+  // apprenant" (bug découvert le 25/08/2026 lors du chantier "documents par
+  // apprenant"). On garde désormais CHAQUE ligne — une entrée = un fichier
+  // PDF distinct en Storage — et on distingue leur libellé par le nom du
+  // bénéficiaire pour que le ZIP contienne bien un fichier par apprenant.
+  const beneficiaryIds = Array.from(
+    new Set(docsData.map((d) => d.beneficiary_id).filter((id): id is string => !!id))
+  );
+  const beneficiaryNameById = new Map<string, string>();
+  if (beneficiaryIds.length > 0) {
+    const { data: beneficiariesData } = await supabase
+      .from("beneficiaries")
+      .select("id, full_name")
+      .in("id", beneficiaryIds);
+    for (const b of beneficiariesData ?? []) {
+      beneficiaryNameById.set(b.id, b.full_name);
+    }
+  }
 
+  const templateIds = Array.from(new Set(docsData.map((d) => d.document_template_id)));
   const { data: templatesData, error: templatesError } = await supabase
     .from("document_templates")
     .select("id, label, folder_group, sort_order")
-    .in("id", Array.from(pathByTemplateId.keys()));
+    .in("id", templateIds);
 
   if (templatesError) {
     return { error: "Erreur lors du chargement des modèles : " + templatesError.message };
   }
+  const templateById = new Map((templatesData ?? []).map((t) => [t.id, t]));
 
-  return (templatesData ?? [])
-    .map((t) => ({
-      document_template_id: t.id,
-      label: t.label,
-      folder_group: t.folder_group,
-      sort_order: t.sort_order,
-      storage_path: pathByTemplateId.get(t.id)!,
-    }))
+  return docsData
+    .map((d) => {
+      const template = templateById.get(d.document_template_id);
+      if (!template || !d.pdf_url) return null;
+      const beneficiaryName = d.beneficiary_id ? beneficiaryNameById.get(d.beneficiary_id) : null;
+      return {
+        document_template_id: d.document_template_id,
+        label: beneficiaryName ? `${template.label} — ${beneficiaryName}` : template.label,
+        folder_group: template.folder_group,
+        sort_order: template.sort_order,
+        storage_path: d.pdf_url as string,
+      };
+    })
+    .filter((d): d is GeneratedDocumentForZip => d !== null)
     .sort((a, b) => (a.folder_group < b.folder_group ? -1 : a.folder_group > b.folder_group ? 1 : a.sort_order - b.sort_order));
 }

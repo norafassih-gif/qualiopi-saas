@@ -92,7 +92,24 @@ type TemplateSection = {
   content_block_scope: "training" | "global";
 };
 
-export type BuildDocumentResult = { html: string; templateLabel: string } | { error: string };
+export type BuildDocumentResult =
+  | {
+      html: string;
+      templateLabel: string;
+      /**
+       * Id du bénéficiaire effectivement utilisé pour remplir les variables
+       * {{student_*}} de ce document (null si la session n'a aucun
+       * bénéficiaire, ou si le document n'est pas "par apprenant"). Peut
+       * différer du beneficiaryId demandé en paramètre si celui-ci ne
+       * correspond à aucun bénéficiaire de la session courante — repli sur
+       * getMyFirstBeneficiary(). Renvoyé pour que l'appelant (cf.
+       * app/api/documents/[templateId]/route.ts) sache pour QUEL apprenant
+       * stocker/mettre à jour le document, plutôt que de faire confiance au
+       * paramètre brut reçu dans l'URL.
+       */
+      beneficiaryId: string | null;
+    }
+  | { error: string };
 
 function interpolate(template: string, vars: Record<string, string>): string {
   return template.replace(/\{\{(\w+)\}\}/g, (_match, key: string) => vars[key] ?? "");
@@ -128,7 +145,20 @@ export async function buildDocumentHtml(
    * les organismes doivent pouvoir choisir la date affichée sur leurs
    * documents plutôt que de subir systématiquement la date du jour.
    */
-  customDate?: string
+  customDate?: string,
+  /**
+   * Id du bénéficiaire pour lequel générer ce document — sélecteur "par
+   * apprenant" sur "Mes documents" (cf. app/(app)/documents/download-form.tsx
+   * et app/api/documents/[templateId]/route.ts). Uniquement pertinent pour
+   * les modèles listés dans STUDENT_SCOPED_TEMPLATE_IDS (cf.
+   * lib/engine/document-variables.ts) : pour les autres, ce paramètre est
+   * simplement ignoré (un document "de session" ne dépend d'aucun
+   * bénéficiaire précis). Si absent, ou si l'id ne correspond à aucun
+   * bénéficiaire de la session courante, on retombe sur
+   * getMyFirstBeneficiary() — comportement historique, inchangé pour les
+   * organismes mono-apprenant.
+   */
+  beneficiaryId?: string
 ): Promise<BuildDocumentResult> {
   const rawOrg = await getMyOrganization();
   if (!rawOrg) return { error: "Organisme introuvable — complétez d'abord votre profil." };
@@ -182,6 +212,9 @@ export async function buildDocumentHtml(
   // par la grille d'émargement dynamique (content_type "attendance_grid",
   // cf. plus bas) qui doit lister TOUS les apprenants, pas un seul.
   let sessionBeneficiaries: Beneficiary[] = [];
+  // Bénéficiaire effectivement utilisé pour ce document — cf. commentaire du
+  // champ beneficiaryId sur BuildDocumentResult ci-dessus.
+  let resolvedBeneficiaryId: string | null = null;
   if (session) {
     // getMyFirstBeneficiary() (lib/actions/session.ts) plutôt qu'une requête
     // ".order('id').limit(1)" locale : cette dernière était une 3e variante,
@@ -197,11 +230,24 @@ export async function buildDocumentHtml(
     // cause de 3 lignes dupliquées désignant la même personne (même bug
     // historique que ci-dessus). countDistinctBeneficiaries() (lib/actions/
     // session.ts) déduplique par nom normalisé avant de compter.
-    const [beneficiary, allBeneficiaries] = await Promise.all([
+    const [firstBeneficiary, allBeneficiaries] = await Promise.all([
       getMyFirstBeneficiary(session.id),
       getSessionBeneficiaries(session.id),
     ]);
+    // Un beneficiaryId a été explicitement demandé (sélecteur "par
+    // apprenant") : on l'utilise s'il correspond bien à un bénéficiaire de
+    // CETTE session — jamais de confiance aveugle dans un id venu de l'URL
+    // — sinon repli sur le bénéficiaire "le plus complet" comme avant cette
+    // fonctionnalité. C'est ce bug précis (le sélecteur envoyait déjà
+    // beneficiary_id, mais rien ici ne le lisait) que corrige ce chantier :
+    // avant, TOUS les documents "par apprenant" d'une session à plusieurs
+    // apprenants pointaient systématiquement vers la même personne.
+    const requestedBeneficiary = beneficiaryId
+      ? allBeneficiaries.find((b) => b.id === beneficiaryId) ?? null
+      : null;
+    const beneficiary = requestedBeneficiary ?? firstBeneficiary;
     if (beneficiary) {
+      resolvedBeneficiaryId = beneficiary.id;
       beneficiaryName = beneficiary.full_name;
       beneficiaryCompany = beneficiary.company;
       beneficiaryEmail = beneficiary.email;
@@ -349,7 +395,7 @@ export async function buildDocumentHtml(
 
   const html = wrapDocument({ org, templateLabel: templateResponse.data.label, sectionsHtml, vars });
 
-  return { html, templateLabel: templateResponse.data.label };
+  return { html, templateLabel: templateResponse.data.label, beneficiaryId: resolvedBeneficiaryId };
 }
 
 function renderSection(

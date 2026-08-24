@@ -83,7 +83,11 @@ export default async function DocumentsPage() {
 
       {!("error" in templates) && templates.length > 0 && (
         <div className="mb-6">
-          <GenerateAllButton templateIds={templates.map((t) => t.id)} />
+          <GenerateAllButton
+            templateIds={templates.map((t) => t.id)}
+            studentScopedTemplateIds={[...studentScopedIds]}
+            beneficiaries={beneficiaries.map((b) => ({ id: b.id, full_name: b.full_name }))}
+          />
           <p className="text-xs text-gray-500">
             Génère (ou régénère) chaque document, puis télécharge automatiquement le ZIP complet — utile
             après avoir complété des informations, ou après une mise à jour du logiciel.

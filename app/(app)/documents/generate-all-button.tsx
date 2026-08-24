@@ -42,23 +42,57 @@ function todayIsoDate(): string {
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
-export function GenerateAllButton({ templateIds }: { templateIds: string[] }) {
+export function GenerateAllButton({
+  templateIds,
+  studentScopedTemplateIds,
+  beneficiaries,
+}: {
+  templateIds: string[];
+  /**
+   * Modèles "par apprenant" (STUDENT_SCOPED_TEMPLATE_IDS, cf.
+   * lib/engine/document-variables.ts) — un exemplaire distinct doit être
+   * généré pour CHAQUE bénéficiaire de la session, pas un seul pour toute la
+   * session (bugfix "documents par apprenant", 25/08/2026 : Nora a un
+   * client avec 15 apprenants sur une même session).
+   */
+  studentScopedTemplateIds: string[];
+  beneficiaries: { id: string; full_name: string }[];
+}) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [done, setDone] = useState(0);
   const [failedLabels, setFailedLabels] = useState<string[]>([]);
   const [date, setDate] = useState(() => todayIsoDate());
 
+  // Construit la liste réelle des documents à générer : un par modèle "de
+  // session", et un par (modèle "par apprenant" × bénéficiaire) — sinon
+  // "Générer tous mes documents" ne produirait jamais qu'un seul exemplaire
+  // des documents par apprenant (celui du bénéficiaire "le plus complet",
+  // cf. lib/actions/session.ts) au lieu d'un jeu complet par apprenant.
+  // C'est précisément le bug corrigé par ce chantier (25/08/2026) : le
+  // sélecteur manuel de bénéficiaire (download-form.tsx) envoyait déjà
+  // beneficiary_id à l'API, mais ce bouton "tout générer" ne l'a jamais
+  // fait, et rien côté serveur ne le lisait de toute façon.
+  const jobs = templateIds.flatMap((id) => {
+    if (!studentScopedTemplateIds.includes(id) || beneficiaries.length === 0) {
+      return [{ templateId: id, beneficiaryId: null as string | null }];
+    }
+    return beneficiaries.map((b) => ({ templateId: id, beneficiaryId: b.id as string | null }));
+  });
+
   async function handleClick() {
     setPending(true);
     setDone(0);
     const failed: string[] = [];
-    const dateParam = date ? `?date=${encodeURIComponent(date)}` : "";
 
-    for (let i = 0; i < templateIds.length; i++) {
-      const id = templateIds[i];
+    for (let i = 0; i < jobs.length; i++) {
+      const { templateId, beneficiaryId } = jobs[i];
+      const params = new URLSearchParams();
+      if (date) params.set("date", date);
+      if (beneficiaryId) params.set("beneficiary_id", beneficiaryId);
+      const queryString = params.toString();
       try {
-        const response = await fetch(`/api/documents/${id}${dateParam}`);
+        const response = await fetch(`/api/documents/${templateId}${queryString ? `?${queryString}` : ""}`);
         if (!response.ok) {
           // Paywall "à l'usage" (décision de Nora, 24/08/2026) : dès qu'un
           // document échoue faute d'abonnement actif, inutile de continuer
@@ -70,10 +104,10 @@ export function GenerateAllButton({ templateIds }: { templateIds: string[] }) {
             router.push("/onboarding/abonnement");
             return;
           }
-          failed.push(id);
+          failed.push(templateId);
         }
       } catch {
-        failed.push(id);
+        failed.push(templateId);
       }
       setDone(i + 1);
     }
@@ -110,11 +144,11 @@ export function GenerateAllButton({ templateIds }: { templateIds: string[] }) {
       <button
         type="button"
         onClick={handleClick}
-        disabled={pending || templateIds.length === 0}
+        disabled={pending || jobs.length === 0}
         className="rounded-md bg-blue-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
       >
         {pending
-          ? `Génération en cours… ${done}/${templateIds.length}`
+          ? `Génération en cours… ${done}/${jobs.length}`
           : "Générer tous mes documents puis télécharger le ZIP"}
       </button>
       <p className="text-xs text-gray-500">
@@ -125,7 +159,7 @@ export function GenerateAllButton({ templateIds }: { templateIds: string[] }) {
         <div className="h-1.5 w-64 overflow-hidden rounded-full bg-gray-200">
           <div
             className="h-full rounded-full bg-blue-900 transition-all"
-            style={{ width: `${(done / Math.max(templateIds.length, 1)) * 100}%` }}
+            style={{ width: `${(done / Math.max(jobs.length, 1)) * 100}%` }}
           />
         </div>
       )}
