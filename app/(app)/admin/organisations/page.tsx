@@ -8,6 +8,7 @@ import {
 import { planLabel, subscriptionStatusLabel } from "@/lib/billing-labels";
 import { OrganizationBlockForm } from "./organization-block-form";
 import { OrganizationAccessForm } from "./organization-access-form";
+import { ClientSessionButton } from "./client-session-button";
 
 function formatDate(iso: string): string {
   return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(iso));
@@ -116,6 +117,7 @@ export default async function AdminOrganizationsPage({
                 >
                   Gérer
                 </a>
+                <ClientSessionButton organizationId={org.id} />
                 {org.is_blocked ? (
                   <form action={unblockOrganization.bind(null, org.id)}>
                     <button type="submit" className="rounded-md bg-blue-900 px-3 py-1 text-xs text-white">
