@@ -477,11 +477,23 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
 
   const was_signed = beneficiary?.signature_accepted ?? false;
   const signature_name = signature_accepted ? beneficiary_name : null;
+  const signature_date_input = String(formData.get("signature_date") ?? "").trim();
+  // La date de signature est choisie par l'organisme : les dossiers sont souvent
+  // produits en decale par rapport a la session (retour de Nora, 23/09/2026).
   const signature_date = signature_accepted
-    ? was_signed && beneficiary?.signature_date
-      ? beneficiary.signature_date
-      : new Date().toISOString().slice(0, 10)
+    ? signature_date_input ||
+      (was_signed && beneficiary?.signature_date
+        ? beneficiary.signature_date
+        : new Date().toISOString().slice(0, 10))
     : null;
+  const signature_mode_raw = String(formData.get("signature_mode") ?? "none");
+  const signature_mode =
+    signature_mode_raw === "paper" || signature_mode_raw === "drawn" ? signature_mode_raw : "none";
+  const signature_data_url_input = String(formData.get("signature_data_url") ?? "").trim();
+  const previous_signature_data_url =
+    (beneficiary as { signature_data_url?: string | null } | null)?.signature_data_url ?? null;
+  const signature_data_url =
+    signature_mode === "drawn" ? signature_data_url_input || previous_signature_data_url : null;
 
   const supabase = await createClient();
 
@@ -517,6 +529,8 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
         role: beneficiary_role || null,
         signature_name,
         signature_accepted,
+        signature_mode,
+        signature_data_url,
         signature_date,
         experience_level: experience_level || null,
         current_difficulties: current_difficulties || null,
@@ -543,6 +557,8 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
       role: beneficiary_role || null,
       signature_name,
       signature_accepted,
+      signature_mode,
+      signature_data_url,
       signature_date,
       experience_level: experience_level || null,
       current_difficulties: current_difficulties || null,
