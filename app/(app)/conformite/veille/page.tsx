@@ -6,6 +6,7 @@ import {
   deleteWatchEntry,
   type WatchEntry,
 } from "@/lib/actions/watch";
+import { SubmitButton } from "./submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -160,12 +161,11 @@ export default async function VeillePage({
             </label>
           </div>
 
-          <button
-            type="submit"
+          <SubmitButton
+            label="Enregistrer cette veille"
+            pendingLabel="Enregistrement en cours..."
             className="mt-5 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
-          >
-            Enregistrer cette veille
-          </button>
+          />
         </form>
       ) : null}
 
@@ -202,9 +202,11 @@ export default async function VeillePage({
                 <form action={deleteWatchEntry} className="mt-3">
                   <input type="hidden" name="id" value={entry.id} />
                   <input type="hidden" name="axis_id" value={entry.axis_id} />
-                  <button type="submit" className="text-xs text-gray-400 hover:text-red-600">
-                    Supprimer
-                  </button>
+                  <SubmitButton
+                    label="Supprimer"
+                    pendingLabel="Suppression..."
+                    className="text-xs text-gray-400 hover:text-red-600"
+                  />
                 </form>
               </li>
             ))}
