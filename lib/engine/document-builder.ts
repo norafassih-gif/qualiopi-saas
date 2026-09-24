@@ -467,7 +467,7 @@ function renderSection(
         ? `<ul class="checklist">${section.html_template
             .split("\n")
             .filter(Boolean)
-            .map((line) => `<li>☐ ${escapeHtml(interpolate(line, vars))}</li>`)
+            .map((line) => `<li class="checkline">${escapeHtml(interpolate(line, vars))}</li>`)
             .join("")}</ul>`
         : "";
       break;
@@ -603,7 +603,7 @@ function wrapDocument({
     : "";
   const logoTag = org.logo_url
     ? `<img src="${escapeHtml(org.logo_url)}" alt="${escapeHtml(vars.company_name ?? "Logo")}" style="max-height:20mm; max-width:60mm; margin-bottom:8pt;" />`
-    : "";
+    : `<div class="letterhead-name">${escapeHtml(org.company_name ?? "")}</div>`;
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -629,7 +629,25 @@ ${fontLinkTag}
   .attendance-period { page-break-inside: avoid; margin-bottom: 20pt; }
   .attendance-period + .attendance-period { page-break-before: always; }
   .attendance-period-label { font-weight: 600; color: ${primary}; margin-bottom: 4pt; }
-</style>
+
+    /* Case a cocher dessinee en CSS : le glyphe unicode sortait en carre vide
+       selon la police choisie par le client (audit du 23/09/2026). */
+    li.checkline { list-style: none; margin-left: 0; }
+    li.checkline::before {
+      content: ""; display: inline-block; width: 9px; height: 9px;
+      border: 1px solid #555; border-radius: 1px; margin-right: 7px;
+      vertical-align: baseline;
+    }
+    /* Valeurs longues dans les tableaux : on borne la colonne de libelles et
+       on autorise la cesure plutot que de laisser deborder. */
+    table th { width: 30%; }
+    table td, table th { overflow-wrap: anywhere; font-size: 0.95em; }
+    /* Un bloc de signature ne doit jamais partir seul sur une page. */
+    .signature-block, section:last-of-type { break-inside: avoid; page-break-inside: avoid; }
+  
+    /* Sans logo, le nom de l'organisme fait office de papier a en-tete. */
+    .letterhead-name { font-size: 20px; font-weight: 700; letter-spacing: 0.02em; color: var(--brand, #111); }
+  </style>
 </head>
 <body>
   ${logoTag}
