@@ -83,7 +83,8 @@ type TemplateSection = {
     | "checklist"
     | "signature_block"
     | "attendance_grid"
-    | "org_chart";
+    | "org_chart"
+    | "data_table";
   html_template: string | null;
   source_content_block_type: string | null;
   // "training" (défaut) : blocs réellement retenus pour cette formation via
@@ -91,6 +92,7 @@ type TemplateSection = {
   // ce type dans la banque de contenu, sans lien avec une formation précise
   // (ex. fiches de poste, sources de veille) — cf. migration 0009.
   content_block_scope: "training" | "global";
+  data_source: string | null;
 };
 
 export type BuildDocumentResult =
@@ -175,7 +177,7 @@ export async function buildDocumentHtml(
     supabase.from("document_templates").select("id, label").eq("id", documentTemplateId).maybeSingle(),
     supabase
       .from("document_template_sections")
-      .select("code, title, sort_order, content_type, html_template, source_content_block_type, content_block_scope")
+      .select("code, title, sort_order, content_type, html_template, source_content_block_type, content_block_scope, data_source")
       .eq("document_template_id", documentTemplateId)
       .order("sort_order"),
   ]);
