@@ -612,18 +612,18 @@ function wrapDocument({
 ${fontLinkTag}
 <style>
   @page { margin: 24mm 18mm; }
-  body { font-family: ${font.cssFontFamily}; color: #1f2937; font-size: 11pt; line-height: 1.5; }
-  h1 { color: ${primary}; font-size: 18pt; margin-bottom: 4pt; }
-  .subtitle { color: ${secondary}; font-size: 10pt; margin-bottom: 20pt; }
-  section { margin-bottom: 16pt; }
-  h2 { color: ${primary}; font-size: 12pt; border-bottom: 1px solid ${primary}33; padding-bottom: 4pt; margin-bottom: 8pt; }
+  body { font-family: ${font.cssFontFamily}; color: #1f2937; font-size: 9.5pt; line-height: 1.38; }
+  h1 { color: ${primary}; font-size: 15pt; margin-bottom: 4pt; }
+  .subtitle { color: ${secondary}; font-size: 8.5pt; margin-bottom: 20pt; }
+  section { margin-bottom: 11pt; }
+  h2 { color: ${primary}; font-size: 11pt; border-bottom: 1px solid ${primary}33; padding-bottom: 4pt; margin-bottom: 8pt; }
   p { margin: 0 0 6pt; }
   ul { margin: 0; padding-left: 18pt; }
   li { margin-bottom: 4pt; }
   .empty { color: #6b7280; font-style: italic; }
   table { width: 100%; border-collapse: collapse; margin-top: 4pt; }
-  th, td { text-align: left; padding: 6pt 8pt; border-bottom: 1px solid #e5e7eb; }
-  th { color: ${secondary}; font-weight: 600; font-size: 9pt; text-transform: uppercase; }
+  th, td { text-align: left; padding: 3.5pt 6pt; border-bottom: 1px solid #e5e7eb; }
+  th { color: ${secondary}; font-weight: 600; font-size: 8pt; text-transform: uppercase; }
   .signature-line { margin-top: 24pt; border-top: 1px solid #1f2937; width: 60mm; padding-top: 4pt; }
   .signature-visuals { display: flex; align-items: flex-end; gap: 12pt; margin-top: 10pt; }
   .attendance-period { page-break-inside: avoid; margin-bottom: 20pt; }
@@ -646,7 +646,17 @@ ${fontLinkTag}
     .signature-block, section:last-of-type { break-inside: avoid; page-break-inside: avoid; }
   
     /* Sans logo, le nom de l'organisme fait office de papier a en-tete. */
-    .letterhead-name { font-size: 20px; font-weight: 700; letter-spacing: 0.02em; color: var(--brand, #111); }
+    .letterhead-name { font-size: 17px; font-weight: 700; letter-spacing: 0.02em; color: var(--brand, #111); }
+  
+    /* Densite revue le 24/09/2026 : les documents partaient sur deux pages
+       pour quelques lignes, et les cellules se chevauchaient. */
+    table { width: 100%; border-collapse: collapse; margin: 6pt 0; }
+    table td, table th { vertical-align: top; line-height: 1.3; }
+    p { margin: 0 0 5pt; }
+    ul, ol { margin: 0 0 6pt; padding-left: 16pt; }
+    li { margin-bottom: 2pt; }
+    h1 { margin-bottom: 2pt; }
+    h2 { margin: 0 0 5pt; }
   </style>
 </head>
 <body>
