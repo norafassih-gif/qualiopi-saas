@@ -200,6 +200,7 @@ export function resolveDocumentVariables(input: {
   beneficiarySignatureName?: string | null;
   beneficiarySignatureAccepted?: boolean;
   beneficiarySignatureDate?: string | null;
+  beneficiarySignatureDataUrl?: string | null;
   evaluationResult?: EvaluationResultForVariables;
   partner?: Partner | null;
   /**
@@ -235,6 +236,7 @@ export function resolveDocumentVariables(input: {
     beneficiarySignatureName = null,
     beneficiarySignatureAccepted = false,
     beneficiarySignatureDate = null,
+    beneficiarySignatureDataUrl = null,
     evaluationResult = null,
     partner = null,
     generatedDate = null,
@@ -370,11 +372,17 @@ export function resolveDocumentVariables(input: {
     // saisis sur /parametres/session. Tant que non signe, on retrouve
     // exactement le texte a completer a la main affiche auparavant dans les
     // modeles (convention, contrat, dossier admission...).
-    student_signature_block: beneficiarySignatureAccepted && beneficiarySignatureName
-      ? `Signature électronique enregistrée<br/><strong>${beneficiarySignatureName}</strong> — le ${formatDate(beneficiarySignatureDate)}<br/>(mention « Lu et approuvé »)`
-      : `Date et signature (précédée de la mention manuscrite « Lu et approuvé ») :<br/><br/><br/>`,
-    student_signature_status: beneficiarySignatureAccepted && beneficiarySignatureName
-      ? `le ${formatDate(beneficiarySignatureDate)}, par ${beneficiarySignatureName} (« Lu et approuvé »)`
+    // Trois cas, jamais de mention "signature electronique" pour une signature
+    // qui n'a pas ete capturee dans l'outil (correctif du 23/09/2026).
+    student_signature_block: beneficiarySignatureDataUrl
+      ? `<img src="${beneficiarySignatureDataUrl}" alt="Signature du stagiaire" style="max-height:70px;display:block;margin:4px 0" />` +
+        `<strong>${beneficiarySignatureName ?? ""}</strong>` +
+        (beneficiarySignatureDate ? `<br/>Signé le ${formatDate(beneficiarySignatureDate)}` : "")
+      : beneficiarySignatureAccepted && beneficiarySignatureDate
+        ? `<strong>${beneficiarySignatureName ?? ""}</strong><br/>Signé le ${formatDate(beneficiarySignatureDate)}`
+        : `Date et signature du stagiaire<br/>……………………………………`,
+    student_signature_status: beneficiarySignatureDate
+      ? `le ${formatDate(beneficiarySignatureDate)}`
       : "……………………",
     participant_count: beneficiaryCount > 0 ? String(beneficiaryCount) : "1",
 
