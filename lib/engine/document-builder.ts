@@ -529,7 +529,7 @@ function renderSection(
       body = "";
   }
 
-  return `<section><h2>${escapeHtml(section.title)}</h2>${body}</section>`;
+  return `<section>${section.code === "header" || !section.title ? "" : `<h2>${escapeHtml(section.title)}</h2>`}${body}</section>`;
 }
 
 /**
