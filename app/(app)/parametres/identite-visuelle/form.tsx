@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { updateBranding, type BrandingFormState } from "@/lib/actions/branding";
 import type { Organization } from "@/lib/actions/organization";
 import { FONT_OPTIONS } from "@/lib/engine/branding-fonts";
@@ -9,6 +9,26 @@ const initialState: BrandingFormState = { error: null };
 
 export function BrandingForm({ org }: { org: Organization }) {
   const [state, formAction, pending] = useActionState(updateBranding, initialState);
+  // Retour visuel demande par Nora (23/09/2026) : sans cela, on clique, le
+  // selecteur de fichier s'ouvre, et plus rien n'indique ce qui a ete choisi
+  // ni si l'enregistrement a fonctionne.
+  const [fileNames, setFileNames] = useState<Record<string, string>>({});
+  const [justSaved, setJustSaved] = useState(false);
+  const wasPending = useRef(false);
+  useEffect(() => {
+    if (wasPending.current && !pending && !state.error) {
+      setJustSaved(true);
+      setFileNames({});
+      const timer = setTimeout(() => setJustSaved(false), 6000);
+      wasPending.current = pending;
+      return () => clearTimeout(timer);
+    }
+    wasPending.current = pending;
+  }, [pending, state.error]);
+  function pickFile(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    setFileNames((previous) => ({ ...previous, [event.target.name]: file ? file.name : "" }));
+  }
 
   const formRef = useRef<HTMLFormElement>(null);
   const intentRef = useRef<HTMLInputElement>(null);
@@ -104,7 +124,9 @@ export function BrandingForm({ org }: { org: Organization }) {
 
         <label className="flex flex-col gap-1 text-sm">
           {org.logo_url ? "Remplacer le logo" : "Envoyer un logo"}
-          <input type="file" name="logo" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="text-sm" />
+          <input type="file" name="logo" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="text-sm" onChange={pickFile}
+/>
+<span className="text-xs text-gray-600">{fileNames["logo"] ? `Fichier choisi : ${fileNames["logo"]} — cliquez sur Enregistrer pour le valider` : "Aucun fichier choisi"}</span>
           <span className="text-xs text-gray-500">PNG, JPEG, SVG ou WebP — 2 Mo maximum.</span>
         </label>
       </fieldset>
@@ -135,7 +157,9 @@ export function BrandingForm({ org }: { org: Organization }) {
 
         <label className="flex flex-col gap-1 text-sm">
           {org.stamp_url ? "Remplacer le cachet" : "Envoyer un cachet"}
-          <input type="file" name="stamp" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="text-sm" />
+          <input type="file" name="stamp" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="text-sm" onChange={pickFile}
+/>
+<span className="text-xs text-gray-600">{fileNames["stamp"] ? `Fichier choisi : ${fileNames["stamp"]} — cliquez sur Enregistrer pour le valider` : "Aucun fichier choisi"}</span>
           <span className="text-xs text-gray-500">
             Idéalement en PNG avec fond transparent — PNG, JPEG, SVG ou WebP, 2 Mo maximum.
           </span>
@@ -198,7 +222,9 @@ export function BrandingForm({ org }: { org: Organization }) {
             name="signature_file"
             accept="image/png,image/jpeg,image/svg+xml,image/webp"
             className="text-sm"
-          />
+          onChange={pickFile}
+/>
+<span className="text-xs text-gray-600">{fileNames["signature_file"] ? `Fichier choisi : ${fileNames["signature_file"]} — cliquez sur Enregistrer pour le valider` : "Aucun fichier choisi"}</span>
           <span className="text-xs text-gray-500">
             PNG, JPEG, SVG ou WebP — 2 Mo maximum. Prioritaire sur le dessin si les deux sont fournis.
           </span>
@@ -256,6 +282,21 @@ export function BrandingForm({ org }: { org: Organization }) {
           {state.error}
         </p>
       )}
+
+      {justSaved ? (
+
+
+        <p className="rounded-md bg-green-50 px-4 py-3 text-sm text-green-800">
+
+
+          Identité visuelle enregistrée. Logo, signature et cachet sont maintenant repris automatiquement dans vos documents.
+
+
+        </p>
+
+
+      ) : null}
+
 
       <button type="submit" disabled={pending} className="mt-2 rounded-md bg-blue-900 px-4 py-2 text-white disabled:opacity-50">
         {pending ? "Enregistrement…" : "Enregistrer"}
