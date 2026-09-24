@@ -82,7 +82,8 @@ type TemplateSection = {
     | "content_block_list"
     | "checklist"
     | "signature_block"
-    | "attendance_grid";
+    | "attendance_grid"
+    | "org_chart";
   html_template: string | null;
   source_content_block_type: string | null;
   // "training" (défaut) : blocs réellement retenus pour cette formation via
@@ -472,6 +473,29 @@ function renderSection(
         : "";
       break;
 
+    // Organigramme fonctionnel schematise : l'indicateur 21 attend un schema,
+    // pas une liste. Pour un organisme individuel, le meme nom apparait dans
+    // chaque fonction, ce qui est exactement ce que l'auditeur veut voir.
+    case "org_chart": {
+      const chief = vars.manager_name || vars.company_name || "";
+      const roles: Array<[string, string]> = [
+        ["Référent pédagogique", vars.pedagogical_referent || vars.pedagogical_referent_name || chief],
+        ["Référent qualité", vars.quality_referent || vars.quality_referent_name || chief],
+        ["Référent handicap", vars.disability_referent || vars.disability_referent_name || chief],
+        ["Référent administratif", vars.administrative_referent_name || chief],
+      ];
+      const cell = (role: string, name: string) =>
+        `<td class="orgbox"><span class="orgrole">${escapeHtml(role)}</span><span class="orgname">${escapeHtml(name)}</span></td>`;
+      body =
+        `<table class="orgchart"><tbody>` +
+        `<tr><td class="orgbox orgtop" colspan="4"><span class="orgrole">Direction</span>` +
+        `<span class="orgname">${escapeHtml(chief)}</span></td></tr>` +
+        `<tr><td class="orgstem" colspan="4"></td></tr>` +
+        `<tr>${roles.map(([role, name]) => cell(role, name)).join("")}</tr>` +
+        `</tbody></table>` +
+        `<p class="orgnote">Les fonctions portées par la même personne sont signalées par la répétition de son nom.</p>`;
+      break;
+    }
     case "signature_block": {
       // Cachet + signature électronique de l'organisme (cf. migration
       // 0029_cachet_signature.sql), injectés automatiquement dès qu'ils sont
@@ -657,6 +681,15 @@ ${fontLinkTag}
     li { margin-bottom: 2pt; }
     h1 { margin-bottom: 2pt; }
     h2 { margin: 0 0 5pt; }
+  
+    /* Organigramme schematise (indicateur 21). */
+    table.orgchart { width: 100%; border-collapse: separate; border-spacing: 6pt; margin: 6pt 0 2pt; }
+    .orgbox { border: 1px solid ${primary}; border-radius: 3pt; padding: 5pt 4pt; text-align: center; vertical-align: middle; }
+    .orgtop { background: #f3f4f6; }
+    .orgrole { display: block; font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.04em; color: ${secondary}; }
+    .orgname { display: block; font-weight: 600; font-size: 9pt; margin-top: 2pt; }
+    .orgstem { height: 10pt; border-left: 1px solid ${primary}; width: 0; }
+    .orgnote { font-size: 7.5pt; color: #6b7280; font-style: italic; }
   </style>
 </head>
 <body>
