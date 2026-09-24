@@ -204,6 +204,7 @@ export async function buildDocumentHtml(
   let beneficiarySignatureName: string | null = null;
   let beneficiarySignatureAccepted = false;
   let beneficiarySignatureDate: string | null = null;
+  let beneficiarySignatureDataUrl: string | null = null;
   // Recueil des besoins digitalisé (demande de Nora, 24/08/2026) — cf.
   // lib/actions/session.ts (type Beneficiary) et lib/engine/document-variables.ts.
   let beneficiaryExperienceLevel: string | null = null;
@@ -263,6 +264,7 @@ export async function buildDocumentHtml(
       beneficiarySignatureName = beneficiary.signature_name;
       beneficiarySignatureAccepted = beneficiary.signature_accepted;
       beneficiarySignatureDate = beneficiary.signature_date;
+      beneficiarySignatureDataUrl = (beneficiary as { signature_data_url?: string | null }).signature_data_url ?? null;
       beneficiaryExperienceLevel = beneficiary.experience_level;
       beneficiaryCurrentDifficulties = beneficiary.current_difficulties;
       beneficiaryPersonalExpectations = beneficiary.personal_expectations;
@@ -328,6 +330,7 @@ export async function buildDocumentHtml(
     beneficiaryCount,
     beneficiarySignatureName,
     beneficiarySignatureAccepted,
+    beneficiarySignatureDataUrl,
     beneficiarySignatureDate,
     beneficiaryExperienceLevel,
     beneficiaryCurrentDifficulties,
