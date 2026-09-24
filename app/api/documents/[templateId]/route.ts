@@ -63,6 +63,32 @@ export async function GET(
     );
   }
 
+  // Controle bloquant avant generation : mieux vaut refuser que produire 41
+  // PDF a refaire (retour de Nora, 24/09/2026). On ne bloque que sur les
+  // informations sans lesquelles le document est faux ou inutilisable.
+  const requiredOrgFields: Array<[unknown, string]> = [
+    [org.company_name, "Raison sociale (Mon entreprise)"],
+    [org.siret, "SIRET (Mon entreprise)"],
+    [org.address, "Adresse (Mon entreprise)"],
+    [org.email, "Email de contact (Mon entreprise)"],
+    [org.manager_name, "Nom du dirigeant (Mon entreprise)"],
+  ];
+  const missingBeforeGeneration = requiredOrgFields
+    .filter(([value]) => !value || String(value).trim() === "")
+    .map(([, label]) => label);
+  if (missingBeforeGeneration.length > 0) {
+    return NextResponse.json(
+      {
+        error:
+          "Génération impossible, il manque des informations obligatoires : " +
+          missingBeforeGeneration.join(", ") +
+          ". Complétez-les puis relancez la génération.",
+        missing: missingBeforeGeneration,
+      },
+      { status: 422 }
+    );
+  }
+
   const built = await buildDocumentHtml(templateId, customDate, requestedBeneficiaryId);
   if ("error" in built) {
     return NextResponse.json({ error: built.error }, { status: 400 });
