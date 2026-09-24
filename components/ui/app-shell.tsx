@@ -88,6 +88,11 @@ function AppSidebar({ data, pathname }: { data: SidebarData; pathname: string })
       badgeWarning: data.missingFieldsCount > 0,
     },
     {
+      icon: ShieldCheck,
+      href: "/conformite/veille",
+      label: "Ma veille",
+    },
+    {
       href: data.hasSession ? "/emargement" : "/onboarding/session",
       label: "Émargements",
       icon: PenLine,
