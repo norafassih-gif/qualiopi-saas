@@ -395,6 +395,31 @@ export async function buildDocumentHtml(
     globalBlocksByType.set(block.type, list);
   }
 
+  // Registres de veille : les entrees saisies dans /conformite/veille sont
+  // imprimees dans les procedures correspondantes. Sans cela, le PDF sortait
+  // avec un tableau vide alors que le client avait saisi sa veille.
+  const watchEntriesByAxis = new Map<string, Array<Record<string, string | null>>>();
+  const dataTableSections = sections.filter((s) => s.content_type === "data_table");
+  if (dataTableSections.length > 0) {
+    const axisIds = dataTableSections
+      .map((s) => String(s.data_source ?? "").split(":")[1])
+      .filter((value): value is string => Boolean(value));
+    if (axisIds.length > 0) {
+      const { data: watchRows } = await supabase
+        .from("watch_entries")
+        .select("axis_id, consulted_on, source_name, source_url, title, summary, impact, action_taken, action_status, responsible")
+        .eq("organization_id", org.id)
+        .in("axis_id", axisIds)
+        .order("consulted_on", { ascending: false });
+      for (const row of watchRows ?? []) {
+        const key = String(row.axis_id);
+        const list = watchEntriesByAxis.get(key) ?? [];
+        list.push(row as Record<string, string | null>);
+        watchEntriesByAxis.set(key, list);
+      }
+    }
+  }
+
   const sectionsHtml = sections
     .map((section) =>
       renderSection(
@@ -408,7 +433,8 @@ export async function buildDocumentHtml(
           beneficiaries: attendanceBeneficiaries,
           signatures: attendanceSignatures,
         },
-        isStudentScopedTemplate
+        isStudentScopedTemplate,
+        watchEntriesByAxis
       )
     )
     .join("\n");
@@ -425,7 +451,8 @@ function renderSection(
   globalBlocksByType: Map<string, string[]>,
   moduleRows: { duration_hours: number | null; modules: { title: string } | { title: string }[] | null }[],
   attendance: { periods: AttendancePeriod[]; beneficiaries: Beneficiary[]; signatures: AttendanceSignature[] },
-  isStudentScopedTemplate: boolean
+  isStudentScopedTemplate: boolean,
+  watchEntriesByAxis: Map<string, Array<Record<string, string | null>>> = new Map()
 ): string {
   let body: string;
 
@@ -476,6 +503,31 @@ function renderSection(
     // Organigramme fonctionnel schematise : l'indicateur 21 attend un schema,
     // pas une liste. Pour un organisme individuel, le meme nom apparait dans
     // chaque fonction, ce qui est exactement ce que l'auditeur veut voir.
+    // Registre de veille imprime a partir des entrees reelles.
+    case "data_table": {
+      const axis = String(section.data_source ?? "").split(":")[1] ?? "";
+      const rows = watchEntriesByAxis.get(axis) ?? [];
+      if (rows.length === 0) {
+        body =
+          `<p class="emptyregister">Aucune entrée enregistrée à ce jour. Ce registre se remplit depuis votre espace Conformité, rubrique « Ma veille ».</p>`;
+        break;
+      }
+      const head =
+        `<tr><th>Date</th><th>Source</th><th>Thème</th><th>Impact identifié</th><th>Action mise en place</th><th>Responsable</th></tr>`;
+      const lines = rows
+        .map(
+          (row) =>
+            `<tr><td>${escapeHtml(String(row.consulted_on ?? "").split("-").reverse().join("/"))}</td>` +
+            `<td>${escapeHtml(row.source_name ?? "")}</td>` +
+            `<td>${escapeHtml(row.title ?? "")}</td>` +
+            `<td>${escapeHtml(row.impact ?? row.summary ?? "")}</td>` +
+            `<td>${escapeHtml(row.action_taken ?? "À exploiter")}</td>` +
+            `<td>${escapeHtml(row.responsible ?? "")}</td></tr>`
+        )
+        .join("");
+      body = `<table class="register"><thead>${head}</thead><tbody>${lines}</tbody></table>`;
+      break;
+    }
     case "org_chart": {
       const chief = vars.manager_name || vars.company_name || "";
       const roles: Array<[string, string]> = [
@@ -690,6 +742,12 @@ ${fontLinkTag}
     .orgname { display: block; font-weight: 600; font-size: 9pt; margin-top: 2pt; }
     .orgstem { height: 10pt; border-left: 1px solid ${primary}; width: 0; }
     .orgnote { font-size: 7.5pt; color: #6b7280; font-style: italic; }
+  
+    /* Registre de veille imprime : beaucoup de colonnes, donc plus compact. */
+    table.register { font-size: 7.8pt; }
+    table.register th { width: auto; background: #f9fafb; }
+    table.register td { line-height: 1.25; }
+    .emptyregister { font-size: 8.5pt; color: #6b7280; font-style: italic; border: 1px dashed #d1d5db; padding: 6pt; }
   </style>
 </head>
 <body>
