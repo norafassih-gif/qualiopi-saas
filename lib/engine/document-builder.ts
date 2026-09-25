@@ -718,8 +718,9 @@ ${fontLinkTag}
     }
     /* Valeurs longues dans les tableaux : on borne la colonne de libelles et
        on autorise la cesure plutot que de laisser deborder. */
-    table th { width: 30%; }
-    table td, table th { overflow-wrap: anywhere; font-size: 0.95em; }
+    /* Pas de largeur imposee : sur un tableau a 8 colonnes, forcer 30% par en-tete
+       ecrasait les colonnes suivantes et empilait les lettres a la verticale. */
+    table td, table th { overflow-wrap: break-word; word-break: normal; hyphens: auto; font-size: 0.95em; }
     /* Un bloc de signature ne doit jamais partir seul sur une page. */
     .signature-block, section:last-of-type { break-inside: avoid; page-break-inside: avoid; }
   
