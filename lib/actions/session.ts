@@ -329,6 +329,7 @@ export async function createSession(
   const location = String(formData.get("location") || "").trim();
   const beneficiary_name = String(formData.get("beneficiary_name") || "").trim();
   const beneficiary_company = String(formData.get("beneficiary_company") || "").trim();
+  const beneficiary_company_representative = String(formData.get("beneficiary_company_representative") ?? "").trim();
   const beneficiary_email = String(formData.get("beneficiary_email") || "").trim();
   const beneficiary_role = String(formData.get("beneficiary_role") || "").trim();
 
@@ -384,6 +385,7 @@ export async function createSession(
     session_id: session.id,
     full_name: beneficiary_name,
     company: beneficiary_company || null,
+    company_representative: beneficiary_company_representative || null,
     email: beneficiary_email || null,
     role: beneficiary_role || null,
   });
@@ -430,6 +432,7 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
   const location = String(formData.get("location") || "").trim();
   const beneficiary_name = String(formData.get("beneficiary_name") || "").trim();
   const beneficiary_company = String(formData.get("beneficiary_company") || "").trim();
+  const beneficiary_company_representative = String(formData.get("beneficiary_company_representative") ?? "").trim();
   const beneficiary_email = String(formData.get("beneficiary_email") || "").trim();
   const beneficiary_role = String(formData.get("beneficiary_role") || "").trim();
 
@@ -525,6 +528,7 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
       .update({
         full_name: beneficiary_name,
         company: beneficiary_company || null,
+        company_representative: beneficiary_company_representative || null,
         email: beneficiary_email || null,
         role: beneficiary_role || null,
         signature_name,
@@ -553,6 +557,7 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
       session_id: session.id,
       full_name: beneficiary_name,
       company: beneficiary_company || null,
+      company_representative: beneficiary_company_representative || null,
       email: beneficiary_email || null,
       role: beneficiary_role || null,
       signature_name,
