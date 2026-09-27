@@ -46,8 +46,12 @@ export function GenerateAllButton({
   templateIds,
   studentScopedTemplateIds,
   beneficiaries,
+  sessionStart,
+  sessionEnd,
 }: {
   templateIds: string[];
+  sessionStart?: string | null;
+  sessionEnd?: string | null;
   /**
    * Modèles "par apprenant" (STUDENT_SCOPED_TEMPLATE_IDS, cf.
    * lib/engine/document-variables.ts) — un exemplaire distinct doit être
@@ -139,6 +143,23 @@ export function GenerateAllButton({
             disabled={pending}
             className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 disabled:opacity-50"
           />
+          {/* Rappel affiche AVANT la generation : la coherence des dates est le
+              premier point regarde en audit (relecture auditeur, 27/09/2026). */}
+          <p className="mt-1 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            <strong>La date doit correspondre à la phase du document.</strong>
+            {sessionStart ? (
+              <>
+                {" "}Devis, convention, contrat, convocation, dossier d&apos;admission, recueil des besoins,
+                livret, règlement intérieur, charte et programme : <strong>avant le{" "}
+                {sessionStart.split("-").reverse().join("/")}</strong>. Émargement et évaluation en cours :
+                pendant la session. Attestation, évaluation finale et satisfaction :{" "}
+                <strong>après le {(sessionEnd ?? sessionStart).split("-").reverse().join("/")}</strong>.
+              </>
+            ) : (
+              <>{" "}Les documents préalables se datent avant le début de la formation, le suivi pendant, et les documents de clôture après la fin.</>
+            )}
+            {" "}La génération est bloquée si la date ne correspond pas.
+          </p>
         </label>
       </div>
       <button
