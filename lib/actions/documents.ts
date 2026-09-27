@@ -69,6 +69,7 @@ export async function listDocumentTemplatesWithStatus(): Promise<DocumentTemplat
       id: t.id,
       label: t.label,
       folder_group: t.folder_group,
+      tip: t.tip ?? null,
       linked_indicator_numbers: t.linked_indicator_numbers ?? [],
       sort_order: t.sort_order,
       generated: agg?.anyGenerated ?? false,
