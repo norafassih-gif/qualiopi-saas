@@ -98,6 +98,8 @@ export default async function DocumentsPage() {
             templateIds={templates.map((t) => t.id)}
             studentScopedTemplateIds={[...studentScopedIds]}
             beneficiaries={beneficiaries.map((b) => ({ id: b.id, full_name: b.full_name }))}
+            sessionStart={session?.start_date ?? null}
+            sessionEnd={session?.end_date ?? null}
           />
           <p className="text-xs text-gray-500">
             Génère (ou régénère) chaque document, puis télécharge automatiquement le ZIP complet — utile
