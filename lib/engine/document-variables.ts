@@ -179,6 +179,7 @@ export function resolveDocumentVariables(input: {
   session: TrainingSession | null;
   beneficiaryName: string | null;
   beneficiaryCompany: string | null;
+  beneficiaryCompanyRepresentative?: string | null;
   beneficiaryEmail?: string | null;
   beneficiaryRole?: string | null;
   beneficiaryCount?: number;
@@ -220,6 +221,7 @@ export function resolveDocumentVariables(input: {
     session,
     beneficiaryName,
     beneficiaryCompany,
+    beneficiaryCompanyRepresentative = null,
     beneficiaryEmail = null,
     beneficiaryRole = null,
     beneficiaryCount = 0,
@@ -365,6 +367,7 @@ export function resolveDocumentVariables(input: {
     // identifié (entreprise, OPCO...) — contrairement au contrat de formation
     // particulier, document distinct prévu pour les bénéficiaires individuels.
     student_company_required: required(beneficiaryCompany, "Entreprise du bénéficiaire (cocontractant)"),
+    student_company_representative: beneficiaryCompanyRepresentative || "……………………………",
     student_email: beneficiaryEmail ?? "",
     student_role: beneficiaryRole ?? "",
     // Signature electronique simple du beneficiaire (cf. migration
