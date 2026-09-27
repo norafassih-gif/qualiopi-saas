@@ -7,6 +7,8 @@ export type DocumentTemplateStatus = {
   id: string;
   label: string;
   folder_group: string;
+  /** Astuce affichee sur la carte du document (migration 0062). */
+  tip: string | null;
   linked_indicator_numbers: number[];
   sort_order: number;
   generated: boolean;
@@ -27,7 +29,7 @@ export async function listDocumentTemplatesWithStatus(): Promise<DocumentTemplat
   const [templatesResponse, documentsResponse] = await Promise.all([
     supabase
       .from("document_templates")
-      .select("id, label, folder_group, linked_indicator_numbers, sort_order")
+      .select("id, label, folder_group, tip, linked_indicator_numbers, sort_order")
       .eq("is_active", true)
       .order("sort_order"),
     supabase
