@@ -201,6 +201,7 @@ export async function buildDocumentHtml(
 
   let beneficiaryName: string | null = null;
   let beneficiaryCompany: string | null = null;
+  let beneficiaryCompanyRepresentative: string | null = null;
   let beneficiaryEmail: string | null = null;
   let beneficiaryRole: string | null = null;
   let beneficiaryCount = 0;
@@ -262,6 +263,7 @@ export async function buildDocumentHtml(
       resolvedBeneficiaryId = beneficiary.id;
       beneficiaryName = beneficiary.full_name;
       beneficiaryCompany = beneficiary.company;
+      beneficiaryCompanyRepresentative = (beneficiary as { company_representative?: string | null }).company_representative ?? null;
       beneficiaryEmail = beneficiary.email;
       beneficiaryRole = beneficiary.role;
       beneficiarySignatureName = beneficiary.signature_name;
@@ -328,6 +330,7 @@ export async function buildDocumentHtml(
     session,
     beneficiaryName,
     beneficiaryCompany,
+    beneficiaryCompanyRepresentative,
     beneficiaryEmail,
     beneficiaryRole,
     beneficiaryCount,
