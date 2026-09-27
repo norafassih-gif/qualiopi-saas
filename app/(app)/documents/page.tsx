@@ -144,6 +144,12 @@ export default async function DocumentsPage() {
                             {doc.linked_indicator_numbers.join(", ")}
                           </p>
                         )}
+                        {doc.tip ? (
+                          <p className="mt-2 rounded-md bg-amber-50 px-2 py-1.5 text-xs leading-snug text-amber-900">
+                            <strong>Astuce : </strong>
+                            {doc.tip}
+                          </p>
+                        ) : null}
                         {doc.id === "feuille_emargement" && (
                           <a href="/emargement" className="text-xs font-medium text-blue-900 underline">
                             ✍️ Faire signer les apprenants sur l&apos;écran →
