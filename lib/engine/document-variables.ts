@@ -328,7 +328,7 @@ export function resolveDocumentVariables(input: {
 
     training_name: training.name ?? "",
     training_duration: training.duration_hours != null ? String(training.duration_hours) : "",
-    access_delay: (training as { access_delay?: string | null }).access_delay || "Inscription possible jusqu'à 7 jours avant le démarrage, sous réserve de places disponibles.",
+    access_delay: (training as { access_delay?: string | null }).access_delay || "Inscription possible jusqu'à 1 jour avant le démarrage, sous réserve de places disponibles. En cas de financement par un tiers (OPCO, France Travail), prévoir le délai d'instruction du financeur.",
     training_modality: MODALITY_LABELS[training.modality ?? ""] ?? training.modality ?? "",
     training_audience:
       training.target_audience && training.target_audience.length > 0
