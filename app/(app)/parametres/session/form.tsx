@@ -182,6 +182,12 @@ export function EditSessionForm({
           help="À renseigner si la formation est prise en charge par une entreprise ou un OPCO : ce nom apparaît comme cocontractant sur la convention de formation."
         />
         <Field
+          label="Représentant de l'entreprise (signataire de la convention)"
+          name="beneficiary_company_representative"
+          defaultValue={(beneficiary as { company_representative?: string | null } | null)?.company_representative ?? ""}
+          help="Nom et fonction de la personne qui signe pour l'entreprise cliente. Apparaît dans la convention."
+        />
+        <Field
           label="Email du bénéficiaire (optionnel)"
           name="beneficiary_email"
           type="email"
