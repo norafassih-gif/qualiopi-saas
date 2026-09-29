@@ -736,35 +736,67 @@ function renderAttendanceGrid(
   signatures: AttendanceSignature[]
 ): string {
   if (beneficiaries.length === 0) {
-    return `<p class="empty">Aucun apprenant enregistré pour cette session — complétez d'abord "Ma session".</p>`;
+    return `<p class="empty">Aucun apprenant renseigné pour cette session.</p>`;
   }
   if (periods.length === 0) {
-    return `<p class="empty">Dates de session manquantes — complétez les dates de début/fin sur "Ma session" pour générer la grille d'émargement.</p>`;
+    return `<p class="empty">Dates de session non renseignées : la feuille ne peut pas être générée.</p>`;
   }
 
-  const signatureByKey = new Map<string, AttendanceSignature>();
-  for (const sig of signatures) {
-    signatureByKey.set(`${sig.beneficiary_id}|${sig.period_date}|${sig.period_slot}`, sig);
-  }
+  // Une seule feuille : les demi-journees en colonnes, les apprenants en
+  // lignes. Retour de Nora (24/09/2026) : une page par demi-journee rendait
+  // la feuille illisible et inutilement longue.
+  const slotLabel = (slot: string) => (slot === "matin" ? "Matin" : "Après-midi");
+  const dayLabel = (iso: string) => {
+    const parts = String(iso).split("-");
+    return parts.length === 3 ? parts[2] + "/" + parts[1] : String(iso);
+  };
 
-  return periods
-    .map((period) => {
-      const rows = beneficiaries
-        .map((b, index) => {
-          const sig = signatureByKey.get(`${b.id}|${period.date}|${period.slot}`);
-          const cell = sig
-            ? `<img src="${sig.signature_data_url}" alt="Signature" style="max-height:14mm; max-width:40mm;" />`
-            : "";
-          return `<tr><td>${index + 1}</td><td>${escapeHtml(b.full_name)}</td><td>${cell}</td></tr>`;
+  const signatureFor = (beneficiaryId: string, period: AttendancePeriod) =>
+    signatures.find(
+      (s) =>
+        String((s as { beneficiary_id?: string }).beneficiary_id ?? "") === beneficiaryId &&
+        String((s as { period_date?: string }).period_date ?? "") === period.date &&
+        String((s as { period_slot?: string }).period_slot ?? "") === period.slot
+    );
+
+  const head =
+    "<tr><th class=\"attname\">Nom et prénom</th>" +
+    periods
+      .map(
+        (p) =>
+          "<th>" + escapeHtml(dayLabel(p.date)) + "<br/><span class=\"attslot\">" +
+          escapeHtml(slotLabel(String(p.slot))) + "</span></th>"
+      )
+      .join("") +
+    "</tr>";
+
+  const rows = beneficiaries
+    .map((b) => {
+      const cells = periods
+        .map((p) => {
+          const sig = signatureFor(String(b.id), p);
+          const url = sig ? (sig as { signature_data_url?: string | null }).signature_data_url : null;
+          const content = url
+            ? "<img src=\"" + String(url) + "\" alt=\"signature\" class=\"attsig\" />"
+            : "&nbsp;";
+          return "<td class=\"attcell\">" + content + "</td>";
         })
         .join("");
-      return `<div class="attendance-period">
-        <p class="attendance-period-label">${escapeHtml(formatPeriodLabel(period))}</p>
-        <table><thead><tr><th>N°</th><th>Nom et prénom</th><th>Signature</th></tr></thead><tbody>${rows}</tbody></table>
-        <p style="margin-top:8pt;">Signature du formateur / de la formatrice : ……………………………</p>
-      </div>`;
+      return "<tr><td class=\"attname\">" + escapeHtml(b.full_name ?? "") + "</td>" + cells + "</tr>";
     })
     .join("");
+
+  const trainerRow =
+    "<tr><td class=\"attname\">Formateur ou formatrice</td>" +
+    periods.map(() => "<td class=\"attcell\">&nbsp;</td>").join("") +
+    "</tr>";
+
+  return (
+    "<table class=\"attendance\"><thead>" + head + "</thead><tbody>" + rows + trainerRow +
+    "</tbody></table>" +
+    "<p class=\"attnote\">Chaque case est signée par la personne concernée pour la demi-journée correspondante. " +
+    "Toute absence est mentionnée par la mention « absent » dans la case.</p>"
+  );
 }
 
 function wrapDocument({
@@ -862,6 +894,15 @@ ${fontLinkTag}
     table.register th { width: auto; background: #f9fafb; }
     table.register td { line-height: 1.25; }
     .emptyregister { font-size: 8.5pt; color: #6b7280; font-style: italic; border: 1px dashed #d1d5db; padding: 6pt; }
+  
+    /* Emargement sur une seule feuille : demi-journees en colonnes. */
+    table.attendance { font-size: 8pt; table-layout: fixed; }
+    table.attendance th { background: #f9fafb; text-align: center; font-size: 7.5pt; }
+    table.attendance .attslot { font-weight: 400; font-size: 6.8pt; color: #6b7280; }
+    table.attendance .attname { text-align: left; width: 38mm; }
+    table.attendance .attcell { height: 13mm; text-align: center; vertical-align: middle; }
+    table.attendance .attsig { max-height: 12mm; max-width: 100%; }
+    .attnote { font-size: 7.5pt; color: #6b7280; font-style: italic; }
   </style>
 </head>
 <body>
