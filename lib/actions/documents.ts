@@ -9,6 +9,8 @@ export type DocumentTemplateStatus = {
   folder_group: string;
   /** Astuce affichee sur la carte du document (migration 0062). */
   tip: string | null;
+  /** Date choisie lors de la derniere generation (migration 0070). */
+  document_date: string | null;
   linked_indicator_numbers: number[];
   sort_order: number;
   generated: boolean;
@@ -34,7 +36,7 @@ export async function listDocumentTemplatesWithStatus(): Promise<DocumentTemplat
       .order("sort_order"),
     supabase
       .from("documents")
-      .select("document_template_id, status, generated_at")
+      .select("document_template_id, status, generated_at, document_date")
       .eq("organization_id", org.id),
   ]);
 
@@ -60,6 +62,9 @@ export async function listDocumentTemplatesWithStatus(): Promise<DocumentTemplat
         agg.latestGeneratedAt = row.generated_at;
       }
     }
+    if (row.document_date) {
+      (agg as { document_date?: string | null }).document_date = String(row.document_date);
+    }
     aggByTemplateId.set(row.document_template_id, agg);
   }
 
@@ -70,6 +75,7 @@ export async function listDocumentTemplatesWithStatus(): Promise<DocumentTemplat
       label: t.label,
       folder_group: t.folder_group,
       tip: t.tip ?? null,
+    document_date: (aggByTemplateId.get(t.id) as { document_date?: string | null } | undefined)?.document_date ?? null,
       linked_indicator_numbers: t.linked_indicator_numbers ?? [],
       sort_order: t.sort_order,
       generated: agg?.anyGenerated ?? false,
