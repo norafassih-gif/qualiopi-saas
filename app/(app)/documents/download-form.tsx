@@ -6,8 +6,11 @@ import { useState, type FormEvent } from "react";
 export function DocumentDownloadForm({
   templateId,
   beneficiaries,
+  defaultDate,
 }: {
   templateId: string;
+  /** Date saisie en haut de page, appliquee par defaut a chaque document. */
+  defaultDate?: string;
   beneficiaries: { id: string; full_name: string }[];
 }) {
   const router = useRouter();
@@ -87,6 +90,7 @@ export function DocumentDownloadForm({
         <input
           type="date"
           name="date"
+        defaultValue={defaultDate ?? ""}
           aria-label="Date à afficher sur le document (optionnel — aujourd'hui par défaut)"
           className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700"
         />
