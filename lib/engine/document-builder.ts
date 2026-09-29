@@ -831,6 +831,7 @@ function wrapDocument({
 <head>
 <meta charset="utf-8" />
 ${fontLinkTag}
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500&display=swap" />
 <style>
   @page { margin: 24mm 18mm; }
   body { font-family: ${font.cssFontFamily}; color: #1f2937; font-size: 9.5pt; line-height: 1.38; }
@@ -903,6 +904,12 @@ ${fontLinkTag}
     table.attendance .attcell { height: 13mm; text-align: center; vertical-align: middle; }
     table.attendance .attsig { max-height: 12mm; max-width: 100%; }
     .attnote { font-size: 7.5pt; color: #6b7280; font-style: italic; }
+  
+    /* Mention manuscrite "Lu et approuve" au-dessus de la signature. */
+    .handwritten {
+      display: block; font-family: "Caveat", cursive; font-size: 15pt;
+      color: #111827; line-height: 1.1; margin-bottom: 1pt;
+    }
   </style>
 </head>
 <body>
