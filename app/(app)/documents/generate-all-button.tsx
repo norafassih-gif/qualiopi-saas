@@ -94,7 +94,13 @@ export function GenerateAllButton({
     for (let i = 0; i < jobs.length; i++) {
       const { templateId, beneficiaryId } = jobs[i];
       const params = new URLSearchParams();
-      if (date) params.set("date", date);
+      // Chaque carte peut porter sa propre date (emargement, evaluations). On la lit
+      // directement sur la carte : un seul bouton suffit alors pour tout sortir.
+      const cardInput = typeof document !== "undefined"
+        ? (document.querySelector(`input[type="date"][data-template-id="${templateId}"]`) as HTMLInputElement | null)
+        : null;
+      const effectiveDate = cardInput?.value || date;
+      if (effectiveDate) params.set("date", effectiveDate);
       if (beneficiaryId) params.set("beneficiary_id", beneficiaryId);
       const queryString = params.toString();
       try {
