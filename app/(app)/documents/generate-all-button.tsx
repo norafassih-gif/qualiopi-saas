@@ -152,7 +152,15 @@ export function GenerateAllButton({
           setDate(value);
           // La date du haut se propage a toutes les cartes ci-dessous ; chacune
           // reste modifiable ensuite (demande de Nora, 29/09/2026).
-          router.replace(value ? `/documents?date=${value}` : "/documents", { scroll: false });
+          // La date du haut ecrase toutes les cartes : c'est le point de depart commun,
+          // chaque carte restant modifiable ensuite (retour de Nora, 30/09/2026).
+                    if (typeof document !== "undefined") {
+                      document
+                        .querySelectorAll<HTMLInputElement>('input[type="date"][data-template-id]')
+                        .forEach((input) => {
+                          input.value = value;
+                        });
+                    }
         }}
             disabled={pending}
             className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 disabled:opacity-50"
