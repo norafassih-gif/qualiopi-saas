@@ -151,6 +151,22 @@ export function FormationSettingsForm({ training }: { training: Training }) {
           ))}
         </div>
       </div>
+      
+      <label className="block text-sm">
+        <span className="text-gray-700">Délai d&apos;accès</span>
+        <textarea
+          name="access_delay"
+          rows={2}
+          defaultValue={(training as { access_delay?: string | null }).access_delay ?? ""}
+          placeholder="Inscription possible jusqu'à 1 jour avant le démarrage, sous réserve de places disponibles."
+          className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+        />
+        <span className="mt-1 block text-xs text-gray-500">
+          Temps entre la demande d&apos;inscription et l&apos;entrée en formation. Mention obligatoire
+          de l&apos;indicateur 1, affichée sur le programme. Si vous laissez vide, une formulation par
+          défaut est utilisée.
+        </span>
+      </label>
 
       {state.error && (
         <p className="text-sm text-red-600" role="alert">
