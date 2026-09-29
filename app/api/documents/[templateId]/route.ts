@@ -217,6 +217,7 @@ export async function GET(
 
     const documentFields = {
       organization_id: org.id,
+      document_date: documentDate,
       training_id: trainingId,
       session_id: session?.id ?? null,
       document_template_id: templateId,
