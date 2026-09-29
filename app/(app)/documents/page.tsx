@@ -36,7 +36,12 @@ const FOLDER_ORDER = [
   "08_Amelioration",
 ];
 
-export default async function DocumentsPage() {
+export default async function DocumentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string }>;
+}) {
+  const { date: globalDate } = await searchParams;
   const org = await getMyOrganization();
   if (!org) {
     redirect("/onboarding/entreprise");
@@ -95,6 +100,7 @@ export default async function DocumentsPage() {
       {!("error" in templates) && templates.length > 0 && (
         <div className="mb-6">
           <GenerateAllButton
+            initialDate={globalDate}
             templateIds={templates.map((t) => t.id)}
             studentScopedTemplateIds={[...studentScopedIds]}
             beneficiaries={beneficiaries.map((b) => ({ id: b.id, full_name: b.full_name }))}
@@ -171,6 +177,7 @@ export default async function DocumentsPage() {
                           {doc.generated ? "✅ Généré" : "❌ Non généré"}
                         </span>
                         <DocumentDownloadForm
+                          defaultDate={globalDate}
                           templateId={doc.id}
                           beneficiaries={studentScopedIds.includes(doc.id) ? beneficiaries : []}
                         />
