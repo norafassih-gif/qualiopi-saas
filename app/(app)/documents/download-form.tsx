@@ -90,6 +90,7 @@ export function DocumentDownloadForm({
         <input
           type="date"
           name="date"
+        data-template-id={templateId}
         defaultValue={defaultDate ?? ""}
           aria-label="Date à afficher sur le document (optionnel — aujourd'hui par défaut)"
           className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700"
