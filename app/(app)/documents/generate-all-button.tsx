@@ -48,8 +48,10 @@ export function GenerateAllButton({
   beneficiaries,
   sessionStart,
   sessionEnd,
+  initialDate,
 }: {
   templateIds: string[];
+  initialDate?: string;
   sessionStart?: string | null;
   sessionEnd?: string | null;
   /**
@@ -66,7 +68,7 @@ export function GenerateAllButton({
   const [pending, setPending] = useState(false);
   const [done, setDone] = useState(0);
   const [failedLabels, setFailedLabels] = useState<string[]>([]);
-  const [date, setDate] = useState(() => todayIsoDate());
+  const [date, setDate] = useState(() => initialDate || todayIsoDate());
 
   // Construit la liste réelle des documents à générer : un par modèle "de
   // session", et un par (modèle "par apprenant" × bénéficiaire) — sinon
@@ -139,7 +141,13 @@ export function GenerateAllButton({
           <input
             type="date"
             value={date}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(e) => {
+          const value = e.target.value;
+          setDate(value);
+          // La date du haut se propage a toutes les cartes ci-dessous ; chacune
+          // reste modifiable ensuite (demande de Nora, 29/09/2026).
+          router.replace(value ? `/documents?date=${value}` : "/documents", { scroll: false });
+        }}
             disabled={pending}
             className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 disabled:opacity-50"
           />
