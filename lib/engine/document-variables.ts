@@ -378,15 +378,21 @@ export function resolveDocumentVariables(input: {
     // modeles (convention, contrat, dossier admission...).
     // Trois cas, jamais de mention "signature electronique" pour une signature
     // qui n'a pas ete capturee dans l'outil (correctif du 23/09/2026).
+    // La date de signature suit la date du document : un dossier ou toutes les
+    // signatures portent la meme date alors que les documents sont dates
+    // differemment n'est pas credible (retour de Nora, 29/09/2026).
     student_signature_block: beneficiarySignatureDataUrl
-      ? `<img src="${beneficiarySignatureDataUrl}" alt="Signature du stagiaire" style="max-height:70px;display:block;margin:4px 0" />` +
+      ? `<span class="handwritten">Lu et approuvé</span>` +
+        `<img src="${beneficiarySignatureDataUrl}" alt="Signature du stagiaire" style="max-height:70px;display:block;margin:2px 0" />` +
         `<strong>${beneficiarySignatureName ?? ""}</strong>` +
-        (beneficiarySignatureDate ? `<br/>Signé le ${formatDate(beneficiarySignatureDate)}` : "")
-      : beneficiarySignatureAccepted && beneficiarySignatureDate
-        ? `<strong>${beneficiarySignatureName ?? ""}</strong><br/>Signé le ${formatDate(beneficiarySignatureDate)}`
-        : `Date et signature du stagiaire<br/>……………………………………`,
-    student_signature_status: beneficiarySignatureDate
-      ? `le ${formatDate(beneficiarySignatureDate)}`
+        `<br/>Signé le ${formatDate(generatedDate ?? beneficiarySignatureDate)}`
+      : beneficiarySignatureAccepted
+        ? `<span class="handwritten">Lu et approuvé</span>` +
+          `<strong>${beneficiarySignatureName ?? ""}</strong>` +
+          `<br/>Signé le ${formatDate(generatedDate ?? beneficiarySignatureDate)}`
+        : `Date et signature du stagiaire, précédées de la mention manuscrite « Lu et approuvé »<br/>……………………………………`,
+    student_signature_status: generatedDate || beneficiarySignatureDate
+      ? `le ${formatDate(generatedDate ?? beneficiarySignatureDate)}`
       : "……………………",
     participant_count: beneficiaryCount > 0 ? String(beneficiaryCount) : "1",
 
