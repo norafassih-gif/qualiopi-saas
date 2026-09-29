@@ -97,13 +97,8 @@ export async function GET(
     "dossier_admission", "questionnaire_besoins", "livret_accueil", "reglement_interieur",
     "charte_engagement_assiduite", "programme_formation", "resultat_positionnement",
   ];
-  const DURING_TRAINING_TEMPLATES = ["feuille_emargement", "resultat_evaluation_en_cours"];
-  const AFTER_TRAINING_TEMPLATES = [
-    "attestation_fin_formation", "resultat_evaluation_finale", "questionnaire_satisfaction",
-  ];
   const sessionForDates = await getMyFirstSession();
   const startDate = sessionForDates?.start_date ?? null;
-  const endDate = sessionForDates?.end_date ?? startDate;
   const documentDate = customDate ?? new Date().toISOString().slice(0, 10);
   const frDate = (value: string) => value.split("-").reverse().join("/");
   let dateError: string | null = null;
@@ -114,16 +109,10 @@ export async function GET(
         "Un devis, une convention ou une convocation datés après le démarrage sont un motif de non-conformité. " +
         "Choisissez une date antérieure puis relancez la génération.";
     }
-    if (DURING_TRAINING_TEMPLATES.includes(templateId) && (documentDate < startDate || (endDate && documentDate > endDate))) {
-      dateError =
-        "Ce document doit être daté PENDANT la formation, entre le " + frDate(startDate) +
-        " et le " + frDate(endDate ?? startDate) + ". Choisissez une date dans cette période.";
-    }
-    if (AFTER_TRAINING_TEMPLATES.includes(templateId) && endDate && documentDate < endDate) {
-      dateError =
-        "Ce document doit être daté APRÈS la fin de la formation (" + frDate(endDate) + "). " +
-        "Une attestation ou une évaluation finale ne peuvent pas précéder la fin de la session.";
-    }
+    // Les documents "pendant" et "apres" ne bloquent plus : la date saisie sur
+    // la page Documents s'applique a tout le dossier, et l'organisme ajuste
+    // ensuite au cas par cas (emargement, evaluations). Seul reste bloquant le
+    // cas disqualifiant : un document prealable date apres le demarrage.
   }
   if (dateError) {
     return NextResponse.json({ error: dateError, kind: "date" }, { status: 422 });
