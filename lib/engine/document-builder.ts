@@ -403,6 +403,24 @@ export async function buildDocumentHtml(
   // Registres de veille : les entrees saisies dans /conformite/veille sont
   // imprimees dans les procedures correspondantes. Sans cela, le PDF sortait
   // avec un tableau vide alors que le client avait saisi sa veille.
+  // Organigramme saisi par le client : nom + fonction, rendu en schema.
+  const orgChartRows: Array<{ person_name: string; function_label: string; level: number }> = [];
+  if (sections.some((s) => s.content_type === "org_chart")) {
+    const { data: chartRows } = await supabase
+      .from("org_chart_entries")
+      .select("person_name, function_label, level, sort_order")
+      .eq("organization_id", org.id)
+      .order("level")
+      .order("sort_order");
+    for (const row of chartRows ?? []) {
+      orgChartRows.push({
+        person_name: String(row.person_name ?? ""),
+        function_label: String(row.function_label ?? ""),
+        level: Number(row.level ?? 2),
+      });
+    }
+  }
+
   const watchEntriesByAxis = new Map<string, Array<Record<string, string | null>>>();
   const dataTableSections = sections.filter((s) => s.content_type === "data_table");
   if (dataTableSections.length > 0) {
@@ -439,7 +457,8 @@ export async function buildDocumentHtml(
           signatures: attendanceSignatures,
         },
         isStudentScopedTemplate,
-        watchEntriesByAxis
+        watchEntriesByAxis,
+        orgChartRows
       )
     )
     .join("\n");
@@ -457,7 +476,8 @@ function renderSection(
   moduleRows: { duration_hours: number | null; modules: { title: string } | { title: string }[] | null }[],
   attendance: { periods: AttendancePeriod[]; beneficiaries: Beneficiary[]; signatures: AttendanceSignature[] },
   isStudentScopedTemplate: boolean,
-  watchEntriesByAxis: Map<string, Array<Record<string, string | null>>> = new Map()
+  watchEntriesByAxis: Map<string, Array<Record<string, string | null>>> = new Map(),
+  orgChartRows: Array<{ person_name: string; function_label: string; level: number }> = []
 ): string {
   let body: string;
 
@@ -534,6 +554,32 @@ function renderSection(
       break;
     }
     case "org_chart": {
+      // Organigramme saisi par le client : rendu tel quel, niveau par niveau.
+      if (orgChartRows.length > 0) {
+        const cellOf = (r: { person_name: string; function_label: string }, cls: string) =>
+          "<td class=\"" + cls + "\"><span class=\"orgrole\">" + escapeHtml(r.function_label) +
+          "</span><span class=\"orgname\">" + escapeHtml(r.person_name) + "</span></td>";
+        const byLevel = [1, 2, 3].map((lvl) => orgChartRows.filter((r) => r.level === lvl));
+        const widest = Math.max(1, byLevel[0].length, byLevel[1].length, byLevel[2].length);
+        let rowsHtml = "";
+        byLevel.forEach((rows, index) => {
+          if (rows.length === 0) return;
+          const cls = index === 0 ? "orgbox orgtop" : "orgbox";
+          if (rows.length === 1 && widest > 1) {
+            rowsHtml += "<tr><td class=\"" + cls + "\" colspan=\"" + widest + "\">" +
+              "<span class=\"orgrole\">" + escapeHtml(rows[0].function_label) + "</span>" +
+              "<span class=\"orgname\">" + escapeHtml(rows[0].person_name) + "</span></td></tr>";
+          } else {
+            rowsHtml += "<tr>" + rows.map((r) => cellOf(r, cls)).join("") + "</tr>";
+          }
+          if (index === 0) {
+            rowsHtml += "<tr><td class=\"orgstem\" colspan=\"" + widest + "\"></td></tr>";
+          }
+        });
+        body = "<table class=\"orgchart\"><tbody>" + rowsHtml + "</tbody></table>" +
+          "<p class=\"orgnote\">Les fonctions portées par la même personne sont signalées par la répétition de son nom.</p>";
+        break;
+      }
       const chief = vars.manager_name || vars.company_name || "";
       const roles: Array<[string, string]> = [
         ["Référent pédagogique", vars.pedagogical_referent || vars.pedagogical_referent_name || chief],
