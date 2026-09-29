@@ -91,6 +91,7 @@ export async function createTraining(
   const name = String(formData.get("name") || "").trim();
   const durationRaw = String(formData.get("duration_hours") || "");
   const modality = String(formData.get("modality") || "");
+  const access_delay = String(formData.get("access_delay") ?? "").trim();
   const target_audience = formData.getAll("target_audience").map(String);
 
   if (!category_id) {
@@ -116,6 +117,7 @@ export async function createTraining(
     duration_hours,
     modality,
     target_audience,
+    access_delay: access_delay || null,
     status: "draft",
   });
 
@@ -181,12 +183,13 @@ export async function updateTraining(
     return { error: "Durée invalide." };
   }
 
+  const access_delay = String(formData.get("access_delay") ?? "").trim();
   const target_audience = formData.getAll("target_audience").map(String);
 
   const supabase = await createClient();
   const { error } = await supabase
     .from("trainings")
-    .update({ name, duration_hours, modality, target_audience })
+    .update({ access_delay: access_delay || null, name, duration_hours, modality, target_audience })
     .eq("id", training.id);
 
   if (error) {
