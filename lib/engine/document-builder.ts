@@ -84,7 +84,8 @@ type TemplateSection = {
     | "signature_block"
     | "attendance_grid"
     | "org_chart"
-    | "data_table";
+    | "data_table"
+    | "qcm_answers";
   html_template: string | null;
   source_content_block_type: string | null;
   // "training" (défaut) : blocs réellement retenus pour cette formation via
@@ -310,7 +311,7 @@ export async function buildDocumentHtml(
   const evaluationPhaseFilter = EVALUATION_TEMPLATE_TO_PHASE[documentTemplateId];
   let evaluationAttemptQuery = supabase
     .from("evaluation_attempts")
-    .select("score_raw, score_max, score_percent, passed, completed_at")
+    .select("id, score_raw, score_max, score_percent, passed, completed_at")
     .eq("training_id", training.id)
     .not("completed_at", "is", null);
   if (evaluationPhaseFilter) {
@@ -320,6 +321,46 @@ export async function buildDocumentHtml(
     .order("completed_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+
+    // Detail du QCM renseigne par le stagiaire : question, reponse donnee,
+    // reponse attendue. Demande de l'auditeur (27/09/2026) : le resultat seul
+    // ne prouve pas que l'evaluation a eu lieu.
+    type QcmRow = { question: string; given: string; expected: string; ok: boolean };
+    const qcmRows: QcmRow[] = [];
+    const attemptId = (latestAttempt as { id?: string } | null)?.id ?? null;
+    if (attemptId && sections.some((s) => s.content_type === "qcm_answers")) {
+      const { data: answerRows } = await supabase
+        .from("evaluation_attempt_answers")
+        .select("question_id, selected_option_id, is_correct")
+        .eq("attempt_id", attemptId);
+      const questionIds = (answerRows ?? []).map((r) => String(r.question_id));
+      if (questionIds.length > 0) {
+        const { data: questionRows } = await supabase
+          .from("evaluation_questions")
+          .select("id, question_text, sort_order")
+          .in("id", questionIds);
+        const { data: optionRows } = await supabase
+          .from("evaluation_answer_options")
+          .select("id, question_id, label, is_correct")
+          .in("question_id", questionIds);
+        const questionById = new Map((questionRows ?? []).map((q) => [String(q.id), q]));
+        const optionById = new Map((optionRows ?? []).map((o) => [String(o.id), o]));
+        const correctByQuestion = new Map<string, string>();
+        for (const option of optionRows ?? []) {
+          if (option.is_correct) correctByQuestion.set(String(option.question_id), String(option.label ?? ""));
+        }
+        for (const answer of answerRows ?? []) {
+          const question = questionById.get(String(answer.question_id));
+          const chosen = optionById.get(String(answer.selected_option_id));
+          qcmRows.push({
+            question: String(question?.question_text ?? ""),
+            given: String(chosen?.label ?? "Sans réponse"),
+            expected: correctByQuestion.get(String(answer.question_id)) ?? "",
+            ok: Boolean(answer.is_correct),
+          });
+        }
+      }
+    }
 
   const partnerType = PARTNER_TYPE_BY_TEMPLATE[documentTemplateId];
   const partner = partnerType ? await getMyFirstPartner(partnerType) : null;
@@ -458,7 +499,8 @@ export async function buildDocumentHtml(
         },
         isStudentScopedTemplate,
         watchEntriesByAxis,
-        orgChartRows
+        orgChartRows,
+        qcmRows
       )
     )
     .join("\n");
@@ -477,7 +519,8 @@ function renderSection(
   attendance: { periods: AttendancePeriod[]; beneficiaries: Beneficiary[]; signatures: AttendanceSignature[] },
   isStudentScopedTemplate: boolean,
   watchEntriesByAxis: Map<string, Array<Record<string, string | null>>> = new Map(),
-  orgChartRows: Array<{ person_name: string; function_label: string; level: number }> = []
+  orgChartRows: Array<{ person_name: string; function_label: string; level: number }> = [],
+  qcmRows: Array<{ question: string; given: string; expected: string; ok: boolean }> = []
 ): string {
   let body: string;
 
@@ -551,6 +594,25 @@ function renderSection(
         )
         .join("");
       body = `<table class="register"><thead>${head}</thead><tbody>${lines}</tbody></table>`;
+      break;
+    }
+    // Detail du QCM renseigne par le stagiaire.
+    case "qcm_answers": {
+      if (qcmRows.length === 0) {
+        body = "<p class=\"emptyregister\">Le détail du questionnaire sera disponible une fois l'évaluation complétée par le bénéficiaire.</p>";
+        break;
+      }
+      let lines = "";
+      qcmRows.forEach((row, index) => {
+        lines += "<tr><td>" + (index + 1) + "</td>" +
+          "<td>" + escapeHtml(row.question) + "</td>" +
+          "<td>" + escapeHtml(row.given) + "</td>" +
+          "<td>" + escapeHtml(row.expected) + "</td>" +
+          "<td>" + (row.ok ? "Correct" : "Incorrect") + "</td></tr>";
+      });
+      body = "<table class=\"register\"><thead><tr><th>N°</th><th>Question</th>" +
+        "<th>Réponse du bénéficiaire</th><th>Réponse attendue</th><th>Résultat</th></tr></thead>" +
+        "<tbody>" + lines + "</tbody></table>";
       break;
     }
     case "org_chart": {
