@@ -177,7 +177,7 @@ export default async function DocumentsPage({
                           {doc.generated ? "✅ Généré" : "❌ Non généré"}
                         </span>
                         <DocumentDownloadForm
-                          defaultDate={globalDate}
+                          defaultDate={doc.document_date ?? globalDate}
                           templateId={doc.id}
                           beneficiaries={studentScopedIds.includes(doc.id) ? beneficiaries : []}
                         />
