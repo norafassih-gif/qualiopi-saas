@@ -1,5 +1,5 @@
+import { SATISFACTION_CRITERIA } from "@/lib/engine/satisfaction-criteria";
 import {
-  SATISFACTION_CRITERIA,
   listSatisfactionResponses,
   addSatisfactionResponse,
   deleteSatisfactionResponse,
