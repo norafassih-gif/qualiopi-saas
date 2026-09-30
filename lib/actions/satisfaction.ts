@@ -40,7 +40,7 @@ export async function addSatisfactionResponse(formData: FormData): Promise<void>
   }
 
   const session = await getMyFirstSession();
-  const beneficiary = await getMyFirstBeneficiary();
+  const beneficiary = session ? await getMyFirstBeneficiary(session.id) : null;
 
   const note = (key: string) => {
     const raw = Number(formData.get(key) ?? 0);
