@@ -89,6 +89,52 @@ export default async function SatisfactionPage({
           ))}
         </div>
 
+        <div className="mt-6 space-y-4 border-t border-gray-100 pt-4">
+          <fieldset>
+            <legend className="text-sm text-gray-800">Pensez-vous pouvoir appliquer rapidement ce que vous avez appris ?</legend>
+            <div className="mt-2 flex flex-wrap gap-4 text-sm text-gray-700">
+              {["oui", "non", "partiellement"].map((value) => (
+                <label key={value} className="flex items-center gap-1.5">
+                  <input type="radio" name="application_rapide" value={value} />
+                  {value.charAt(0).toUpperCase() + value.slice(1)}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend className="text-sm text-gray-800">Cette formation a-t-elle répondu à vos attentes ?</legend>
+            <div className="mt-2 flex flex-wrap gap-4 text-sm text-gray-700">
+              {["oui", "non", "partiellement"].map((value) => (
+                <label key={value} className="flex items-center gap-1.5">
+                  <input type="radio" name="attentes_reponse" value={value} />
+                  {value.charAt(0).toUpperCase() + value.slice(1)}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend className="text-sm text-gray-800">Recommanderiez-vous cette formation ?</legend>
+            <div className="mt-2 flex flex-wrap gap-4 text-sm text-gray-700">
+              {["oui", "non"].map((value) => (
+                <label key={value} className="flex items-center gap-1.5">
+                  <input type="radio" name="recommande" value={value} />
+                  {value.charAt(0).toUpperCase() + value.slice(1)}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <label className="block text-sm">
+            <span className="text-gray-700">Note globale sur 20</span>
+            <input
+              type="number"
+              name="note_globale"
+              min={0}
+              max={20}
+              className="mt-1 w-28 rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
+          </label>
+        </div>
+
         <div className="mt-6 grid gap-4 sm:grid-cols-3">
           <label className="block text-sm">
             <span className="text-gray-700">Points forts</span>
