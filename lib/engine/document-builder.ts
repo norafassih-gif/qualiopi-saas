@@ -711,7 +711,11 @@ function renderSection(
     }
 
     case "attendance_grid":
-      body = renderAttendanceGrid(attendance.periods, attendance.beneficiaries, attendance.signatures);
+      body = renderAttendanceGrid(attendance.periods,
+        attendance.beneficiaries,
+        attendance.signatures,
+        vars.org_signature_src || null
+      );
       break;
 
     default:
@@ -733,7 +737,8 @@ function renderSection(
 function renderAttendanceGrid(
   periods: AttendancePeriod[],
   beneficiaries: Beneficiary[],
-  signatures: AttendanceSignature[]
+  signatures: AttendanceSignature[],
+  trainerSignatureUrl: string | null = null
 ): string {
   if (beneficiaries.length === 0) {
     return `<p class="empty">Aucun apprenant renseigné pour cette session.</p>`;
@@ -786,9 +791,14 @@ function renderAttendanceGrid(
     })
     .join("");
 
+  // La formatrice signe chaque demi-journee : on reprend la signature deposee
+  // dans Identite visuelle plutot que de laisser la ligne vide.
+  const trainerCell = trainerSignatureUrl
+    ? "<td class=\"attcell\"><img src=\"" + trainerSignatureUrl + "\" alt=\"signature\" class=\"attsig\" /></td>"
+    : "<td class=\"attcell\">&nbsp;</td>";
   const trainerRow =
     "<tr><td class=\"attname\">Formateur ou formatrice</td>" +
-    periods.map(() => "<td class=\"attcell\">&nbsp;</td>").join("") +
+    periods.map(() => trainerCell).join("") +
     "</tr>";
 
   return (
