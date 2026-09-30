@@ -615,10 +615,6 @@ function renderSection(
     // Detail du QCM renseigne par le stagiaire.
     // Resultats de satisfaction saisis dans l'outil.
     case "satisfaction_results": {
-      if (satisfactionRows.length === 0) {
-        body = "<p class=\"emptyregister\">Aucune réponse enregistrée. Les réponses se saisissent depuis Conformité, rubrique « Satisfaction ».</p>";
-        break;
-      }
       const criteria: Array<[string, string]> = [
         ["q_accessibilite", "Qualité de l accueil"],
         ["q_organisation", "Locaux ou plateforme à distance"],
@@ -629,6 +625,18 @@ function renderSection(
         ["q_formateur", "Pédagogie et disponibilité du formateur"],
         ["q_contenu", "Adéquation du contenu avec vos besoins"],
       ];
+      if (satisfactionRows.length === 0) {
+        // Aucune reponse saisie : on imprime la grille vierge, a remplir a la main.
+        let blank = "";
+        for (const [, label] of criteria) {
+          blank += "<tr><td>" + escapeHtml(label) + "</td><td>&nbsp;</td></tr>";
+        }
+        body =
+          "<p>Pour chaque critère, merci de noter de 1 (très insatisfait) à 5 (très satisfait).</p>" +
+          "<table class=\"register\"><thead><tr><th>Critère</th><th>Note (1 à 5)</th></tr></thead><tbody>" +
+          blank + "</tbody></table>";
+        break;
+      }
       const avg = (key: string) => {
         const values = satisfactionRows
           .map((r) => (typeof r[key] === "number" ? (r[key] as number) : null))
