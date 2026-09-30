@@ -514,6 +514,10 @@ export function resolveDocumentVariables(input: {
     org_stamp_image: org.stamp_url
       ? `<img src="${org.stamp_url}" alt="Cachet de l'organisme" style="max-height:28mm; max-width:28mm;" />`
       : "",
+    // URL brute de la signature : remplit la ligne formateur de l'emargement.
+    org_signature_src: org.signature_url ?? "",
+    // Assiduite : par defaut la totalite du volume horaire prevu.
+    attendance_hours: String(training.duration_hours ?? ""),
     org_signature_image: org.signature_url
       ? `<img src="${org.signature_url}" alt="Signature" style="max-height:18mm; max-width:50mm;" />`
       : "",
