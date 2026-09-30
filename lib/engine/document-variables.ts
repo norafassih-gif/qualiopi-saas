@@ -328,7 +328,7 @@ export function resolveDocumentVariables(input: {
 
     training_name: training.name ?? "",
     training_duration: training.duration_hours != null ? String(training.duration_hours) : "",
-    access_delay: (training as { access_delay?: string | null }).access_delay || "Inscription possible jusqu'à 1 jour avant le démarrage, sous réserve de places disponibles. En cas de financement par un tiers (OPCO, France Travail), prévoir le délai d'instruction du financeur.",
+    access_delay: (training as { access_delay?: string | null }).access_delay || "La formation peut débuter dans un délai de 10 à 20 jours après la signature du contrat ou de la convention. Une autre date peut être convenue d'un commun accord avec le participant, sous réserve des places disponibles. En cas de financement par un tiers, le délai d'instruction du financeur s'ajoute à ce délai.",
     training_modality: MODALITY_LABELS[training.modality ?? ""] ?? training.modality ?? "",
     training_audience:
       training.target_audience && training.target_audience.length > 0
