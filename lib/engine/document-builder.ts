@@ -634,7 +634,12 @@ function renderSection(
         body =
           "<p>Pour chaque critère, merci de noter de 1 (très insatisfait) à 5 (très satisfait).</p>" +
           "<table class=\"register\"><thead><tr><th>Critère</th><th>Note (1 à 5)</th></tr></thead><tbody>" +
-          blank + "</tbody></table>";
+          blank + "</tbody></table>" +
+          "<p>Pensez-vous pouvoir appliquer rapidement ce que vous avez appris ? ☐ Oui ☐ Non ☐ Partiellement</p>" +
+          "<p>Cette formation a-t-elle répondu à vos attentes ? ☐ Oui ☐ Non ☐ Partiellement</p>" +
+          "<p>Recommanderiez-vous cette formation ? ☐ Oui ☐ Non</p>" +
+          "<p>Note globale sur 20 : …… / 20</p>" +
+          "<p>Remarques libres : ……………………………………………………………………</p>";
         break;
       }
       const avg = (key: string) => {
@@ -655,6 +660,32 @@ function renderSection(
       const globalAvg = allValues.length
         ? Math.round((allValues.reduce((a, b) => a + b, 0) / allValues.length) * 10) / 10
         : null;
+      const share = (key: string, expected: string) => {
+        const total = satisfactionRows.filter((r) => r[key]).length;
+        if (total === 0) return null;
+        const hits = satisfactionRows.filter((r) => String(r[key]) === expected).length;
+        return Math.round((hits / total) * 100);
+      };
+      const noteGlobale = (() => {
+        const values = satisfactionRows
+          .map((r) => (typeof r.note_globale === "number" ? (r.note_globale as number) : null))
+          .filter((v): v is number => v !== null);
+        if (values.length === 0) return null;
+        return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10;
+      })();
+      const extra =
+        (share("application_rapide", "oui") !== null
+          ? "<p>Peuvent appliquer rapidement les acquis : <strong>" + share("application_rapide", "oui") + " %</strong></p>"
+          : "") +
+        (share("attentes_reponse", "oui") !== null
+          ? "<p>Formation ayant répondu aux attentes : <strong>" + share("attentes_reponse", "oui") + " %</strong></p>"
+          : "") +
+        (share("recommande", "oui") !== null
+          ? "<p>Recommanderaient la formation : <strong>" + share("recommande", "oui") + " %</strong></p>"
+          : "") +
+        (noteGlobale !== null
+          ? "<p>Note globale moyenne : <strong>" + String(noteGlobale).replace(".", ",") + " / 20</strong></p>"
+          : "");
       const comments = satisfactionRows
         .map((r) => {
           const forts = r.points_forts ? "<li><strong>Points forts :</strong> " + escapeHtml(String(r.points_forts)) + "</li>" : "";
@@ -668,7 +699,7 @@ function renderSection(
         (globalAvg !== null ? " — satisfaction moyenne : <strong>" + String(globalAvg).replace(".", ",") + " / 5</strong>" : "") +
         "</p>" +
         "<table class=\"register\"><thead><tr><th>Critère</th><th>Moyenne</th></tr></thead><tbody>" +
-        lines + "</tbody></table>" +
+        lines + "</tbody></table>" + extra +
         (comments ? "<p><strong>Commentaires recueillis</strong></p><ul>" + comments + "</ul>" : "");
       break;
     }
