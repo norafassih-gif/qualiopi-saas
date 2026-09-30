@@ -5,18 +5,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getMyOrganization } from "@/lib/actions/organization";
 import { getMyFirstSession, getMyFirstBeneficiary } from "@/lib/actions/session";
+import { SATISFACTION_CRITERIA } from "@/lib/engine/satisfaction-criteria";
 
-/** Les huit criteres notes de 1 a 5 du questionnaire de satisfaction. */
-export const SATISFACTION_CRITERIA = [
-  { key: "q_attentes", label: "La formation a répondu à mes attentes" },
-  { key: "q_objectifs", label: "Les objectifs pédagogiques étaient clairs" },
-  { key: "q_contenu", label: "Le contenu était adapté à mon niveau" },
-  { key: "q_formateur", label: "Le formateur a su s'adapter et répondre à mes questions" },
-  { key: "q_supports", label: "Les supports remis sont utiles et exploitables" },
-  { key: "q_organisation", label: "L'organisation matérielle était satisfaisante" },
-  { key: "q_accessibilite", label: "Les conditions d'accueil et d'accessibilité étaient adaptées" },
-  { key: "q_recommandation", label: "Je recommanderais cette formation" },
-] as const;
 
 export type SatisfactionResponse = {
   id: string;
@@ -50,7 +40,7 @@ export async function addSatisfactionResponse(formData: FormData): Promise<void>
   }
 
   const session = await getMyFirstSession();
-  const beneficiary = session ? await getMyFirstBeneficiary(session.id) : null;
+  const beneficiary = await getMyFirstBeneficiary();
 
   const note = (key: string) => {
     const raw = Number(formData.get(key) ?? 0);
