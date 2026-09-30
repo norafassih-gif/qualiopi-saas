@@ -85,7 +85,8 @@ type TemplateSection = {
     | "attendance_grid"
     | "org_chart"
     | "data_table"
-    | "qcm_answers";
+    | "qcm_answers"
+    | "satisfaction_results";
   html_template: string | null;
   source_content_block_type: string | null;
   // "training" (défaut) : blocs réellement retenus pour cette formation via
@@ -445,6 +446,19 @@ export async function buildDocumentHtml(
   // imprimees dans les procedures correspondantes. Sans cela, le PDF sortait
   // avec un tableau vide alors que le client avait saisi sa veille.
   // Organigramme saisi par le client : nom + fonction, rendu en schema.
+  // Reponses de satisfaction saisies dans /conformite/satisfaction.
+  const satisfactionRows: Array<Record<string, string | number | null>> = [];
+  if (sections.some((s) => s.content_type === "satisfaction_results")) {
+    const { data: satRows } = await supabase
+      .from("satisfaction_responses")
+      .select("*")
+      .eq("organization_id", org.id)
+      .order("answered_on", { ascending: false });
+    for (const row of satRows ?? []) {
+      satisfactionRows.push(row as Record<string, string | number | null>);
+    }
+  }
+
   const orgChartRows: Array<{ person_name: string; function_label: string; level: number }> = [];
   if (sections.some((s) => s.content_type === "org_chart")) {
     const { data: chartRows } = await supabase
@@ -500,7 +514,8 @@ export async function buildDocumentHtml(
         isStudentScopedTemplate,
         watchEntriesByAxis,
         orgChartRows,
-        qcmRows
+        qcmRows,
+        satisfactionRows
       )
     )
     .join("\n");
@@ -520,7 +535,8 @@ function renderSection(
   isStudentScopedTemplate: boolean,
   watchEntriesByAxis: Map<string, Array<Record<string, string | null>>> = new Map(),
   orgChartRows: Array<{ person_name: string; function_label: string; level: number }> = [],
-  qcmRows: Array<{ question: string; given: string; expected: string; ok: boolean }> = []
+  qcmRows: Array<{ question: string; given: string; expected: string; ok: boolean }> = [],
+  satisfactionRows: Array<Record<string, string | number | null>> = []
 ): string {
   let body: string;
 
@@ -597,6 +613,57 @@ function renderSection(
       break;
     }
     // Detail du QCM renseigne par le stagiaire.
+    // Resultats de satisfaction saisis dans l'outil.
+    case "satisfaction_results": {
+      if (satisfactionRows.length === 0) {
+        body = "<p class=\"emptyregister\">Aucune réponse enregistrée. Les réponses se saisissent depuis Conformité, rubrique « Satisfaction ».</p>";
+        break;
+      }
+      const criteria: Array<[string, string]> = [
+        ["q_attentes", "La formation a répondu à mes attentes"],
+        ["q_objectifs", "Les objectifs pédagogiques étaient clairs"],
+        ["q_contenu", "Le contenu était adapté à mon niveau"],
+        ["q_formateur", "Le formateur a su s'adapter et répondre aux questions"],
+        ["q_supports", "Les supports remis sont utiles et exploitables"],
+        ["q_organisation", "L'organisation matérielle était satisfaisante"],
+        ["q_accessibilite", "Les conditions d'accueil et d'accessibilité étaient adaptées"],
+        ["q_recommandation", "Je recommanderais cette formation"],
+      ];
+      const avg = (key: string) => {
+        const values = satisfactionRows
+          .map((r) => (typeof r[key] === "number" ? (r[key] as number) : null))
+          .filter((v): v is number => v !== null);
+        if (values.length === 0) return null;
+        return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10;
+      };
+      let lines = "";
+      const allValues: number[] = [];
+      for (const [key, label] of criteria) {
+        const value = avg(key);
+        if (value !== null) allValues.push(value);
+        lines += "<tr><td>" + escapeHtml(label) + "</td><td>" +
+          (value !== null ? String(value).replace(".", ",") + " / 5" : "Non renseigné") + "</td></tr>";
+      }
+      const globalAvg = allValues.length
+        ? Math.round((allValues.reduce((a, b) => a + b, 0) / allValues.length) * 10) / 10
+        : null;
+      const comments = satisfactionRows
+        .map((r) => {
+          const forts = r.points_forts ? "<li><strong>Points forts :</strong> " + escapeHtml(String(r.points_forts)) + "</li>" : "";
+          const amel = r.points_ameliorer ? "<li><strong>À améliorer :</strong> " + escapeHtml(String(r.points_ameliorer)) + "</li>" : "";
+          const libre = r.commentaire_libre ? "<li>" + escapeHtml(String(r.commentaire_libre)) + "</li>" : "";
+          return forts + amel + libre;
+        })
+        .join("");
+      body =
+        "<p>Nombre de questionnaires recueillis : <strong>" + satisfactionRows.length + "</strong>" +
+        (globalAvg !== null ? " — satisfaction moyenne : <strong>" + String(globalAvg).replace(".", ",") + " / 5</strong>" : "") +
+        "</p>" +
+        "<table class=\"register\"><thead><tr><th>Critère</th><th>Moyenne</th></tr></thead><tbody>" +
+        lines + "</tbody></table>" +
+        (comments ? "<p><strong>Commentaires recueillis</strong></p><ul>" + comments + "</ul>" : "");
+      break;
+    }
     case "qcm_answers": {
       if (qcmRows.length === 0) {
         body = "<p class=\"emptyregister\">Le détail du questionnaire sera disponible une fois l'évaluation complétée par le bénéficiaire.</p>";
