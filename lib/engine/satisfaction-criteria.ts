@@ -1,12 +1,13 @@
 // Criteres du questionnaire de satisfaction.
-// Fichier separe : un fichier "use server" ne peut exporter que des fonctions.
+// Ils reprennent mot pour mot ceux du formulaire papier remis au beneficiaire,
+// pour que la saisie et le document dise la meme chose.
 export const SATISFACTION_CRITERIA = [
-  { key: "q_attentes", label: "La formation a répondu à mes attentes" },
-  { key: "q_objectifs", label: "Les objectifs pédagogiques étaient clairs" },
-  { key: "q_contenu", label: "Le contenu était adapté à mon niveau" },
-  { key: "q_formateur", label: "Le formateur a su s adapter et répondre à mes questions" },
-  { key: "q_supports", label: "Les supports remis sont utiles et exploitables" },
-  { key: "q_organisation", label: "L organisation matérielle était satisfaisante" },
-  { key: "q_accessibilite", label: "Les conditions d accueil et d accessibilité étaient adaptées" },
-  { key: "q_recommandation", label: "Je recommanderais cette formation" },
+  { key: "q_accessibilite", label: "Qualité de l accueil" },
+  { key: "q_organisation", label: "Locaux ou plateforme à distance" },
+  { key: "q_attentes", label: "Respect des horaires" },
+  { key: "q_recommandation", label: "Communication avant la formation" },
+  { key: "q_objectifs", label: "Clarté des objectifs annoncés" },
+  { key: "q_supports", label: "Qualité des supports pédagogiques" },
+  { key: "q_formateur", label: "Pédagogie et disponibilité du formateur" },
+  { key: "q_contenu", label: "Adéquation du contenu avec vos besoins" },
 ] as const;
