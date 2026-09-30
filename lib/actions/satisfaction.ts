@@ -46,6 +46,10 @@ export async function addSatisfactionResponse(formData: FormData): Promise<void>
     const raw = Number(formData.get(key) ?? 0);
     return raw >= 1 && raw <= 5 ? raw : null;
   };
+  const choice = (key: string, allowed: string[]) => {
+    const value = String(formData.get(key) ?? "").trim();
+    return allowed.includes(value) ? value : null;
+  };
   const text = (key: string) => {
     const value = String(formData.get(key) ?? "").trim();
     return value || null;
@@ -60,6 +64,13 @@ export async function addSatisfactionResponse(formData: FormData): Promise<void>
     points_forts: text("points_forts"),
     points_ameliorer: text("points_ameliorer"),
     commentaire_libre: text("commentaire_libre"),
+    application_rapide: choice("application_rapide", ["oui", "non", "partiellement"]),
+    attentes_reponse: choice("attentes_reponse", ["oui", "non", "partiellement"]),
+    recommande: choice("recommande", ["oui", "non"]),
+    note_globale: (() => {
+      const raw = Number(formData.get("note_globale") ?? NaN);
+      return Number.isFinite(raw) && raw >= 0 && raw <= 20 ? raw : null;
+    })(),
   };
   if (answeredOn) payload.answered_on = answeredOn;
   for (const criterion of SATISFACTION_CRITERIA) {
