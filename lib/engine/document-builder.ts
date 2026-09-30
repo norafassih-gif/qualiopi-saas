@@ -620,14 +620,14 @@ function renderSection(
         break;
       }
       const criteria: Array<[string, string]> = [
-        ["q_attentes", "La formation a répondu à mes attentes"],
-        ["q_objectifs", "Les objectifs pédagogiques étaient clairs"],
-        ["q_contenu", "Le contenu était adapté à mon niveau"],
-        ["q_formateur", "Le formateur a su s'adapter et répondre aux questions"],
-        ["q_supports", "Les supports remis sont utiles et exploitables"],
-        ["q_organisation", "L'organisation matérielle était satisfaisante"],
-        ["q_accessibilite", "Les conditions d'accueil et d'accessibilité étaient adaptées"],
-        ["q_recommandation", "Je recommanderais cette formation"],
+        ["q_accessibilite", "Qualité de l accueil"],
+        ["q_organisation", "Locaux ou plateforme à distance"],
+        ["q_attentes", "Respect des horaires"],
+        ["q_recommandation", "Communication avant la formation"],
+        ["q_objectifs", "Clarté des objectifs annoncés"],
+        ["q_supports", "Qualité des supports pédagogiques"],
+        ["q_formateur", "Pédagogie et disponibilité du formateur"],
+        ["q_contenu", "Adéquation du contenu avec vos besoins"],
       ];
       const avg = (key: string) => {
         const values = satisfactionRows
