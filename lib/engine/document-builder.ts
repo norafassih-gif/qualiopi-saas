@@ -722,6 +722,15 @@ function renderSection(
       body = "";
   }
 
+  // Mise en valeur des reponses : dans "Libelle : valeur", la valeur passe en
+  // gras. Demande de Nora (30/09/2026) : sans cela, l'information utile se perd
+  // dans la phrase.
+  body = body.replace(
+    /<p>([^<:]{3,90}\s:\s)([^<]{1,200})<\/p>/g,
+    (match, label, value) =>
+      /^[…\.\s]*$/.test(value) ? match : `<p>${label}<strong>${value}</strong></p>`
+  );
+
   return `<section>${section.code === "header" || !section.title ? "" : `<h2>${escapeHtml(section.title)}</h2>`}${body}</section>`;
 }
 
