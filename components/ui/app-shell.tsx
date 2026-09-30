@@ -93,6 +93,11 @@ function AppSidebar({ data, pathname }: { data: SidebarData; pathname: string })
       label: "Ma veille",
     },
     {
+      icon: ClipboardList,
+      href: "/conformite/satisfaction",
+      label: "Satisfaction",
+    },
+    {
       href: data.hasSession ? "/emargement" : "/onboarding/session",
       label: "Émargements",
       icon: PenLine,
