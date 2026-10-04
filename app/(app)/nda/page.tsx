@@ -155,7 +155,7 @@ export default async function NdaPage({
   const legal = legalFormInfo(org.legal_form);
   const { siren, nic } = splitSiret(org.siret);
   const year = new Date().getFullYear();
-  const nsf = training ? NSF_BY_CATEGORY[training.category_id] : null;
+  const nsf = training ? NSF_BY_CATEGORY[training.category_id] ?? training.nsf_specialty ?? null : null;
   const sole = org.is_sole_practitioner;
 
   return (
@@ -384,7 +384,7 @@ export default async function NdaPage({
         {/* ÉTAPE 5 */}
         <Step progress={progress} stepKey="formations" intro="Le domaine de vos formations.">
           <Row label="Spécialité" hint="Code proposé à partir de votre domaine de formation. Choisissez-le dans la liste du formulaire.">
-            {nsf ? <CopyValue value={nsf} /> : <Missing href="/onboarding/activite">Choisir mon domaine de formation</Missing>}
+            {nsf ? <CopyValue value={nsf} /> : <Missing href={training?.category_id === "sur_mesure" ? "/parametres/programme" : "/onboarding/activite"}>{training?.category_id === "sur_mesure" ? "Indiquer ma spécialité dans mon programme sur mesure" : "Choisir mon domaine de formation"}</Missing>}
           </Row>
           <Row label="Précisions éventuelles" hint="Une phrase qui décrit votre formation et son public.">
             {training ? <CopyValue value={training.name} /> : "Intitulé de votre formation"}

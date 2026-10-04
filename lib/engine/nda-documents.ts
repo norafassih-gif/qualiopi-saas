@@ -91,7 +91,7 @@ export function ndaVariables(org: Organization, training: Training, session: Tra
   return {
     legal_form_label: lf?.label ?? "[Forme juridique à compléter]",
     manager_title: lf?.managerTitle ?? "Dirigeant(e)",
-    nda_specialty: NSF_BY_CATEGORY[training.category_id] ?? "",
+    nda_specialty: NSF_BY_CATEGORY[training.category_id] ?? training.nsf_specialty ?? "",
     nda_days_summary: daysSummary(training.duration_hours),
     nda_contract_rows: contractRows,
     nda_contract_pieces: pieces.map((p) => `<li>${esc(p)}</li>`).join(""),

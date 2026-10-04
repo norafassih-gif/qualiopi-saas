@@ -42,6 +42,14 @@ export default async function ParametresFormationPage({
           Enregistré. Vos prochains documents générés utiliseront ces informations.
         </div>
       )}
+      {training.category_id === "sur_mesure" && (
+        <a
+          href="/parametres/programme"
+          className="mb-6 block rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 underline"
+        >
+          Modifier mon programme sur mesure (objectifs, modules, prérequis, évaluations)
+        </a>
+      )}
       <FormationSettingsForm training={training} />
       <a href="/dashboard" className="mt-6 inline-block text-sm text-blue-900 underline">
         ← Retour au tableau de bord

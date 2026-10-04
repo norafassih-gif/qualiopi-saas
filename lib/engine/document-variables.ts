@@ -2,6 +2,7 @@ import type { Organization } from "@/lib/actions/organization";
 import type { Training } from "@/lib/actions/training";
 import type { TrainingSession } from "@/lib/actions/session";
 import type { Partner } from "@/lib/actions/partners";
+import { CUSTOM_CATEGORY_ID, parseCustomProgram } from "./custom-program";
 
 // Modèles de document qui utilisent les variables {{student_*}} — donc "par
 // apprenant" plutôt que "de session" (cf. Phase 29, 24/08/2026 : une session
@@ -328,6 +329,11 @@ export function resolveDocumentVariables(input: {
 
     training_name: training.name ?? "",
     training_duration: training.duration_hours != null ? String(training.duration_hours) : "",
+    // Prérequis du programme : saisis par le client pour une formation sur
+    // mesure, sinon texte standard (identique à l'ancien texte fixe).
+    training_prerequisites:
+      (training.category_id === CUSTOM_CATEGORY_ID && parseCustomProgram(training.custom_program).prerequisites) ||
+      `Aucun prérequis spécifique n'est exigé pour suivre la formation « ${training.name} », au-delà d'un accès à un ordinateur ou un smartphone connecté à internet. Un entretien de positionnement est réalisé avant l'entrée en formation afin d'adapter le parcours au niveau de chaque bénéficiaire.`,
     access_delay: (training as { access_delay?: string | null }).access_delay || "La formation peut débuter dans un délai de 10 à 20 jours après la signature du contrat ou de la convention. Une autre date peut être convenue d'un commun accord avec le participant, sous réserve des places disponibles. En cas de financement par un tiers, le délai d'instruction du financeur s'ajoute à ce délai.",
     training_modality: MODALITY_LABELS[training.modality ?? ""] ?? training.modality ?? "",
     training_audience:

@@ -2,6 +2,7 @@
 
 import { TRAINER_SATISFACTION_CRITERIA } from "@/lib/engine/trainer-satisfaction-criteria";
 import { ndaVariables, ndaCalendarRows } from "@/lib/engine/nda-documents";
+import { CUSTOM_CATEGORY_ID, customBlocksByType, customModuleRows, parseCustomProgram } from "@/lib/engine/custom-program";
 import { createClient } from "@/lib/supabase/server";
 import { getMyOrganization, type Organization } from "@/lib/actions/organization";
 import { getMyBilling } from "@/lib/actions/billing";
@@ -436,7 +437,16 @@ export async function buildDocumentHtml(
   }
 
   type ModuleRow = { duration_hours: number | null; modules: { title: string } | { title: string }[] | null };
-  const moduleRows = (modulesResponse.data ?? []) as unknown as ModuleRow[];
+  let moduleRows = (modulesResponse.data ?? []) as unknown as ModuleRow[];
+
+  // Formation sur mesure : objectifs, modules, méthodes... saisis par le
+  // client remplacent la banque de contenus (migration 0051).
+  if (training.category_id === CUSTOM_CATEGORY_ID) {
+    const custom = parseCustomProgram(training.custom_program);
+    blocksByType.clear();
+    for (const [type, items] of customBlocksByType(custom)) blocksByType.set(type, items);
+    moduleRows = customModuleRows(custom);
+  }
 
   // Pièces du dossier de déclaration d'activité (NDA) : variables
   // supplémentaires, calculées uniquement pour ces modèles.

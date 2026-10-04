@@ -1,6 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { CUSTOM_CATEGORY_ID } from "@/lib/engine/custom-program";
 import { createClient } from "@/lib/supabase/server";
 import { getMyOrganization } from "@/lib/actions/organization";
 
@@ -21,6 +23,9 @@ export type Training = {
   modality: "presentiel" | "distanciel" | "hybride" | null;
   target_audience: string[];
   status: "draft" | "in_progress" | "complete";
+  // Programme saisi par le client (catégorie sur_mesure, migration 0051).
+  custom_program?: unknown;
+  nsf_specialty?: string | null;
 };
 
 /**
@@ -125,6 +130,12 @@ export async function createTraining(
     return { error: "Une erreur est survenue : " + error.message };
   }
 
+  // Formation sur mesure : le client saisit lui-même son programme.
+  if (category_id === CUSTOM_CATEGORY_ID) {
+    revalidatePath("/", "layout");
+    redirect("/parametres/programme");
+  }
+
   // Certaines catégories ont une banque de contenu importée (questions
   // pédagogiques conditionnelles, ex. thématiques Community Management) —
   // on y envoie directement l'utilisateur si c'est le cas, sinon on passe
@@ -197,4 +208,59 @@ export async function updateTraining(
   }
 
   redirect("/parametres/formation?saved=1");
+}
+
+
+/**
+ * Enregistre le programme d'une formation sur mesure (catégorie sur_mesure) :
+ * objectifs, compétences, prérequis, méthodes, évaluations, modules. La durée
+ * de la formation suit la somme des durées des modules quand elles sont
+ * renseignées.
+ */
+export async function saveCustomProgram(formData: FormData): Promise<void> {
+  const training = await getMyFirstTraining();
+  if (!training) redirect("/onboarding/activite");
+
+  const lines = (key: string) =>
+    String(formData.get(key) ?? "")
+      .split("\n")
+      .map((l) => l.replace(/^[-•*\s]+/, "").trim())
+      .filter(Boolean);
+
+  const modules: { title: string; hours: number | null; content: string }[] = [];
+  for (let i = 0; i < 20; i++) {
+    const title = String(formData.get(`module_title_${i}`) ?? "").trim();
+    if (!title) continue;
+    const hours = Number(String(formData.get(`module_hours_${i}`) ?? "").replace(",", "."));
+    modules.push({
+      title,
+      hours: Number.isFinite(hours) && hours > 0 ? hours : null,
+      content: String(formData.get(`module_content_${i}`) ?? "").trim(),
+    });
+  }
+
+  const custom_program = {
+    objectives: lines("objectives"),
+    skills: lines("skills"),
+    prerequisites: String(formData.get("prerequisites") ?? "").trim(),
+    methods: lines("methods"),
+    evaluations: lines("evaluations"),
+    exercises: lines("exercises"),
+    positioning: lines("positioning"),
+    needs: lines("needs"),
+    modules,
+  };
+  const nsf_specialty = String(formData.get("nsf_specialty") ?? "").trim() || null;
+  const total = modules.reduce((sum, m) => sum + (m.hours ?? 0), 0);
+
+  const supabase = await createClient();
+  const update: Record<string, unknown> = { custom_program, nsf_specialty };
+  if (total > 0) update.duration_hours = total;
+  const { error } = await supabase.from("trainings").update(update).eq("id", training.id);
+  if (error) {
+    console.error("saveCustomProgram", error);
+    redirect("/parametres/programme?error=1");
+  }
+  revalidatePath("/", "layout");
+  redirect("/parametres/programme?saved=1");
 }

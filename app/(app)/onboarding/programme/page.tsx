@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getMyOrganization } from "@/lib/actions/organization";
 import { getMyFirstTraining } from "@/lib/actions/training";
 import { buildProgramForMyTraining } from "@/lib/engine/program-builder";
+import { CUSTOM_CATEGORY_ID } from "@/lib/engine/custom-program";
 
 const BLOCK_TYPE_LABELS: Record<string, string> = {
   pedagogical_objective: "Objectifs pédagogiques",
@@ -22,6 +23,11 @@ export default async function OnboardingProgrammePage() {
   const training = await getMyFirstTraining();
   if (!training) {
     redirect("/onboarding/activite");
+  }
+  // Formation sur mesure : pas de moteur de règles, le programme est saisi
+  // par le client lui-même.
+  if (training.category_id === CUSTOM_CATEGORY_ID) {
+    redirect("/parametres/programme");
   }
 
   // Construit (ou reconstruit) le programme à chaque visite de cette page —
