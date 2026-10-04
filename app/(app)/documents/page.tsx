@@ -19,6 +19,7 @@ import { DocumentDownloadForm } from "./download-form";
 import { GenerateAllButton } from "./generate-all-button";
 
 const FOLDER_LABELS: Record<string, string> = {
+  "00_Declaration_activite": "Déclaration d'activité (NDA)",
   "03_Avant_formation": "Avant la formation",
   "04_Pendant_formation": "Pendant la formation",
   "05_Apres_formation": "Après la formation",
@@ -28,6 +29,7 @@ const FOLDER_LABELS: Record<string, string> = {
 };
 
 const FOLDER_ORDER = [
+  "00_Declaration_activite",
   "03_Avant_formation",
   "04_Pendant_formation",
   "05_Apres_formation",

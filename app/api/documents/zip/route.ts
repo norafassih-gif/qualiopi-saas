@@ -99,7 +99,7 @@ export async function GET() {
 
   // Tous les dossiers indicateurs, même vides : l'auditeur retrouve
   // immédiatement la grille complète des 32 indicateurs.
-  for (const indicator of allIndicatorFolders()) {
+  for (const indicator of org.current_track === "nda" ? [] : allIndicatorFolders()) {
     const folder = `${root}/${indicatorFolderPath(indicator, ctx)}`;
     zip.folder(folder);
     const naReason = notApplicableReason(indicator, ctx);
@@ -112,9 +112,20 @@ export async function GET() {
     }
   }
 
+  const isNdaTrack = org.current_track === "nda";
+  const ndaRoot = `Dossier declaration d'activite - ${safeFileName(org.company_name || "organisme").replace(/_/g, " ")}`;
+
   const usedNamesByFolder = new Map<string, Set<string>>();
   for (const result of results) {
     if (!result) continue;
+    // Parcours NDA : un seul dossier, pièces dans l'ordre du formulaire.
+    if (isNdaTrack) {
+      const shared = ["programme_formation", "convention_formation", "contrat_formation_particulier", "devis"];
+      if (result.doc.folder_group !== "00_Declaration_activite" && !shared.includes(result.doc.document_template_id)) continue;
+      zip.file(`${ndaRoot}/${safeFileName(result.doc.label)}.pdf`, result.buffer);
+      continue;
+    }
+    if (result.doc.folder_group === "00_Declaration_activite") continue;
     const indicators = documentIndicators(
       result.doc.document_template_id,
       result.doc.linked_indicator_numbers,
@@ -145,7 +156,7 @@ export async function GET() {
     status: 200,
     headers: {
       "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="dossier-qualiopi-${orgSlug}-${dateSlug}.zip"`,
+      "Content-Disposition": `attachment; filename="${org.current_track === "nda" ? "dossier-nda" : "dossier-qualiopi"}-${orgSlug}-${dateSlug}.zip"`,
       "Cache-Control": "no-store",
     },
   });

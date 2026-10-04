@@ -3,6 +3,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { getMyOrganization } from "@/lib/actions/organization";
 
+const NDA_FOLDER = "00_Declaration_activite";
+// Modèles Qualiopi également déposés dans le dossier NDA.
+const NDA_SHARED_TEMPLATE_IDS = ["programme_formation", "convention_formation", "contrat_formation_particulier", "devis"];
+
 export type DocumentTemplateStatus = {
   id: string;
   label: string;
@@ -68,7 +72,18 @@ export async function listDocumentTemplatesWithStatus(): Promise<DocumentTemplat
     aggByTemplateId.set(row.document_template_id, agg);
   }
 
-  return (templatesResponse.data ?? []).map((t) => {
+  // Parcours NDA : uniquement les pièces de la déclaration d'activité (plus
+  // la convention / le contrat et le programme, déposés eux aussi). Parcours
+  // Qualiopi : les pièces NDA restent masquées, pour ne pas fausser la
+  // progression du dossier d'audit.
+  const isNdaTrack = org.current_track === "nda";
+  const visible = (templatesResponse.data ?? []).filter((t) =>
+    isNdaTrack
+      ? t.folder_group === NDA_FOLDER || NDA_SHARED_TEMPLATE_IDS.includes(t.id)
+      : t.folder_group !== NDA_FOLDER
+  );
+
+  return visible.map((t) => {
     const agg = aggByTemplateId.get(t.id);
     return {
       id: t.id,

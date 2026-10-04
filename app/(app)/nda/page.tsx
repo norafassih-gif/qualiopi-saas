@@ -324,7 +324,7 @@ export default async function NdaPage({
           <p className="mt-4 text-sm font-medium text-gray-900">Pièces justificatives à déposer à cette étape</p>
           <ul className="mt-2 space-y-2">
             {org.nda_revenue_over_threshold !== true && (
-              <Piece title="Description succincte de l'activité" status="soon">
+              <Piece title="Description succincte de l'activité" status="generated">
                 Demandée quand votre chiffre d&apos;affaires ne dépasse pas {NDA_REVENUE_THRESHOLD}.
               </Piece>
             )}
@@ -336,9 +336,15 @@ export default async function NdaPage({
             <Piece title="Contenu des actions de formation" status="generated">
               C&apos;est votre « Programme de formation », dans <Link href="/documents" className="underline">Mes documents</Link>.
             </Piece>
-            <Piece title="Organisation des actions de formation" status="soon" />
-            <Piece title="Moyens pédagogiques mobilisés" status="soon" />
-            <Piece title="Moyens techniques mobilisés" status="soon" />
+            <Piece title="Organisation des actions de formation" status="generated">
+              Calendrier jour par jour, rythme, lieux et modalités, dans <Link href="/documents" className="underline">Mes documents</Link>.
+            </Piece>
+            <Piece title="Moyens pédagogiques mobilisés" status="generated">
+              Dans <Link href="/documents" className="underline">Mes documents</Link>.
+            </Piece>
+            <Piece title="Moyens techniques mobilisés" status="generated">
+              Dans <Link href="/documents" className="underline">Mes documents</Link>.
+            </Piece>
           </ul>
         </Step>
 
@@ -368,7 +374,7 @@ export default async function NdaPage({
             <Piece title="Documents justificatifs" status="user">
               CV à jour et copies des diplômes de chaque formateur.
             </Piece>
-            <Piece title="Documents contractuels" status="soon">
+            <Piece title="Documents contractuels" status="generated">
               Preuve du lien entre chaque formateur et l&apos;organisme
               {legal ? ` (pour vous : ${legal.registrationProof.toLowerCase()})` : ""}.
             </Piece>

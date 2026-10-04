@@ -1,6 +1,7 @@
 "use server";
 
 import { TRAINER_SATISFACTION_CRITERIA } from "@/lib/engine/trainer-satisfaction-criteria";
+import { ndaVariables, ndaCalendarRows } from "@/lib/engine/nda-documents";
 import { createClient } from "@/lib/supabase/server";
 import { getMyOrganization, type Organization } from "@/lib/actions/organization";
 import { getMyBilling } from "@/lib/actions/billing";
@@ -178,7 +179,7 @@ export async function buildDocumentHtml(
   const supabase = await createClient();
 
   const [templateResponse, sectionsResponse] = await Promise.all([
-    supabase.from("document_templates").select("id, label").eq("id", documentTemplateId).maybeSingle(),
+    supabase.from("document_templates").select("id, label, folder_group").eq("id", documentTemplateId).maybeSingle(),
     supabase
       .from("document_template_sections")
       .select("code, title, sort_order, content_type, html_template, source_content_block_type, content_block_scope, data_source")
@@ -436,6 +437,14 @@ export async function buildDocumentHtml(
 
   type ModuleRow = { duration_hours: number | null; modules: { title: string } | { title: string }[] | null };
   const moduleRows = (modulesResponse.data ?? []) as unknown as ModuleRow[];
+
+  // Pièces du dossier de déclaration d'activité (NDA) : variables
+  // supplémentaires, calculées uniquement pour ces modèles.
+  if (templateResponse.data.folder_group === "00_Declaration_activite") {
+    Object.assign(vars, ndaVariables(org, training, session), {
+      nda_calendar_rows: ndaCalendarRows(training, session, moduleRows),
+    });
+  }
 
   const globalBlocksByType = new Map<string, string[]>();
   for (const block of globalBlocksResponse.data ?? []) {
