@@ -43,7 +43,10 @@ export default async function DashboardPage() {
   // Abonnement actif mais formulaire "Mon entreprise" pas encore rempli
   // (organisme encore au stade "placeholder" créé par startCheckout).
   if (!org.onboarding_company_completed) {
-    redirect("/onboarding/entreprise");
+    // Organisme pas encore complété : on passe d'abord par le choix du
+    // parcours (NDA / audit initial / surveillance), qui renvoie ensuite
+    // vers « Mon entreprise ».
+    redirect("/onboarding/parcours");
   }
 
   const training = await getMyFirstTraining();

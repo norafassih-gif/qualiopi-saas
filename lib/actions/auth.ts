@@ -33,7 +33,7 @@ export async function signUp(_prevState: AuthState, formData: FormData): Promise
 
   const supabase = await createClient();
   const origin = await getOrigin();
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     // /dashboard est le point d'entrée unique après connexion : il renvoie
@@ -47,6 +47,17 @@ export async function signUp(_prevState: AuthState, formData: FormData): Promise
 
   if (error) {
     return { error: error.message };
+  }
+
+  // Adresse déjà inscrite : Supabase ne renvoie pas d'erreur (pour ne pas
+  // révéler quels comptes existent) mais n'envoie AUCUN e-mail. Sans ce
+  // message, l'utilisateur attendait indéfiniment un mail de confirmation
+  // qui ne viendra jamais (constaté le 04/10/2026).
+  if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+    return {
+      error:
+        "Un compte existe déjà avec cette adresse e-mail. Connectez-vous depuis la page de connexion (ou avec « Continuer avec Google » si vous l'aviez utilisé).",
+    };
   }
 
   // Tant que l'email n'est pas confirmé, l'utilisateur n'a pas de session
