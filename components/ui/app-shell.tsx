@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   AlertTriangle,
   PenLine,
+  MessageSquare,
 } from "lucide-react";
 
 /**
@@ -96,6 +97,11 @@ function AppSidebar({ data, pathname }: { data: SidebarData; pathname: string })
       icon: ClipboardList,
       href: "/conformite/satisfaction",
       label: "Satisfaction",
+    },
+    {
+      icon: MessageSquare,
+      href: "/conformite/satisfaction-formateur",
+      label: "Satisfaction formateur",
     },
     {
       href: data.hasSession ? "/emargement" : "/onboarding/session",

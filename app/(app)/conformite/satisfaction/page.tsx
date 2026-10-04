@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { SATISFACTION_CRITERIA } from "@/lib/engine/satisfaction-criteria";
 import {
   listSatisfactionResponses,
@@ -41,6 +42,11 @@ export default async function SatisfactionPage({
       <p className="mt-1 text-sm text-gray-600">
         Saisissez ici les réponses de vos bénéficiaires. Elles alimentent le document
         « Questionnaire de satisfaction » et vos indicateurs de résultats.
+      </p>
+      <p className="mt-2 text-sm">
+        <Link href="/conformite/satisfaction-formateur" className="text-blue-700 hover:underline">
+          Recueillir aussi l&apos;avis du formateur (indicateur 30) →
+        </Link>
       </p>
 
       {params.saved ? (

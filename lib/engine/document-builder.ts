@@ -1,5 +1,6 @@
 "use server";
 
+import { TRAINER_SATISFACTION_CRITERIA } from "@/lib/engine/trainer-satisfaction-criteria";
 import { createClient } from "@/lib/supabase/server";
 import { getMyOrganization, type Organization } from "@/lib/actions/organization";
 import { getMyBilling } from "@/lib/actions/billing";
@@ -86,7 +87,8 @@ type TemplateSection = {
     | "org_chart"
     | "data_table"
     | "qcm_answers"
-    | "satisfaction_results";
+    | "satisfaction_results"
+    | "trainer_satisfaction_results";
   html_template: string | null;
   source_content_block_type: string | null;
   // "training" (défaut) : blocs réellement retenus pour cette formation via
@@ -459,6 +461,19 @@ export async function buildDocumentHtml(
     }
   }
 
+  // Reponses du formateur saisies dans /conformite/satisfaction-formateur.
+  const trainerSatisfactionRows: Array<Record<string, string | number | null>> = [];
+  if (sections.some((s) => s.content_type === "trainer_satisfaction_results")) {
+    const { data: trainerRows } = await supabase
+      .from("trainer_satisfaction_responses")
+      .select("*")
+      .eq("organization_id", org.id)
+      .order("answered_on", { ascending: false });
+    for (const row of trainerRows ?? []) {
+      trainerSatisfactionRows.push(row as Record<string, string | number | null>);
+    }
+  }
+
   const orgChartRows: Array<{ person_name: string; function_label: string; level: number }> = [];
   if (sections.some((s) => s.content_type === "org_chart")) {
     const { data: chartRows } = await supabase
@@ -515,7 +530,8 @@ export async function buildDocumentHtml(
         watchEntriesByAxis,
         orgChartRows,
         qcmRows,
-        satisfactionRows
+        satisfactionRows,
+        trainerSatisfactionRows
       )
     )
     .join("\n");
@@ -536,7 +552,8 @@ function renderSection(
   watchEntriesByAxis: Map<string, Array<Record<string, string | null>>> = new Map(),
   orgChartRows: Array<{ person_name: string; function_label: string; level: number }> = [],
   qcmRows: Array<{ question: string; given: string; expected: string; ok: boolean }> = [],
-  satisfactionRows: Array<Record<string, string | number | null>> = []
+  satisfactionRows: Array<Record<string, string | number | null>> = [],
+  trainerSatisfactionRows: Array<Record<string, string | number | null>> = []
 ): string {
   let body: string;
 
@@ -697,6 +714,71 @@ function renderSection(
       body =
         "<p>Nombre de questionnaires recueillis : <strong>" + satisfactionRows.length + "</strong>" +
         (globalAvg !== null ? " — satisfaction moyenne : <strong>" + String(globalAvg).replace(".", ",") + " / 5</strong>" : "") +
+        "</p>" +
+        "<table class=\"register\"><thead><tr><th>Critère</th><th>Moyenne</th></tr></thead><tbody>" +
+        lines + "</tbody></table>" + extra +
+        (comments ? "<p><strong>Commentaires recueillis</strong></p><ul>" + comments + "</ul>" : "");
+      break;
+    }
+    // Avis du formateur (indicateur 30), saisi dans l'outil.
+    case "trainer_satisfaction_results": {
+      const criteria = TRAINER_SATISFACTION_CRITERIA;
+      const rows = trainerSatisfactionRows;
+      if (rows.length === 0) {
+        // Aucune reponse saisie : grille vierge a remplir par le formateur.
+        let blank = "";
+        for (const c of criteria) {
+          blank += "<tr><td>" + escapeHtml(c.label) + "</td><td>&nbsp;</td></tr>";
+        }
+        body =
+          "<p>Pour chaque critère, merci de noter de 1 (très insatisfait) à 5 (très satisfait).</p>" +
+          "<table class=\"register\"><thead><tr><th>Critère</th><th>Note (1 à 5)</th></tr></thead><tbody>" +
+          blank + "</tbody></table>" +
+          "<p>Les objectifs pédagogiques ont-ils été atteints ? ☐ Oui ☐ Non ☐ Partiellement</p>" +
+          "<p>Souhaitez-vous intervenir à nouveau pour notre organisme ? ☐ Oui ☐ Non</p>" +
+          "<p>Difficultés rencontrées : ……………………………………………………………………</p>" +
+          "<p>Suggestions d'amélioration : ……………………………………………………………………</p>";
+        break;
+      }
+      const fmt = (n: number) => String(n).replace(".", ",");
+      const avgOf = (values: number[]) =>
+        values.length ? Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10 : null;
+      let lines = "";
+      const allValues: number[] = [];
+      for (const c of criteria) {
+        const value = avgOf(
+          rows.map((r) => (typeof r[c.key] === "number" ? (r[c.key] as number) : null)).filter((v): v is number => v !== null)
+        );
+        if (value !== null) allValues.push(value);
+        lines += "<tr><td>" + escapeHtml(c.label) + "</td><td>" +
+          (value !== null ? fmt(value) + " / 5" : "Non renseigné") + "</td></tr>";
+      }
+      const globalAvg = avgOf(allValues);
+      const share = (key: string, expected: string) => {
+        const total = rows.filter((r) => r[key]).length;
+        if (total === 0) return null;
+        return Math.round((rows.filter((r) => String(r[key]) === expected).length / total) * 100);
+      };
+      const names = Array.from(new Set(rows.map((r) => String(r.trainer_name ?? "").trim()).filter(Boolean)));
+      const extra =
+        (share("objectifs_atteints", "oui") !== null
+          ? "<p>Objectifs pédagogiques atteints selon le formateur : <strong>" + share("objectifs_atteints", "oui") + " %</strong></p>"
+          : "") +
+        (share("reintervenir", "oui") !== null
+          ? "<p>Souhaitent intervenir à nouveau : <strong>" + share("reintervenir", "oui") + " %</strong></p>"
+          : "");
+      const comments = rows
+        .map((r) => {
+          const diff = r.difficultes ? "<li><strong>Difficultés :</strong> " + escapeHtml(String(r.difficultes)) + "</li>" : "";
+          const sugg = r.suggestions ? "<li><strong>Suggestions :</strong> " + escapeHtml(String(r.suggestions)) + "</li>" : "";
+          const libre = r.commentaire_libre ? "<li>" + escapeHtml(String(r.commentaire_libre)) + "</li>" : "";
+          return diff + sugg + libre;
+        })
+        .join("");
+      body =
+        "<p>Nombre de questionnaires recueillis : <strong>" + rows.length + "</strong>" +
+        (names.length ? " (" + escapeHtml(names.join(", ")) + ")" : "") +
+        (globalAvg !== null ? " — satisfaction moyenne : <strong>" + fmt(globalAvg) + " / 5</strong>" : "") +
         "</p>" +
         "<table class=\"register\"><thead><tr><th>Critère</th><th>Moyenne</th></tr></thead><tbody>" +
         lines + "</tbody></table>" + extra +
