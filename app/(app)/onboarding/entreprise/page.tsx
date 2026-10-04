@@ -13,8 +13,10 @@ export default async function OnboardingEntreprisePage() {
   // l'utilisateur vers le paywall juste après qu'il ait payé. Rien n'est
   // pour autant contournable : sans organisme, impossible d'arriver ici.
   const existing = await getMyOrganization();
+  // Depuis le choix du parcours à l'entrée (octobre 2026), l'organisme
+  // minimal est créé au moment du choix NDA / audit initial / surveillance.
   if (!existing) {
-    redirect("/onboarding/abonnement");
+    redirect("/onboarding/parcours");
   }
   // Un compte = un organisme (addendum 17) : une fois le vrai formulaire
   // rempli, cet écran n'est plus atteignable, on renvoie au dashboard.

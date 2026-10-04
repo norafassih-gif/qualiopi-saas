@@ -73,6 +73,13 @@ export type Organization = {
   campus_org_id: string | null;
   campus_setup_link: string | null;
   campus_account_created_at: string | null;
+  // Parcours choisi à l'entrée et parcours guidé NDA (migration 0049).
+  current_track: "nda" | "qualiopi_initial" | "qualiopi_surveillance";
+  legal_form: string | null;
+  nda_number: string | null;
+  nda_filed_on: string | null;
+  nda_revenue_over_threshold: boolean | null;
+  nda_progress: Record<string, boolean> | null;
 };
 
 /**
@@ -152,6 +159,7 @@ export async function createOrganization(
     disability_referent:
       disability_referent_raw || (is_sole_practitioner ? manager_name : null),
     is_sole_practitioner,
+    legal_form: String(formData.get("legal_form") || "") || null,
     onboarding_company_completed: true,
   };
 
@@ -172,7 +180,8 @@ export async function createOrganization(
       return { error: "Une erreur est survenue : " + error.message };
     }
     revalidatePath("/", "layout");
-    redirect("/onboarding/activite");
+    // Parcours NDA : on enchaîne sur le guide de déclaration d'activité.
+    redirect(existing.current_track === "nda" ? "/nda" : "/onboarding/activite");
   }
 
   const { error } = await supabase
@@ -221,6 +230,7 @@ const OPTIONAL_TEXT_FIELDS = [
   "external_trainer_contract_type",
   "technical_provider_name",
   "technical_provider_company",
+  "legal_form",
 ] as const;
 
 // Champs texte avec une valeur par défaut côté base (colonnes NOT NULL) :

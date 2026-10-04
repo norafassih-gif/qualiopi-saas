@@ -104,5 +104,6 @@ async function getSidebarData(): Promise<SidebarData | null> {
     documentsTotal,
     missingFieldsCount: missingFields.length,
     isAdmin,
+    currentTrack: org.current_track ?? "qualiopi_initial",
   };
 }

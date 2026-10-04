@@ -38,7 +38,7 @@ export default async function DashboardPage() {
   // Le paiement n'est exigé qu'au moment d'une action à valeur (génération
   // de document, cf. isSubscriptionActiveForOrg dans les routes /api/documents/*).
   if (!org) {
-    redirect("/onboarding/entreprise");
+    redirect("/onboarding/parcours");
   }
   // Abonnement actif mais formulaire "Mon entreprise" pas encore rempli
   // (organisme encore au stade "placeholder" créé par startCheckout).
@@ -96,6 +96,25 @@ export default async function DashboardPage() {
       </div>
 
       {pendingAccessGrant && <AccessGrantBanner grant={pendingAccessGrant} />}
+
+      {org.current_track === "nda" && (
+        <div className="mb-8 rounded-lg border border-blue-200 bg-blue-50 p-5">
+          <p className="text-xs font-medium uppercase tracking-wide text-blue-800">Votre parcours</p>
+          <p className="mt-1 text-lg font-semibold text-blue-950">Déclaration d&apos;activité (NDA)</p>
+          <p className="mt-1 text-sm text-blue-900">
+            {org.nda_number
+              ? `Numéro de déclaration enregistré : ${org.nda_number}.`
+              : "Suivez le guide pas à pas du formulaire Mon Activité Formation et préparez vos pièces justificatives."}
+          </p>
+          <Link
+            href="/nda"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-blue-900 px-4 py-2 text-sm font-medium text-white"
+          >
+            {org.nda_number ? "Voir ma déclaration" : "Continuer ma déclaration"}
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </div>
+      )}
 
       {/*
         Accès LMS (campus.pivotformation.com) — demande de Nora (24/08/2026) :

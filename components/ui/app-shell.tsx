@@ -17,6 +17,8 @@ import {
   AlertTriangle,
   PenLine,
   MessageSquare,
+  FilePen,
+  Route,
 } from "lucide-react";
 
 /**
@@ -34,6 +36,7 @@ export type SidebarData = {
   documentsTotal: number;
   missingFieldsCount: number;
   isAdmin: boolean;
+  currentTrack: string;
 };
 
 /**
@@ -112,6 +115,12 @@ function AppSidebar({ data, pathname }: { data: SidebarData; pathname: string })
     { href: "/parametres/identite-visuelle", label: "Identité visuelle", icon: Palette },
     { href: "/parametres/abonnement", label: "Mon abonnement", icon: CreditCard },
   ];
+
+  // Parcours NDA : le guide de déclaration d'activité passe en tête.
+  if (data.currentTrack === "nda") {
+    items.splice(1, 0, { href: "/nda", label: "Ma déclaration (NDA)", icon: FilePen });
+  }
+  items.push({ href: "/onboarding/parcours", label: "Changer de parcours", icon: Route });
 
   if (data.isAdmin) {
     items.push({ href: "/admin", label: "Back-office admin", icon: ShieldCheck });

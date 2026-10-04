@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { createOrganization, type OrgFormState } from "@/lib/actions/organization";
+import { LegalFormSelect } from "@/components/ui/legal-form-select";
 
 const initialState: OrgFormState = { error: null };
 
@@ -38,6 +39,7 @@ export function OnboardingEntrepriseForm() {
       <Field label="Nom commercial" name="commercial_name" />
       <Field label="Nom du dirigeant" name="manager_name" />
       <Field label="SIRET" name="siret" />
+      <LegalFormSelect />
       <Field label="Adresse" name="address" />
       <Field label="Téléphone" name="phone" />
       <Field label="Email" name="email" type="email" />
