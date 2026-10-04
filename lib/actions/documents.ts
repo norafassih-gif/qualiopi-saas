@@ -90,6 +90,7 @@ export type GeneratedDocumentForZip = {
   folder_group: string;
   sort_order: number;
   storage_path: string;
+  linked_indicator_numbers: number[];
 };
 
 /**
@@ -146,7 +147,7 @@ export async function getGeneratedDocumentsForZip(): Promise<GeneratedDocumentFo
   const templateIds = Array.from(new Set(docsData.map((d) => d.document_template_id)));
   const { data: templatesData, error: templatesError } = await supabase
     .from("document_templates")
-    .select("id, label, folder_group, sort_order")
+    .select("id, label, folder_group, sort_order, linked_indicator_numbers")
     .in("id", templateIds);
 
   if (templatesError) {
@@ -165,6 +166,7 @@ export async function getGeneratedDocumentsForZip(): Promise<GeneratedDocumentFo
         folder_group: template.folder_group,
         sort_order: template.sort_order,
         storage_path: d.pdf_url as string,
+        linked_indicator_numbers: (template.linked_indicator_numbers ?? []) as number[],
       };
     })
     .filter((d): d is GeneratedDocumentForZip => d !== null)

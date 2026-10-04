@@ -5,21 +5,18 @@ import { createClient } from "@/lib/supabase/server";
 import { getMyOrganization } from "@/lib/actions/organization";
 import { isSubscriptionActiveForOrg } from "@/lib/actions/billing";
 import { getGeneratedDocumentsForZip } from "@/lib/actions/documents";
+import { getMyFirstTraining } from "@/lib/actions/training";
+import { getMyFirstPartner } from "@/lib/actions/partners";
+import {
+  allIndicatorFolders,
+  documentIndicators,
+  indicatorFolderPath,
+  notApplicableReason,
+  TO_COMPLETE,
+  type AuditContext,
+} from "@/lib/engine/audit-structure";
 
 export const maxDuration = 60;
-
-// Noms de dossiers affichés dans le ZIP — reprend les libellés déjà utilisés
-// sur l'écran "Mes documents" (folder_group en base), sans le préfixe
-// numérique technique, pour un ZIP lisible par un auditeur qui l'ouvrirait
-// directement (cf. conception initiale, "PACK DOCUMENTAIRE").
-const FOLDER_NAMES: Record<string, string> = {
-  "03_Avant_formation": "03_Avant_la_formation",
-  "04_Pendant_formation": "04_Pendant_la_formation",
-  "05_Apres_formation": "05_Apres_la_formation",
-  "06_Procedures": "06_Procedures",
-  "07_Veille": "07_Veille",
-  "08_Amelioration": "08_Amelioration_continue",
-};
 
 function safeFileName(label: string): string {
   return label
@@ -85,23 +82,58 @@ export async function GET() {
     })
   );
 
+  // Classement par critère puis par indicateur, comme le chef auditeur
+  // l'a fait à la main pour un dossier client (cf. lib/engine/audit-structure.ts).
+  const [training, subcontractor, partner] = await Promise.all([
+    getMyFirstTraining(),
+    getMyFirstPartner("sous_traitant"),
+    getMyFirstPartner("partenaire"),
+  ]);
+  const ctx: AuditContext = {
+    isCertifying: Boolean((training as { is_certifying?: boolean | null } | null)?.is_certifying),
+    hasSubcontractor: Boolean(subcontractor),
+    hasWorkPlacementPartner: Boolean(partner),
+  };
+
+  const root = `Dossier audit Qualiopi - ${safeFileName(org.company_name || "organisme").replace(/_/g, " ")}`;
+
+  // Tous les dossiers indicateurs, même vides : l'auditeur retrouve
+  // immédiatement la grille complète des 32 indicateurs.
+  for (const indicator of allIndicatorFolders()) {
+    const folder = `${root}/${indicatorFolderPath(indicator, ctx)}`;
+    zip.folder(folder);
+    const naReason = notApplicableReason(indicator, ctx);
+    if (naReason) {
+      zip.file(`${folder}/NON_APPLICABLE.txt`, naReason + "\n");
+    }
+    const toComplete = TO_COMPLETE[indicator];
+    if (toComplete && !naReason) {
+      zip.file(`${folder}/A_COMPLETER.txt`, "Preuves à ajouter par l'organisme avant l'audit :\n" + toComplete + "\n");
+    }
+  }
+
   const usedNamesByFolder = new Map<string, Set<string>>();
   for (const result of results) {
     if (!result) continue;
-    const folderName = FOLDER_NAMES[result.doc.folder_group] ?? result.doc.folder_group;
-    const usedNames = usedNamesByFolder.get(folderName) ?? new Set<string>();
-    let fileName = `${safeFileName(result.doc.label)}.pdf`;
-    // Sécurité anti-collision : deux libellés très proches ne doivent pas
-    // s'écraser l'un l'autre dans le ZIP (improbable avec le référentiel
-    // actuel, mais peu coûteux à garantir).
-    let suffix = 2;
-    while (usedNames.has(fileName)) {
-      fileName = `${safeFileName(result.doc.label)}_${suffix}.pdf`;
-      suffix += 1;
+    const indicators = documentIndicators(
+      result.doc.document_template_id,
+      result.doc.linked_indicator_numbers,
+      ctx
+    );
+    for (const indicator of indicators) {
+      const folderName = `${root}/${indicatorFolderPath(indicator, ctx)}`;
+      const usedNames = usedNamesByFolder.get(folderName) ?? new Set<string>();
+      let fileName = `${safeFileName(result.doc.label)}.pdf`;
+      // Anti-collision : deux libellés proches ne doivent pas s'écraser.
+      let suffix = 2;
+      while (usedNames.has(fileName)) {
+        fileName = `${safeFileName(result.doc.label)}_${suffix}.pdf`;
+        suffix += 1;
+      }
+      usedNames.add(fileName);
+      usedNamesByFolder.set(folderName, usedNames);
+      zip.file(`${folderName}/${fileName}`, result.buffer);
     }
-    usedNames.add(fileName);
-    usedNamesByFolder.set(folderName, usedNames);
-    zip.file(`${folderName}/${fileName}`, result.buffer);
   }
 
   const zipBuffer = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
