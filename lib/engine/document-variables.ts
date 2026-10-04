@@ -397,6 +397,15 @@ export function resolveDocumentVariables(input: {
           `<strong>${beneficiarySignatureName ?? ""}</strong>` +
           `<br/>Signé le ${formatDate(generatedDate ?? beneficiarySignatureDate)}`
         : `Date et signature du stagiaire, précédées de la mention manuscrite « Lu et approuvé »<br/>……………………………………`,
+    // Variante du devis : mention manuscrite « Bon pour accord » au lieu de
+    // « Lu et approuvé » (retour de Nora, 04/10/2026 : le client signe aussi
+    // le devis).
+    student_accord_block: beneficiarySignatureDataUrl
+      ? `<span class="handwritten">Bon pour accord</span>` +
+        `<img src="${beneficiarySignatureDataUrl}" alt="Signature du client" style="max-height:70px;display:block;margin:2px 0" />` +
+        `<strong>${beneficiarySignatureName ?? ""}</strong>` +
+        `<br/>Signé le ${formatDate(generatedDate ?? beneficiarySignatureDate)}`
+      : `Date et signature, précédées de la mention manuscrite « Bon pour accord »<br/>……………………………………`,
     student_signature_status: generatedDate || beneficiarySignatureDate
       ? `le ${formatDate(generatedDate ?? beneficiarySignatureDate)}`
       : "……………………",

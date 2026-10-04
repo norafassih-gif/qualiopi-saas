@@ -289,6 +289,26 @@ export async function buildDocumentHtml(
     }
     beneficiaryCount = countDistinctBeneficiaries(allBeneficiaries);
     sessionBeneficiaries = allBeneficiaries;
+
+    // Signature du stagiaire reprise de l'émargement (retour de Nora,
+    // 04/10/2026 : "la signature du stagiaire est sur les émargements, on
+    // peut la récupérer") : si aucune signature n'a été enregistrée sur la
+    // fiche du bénéficiaire, on réutilise son premier tracé d'émargement pour
+    // la convention, le contrat, le devis... Requête faite seulement pour les
+    // modèles qui affichent une signature du stagiaire.
+    const showsStudentSignature =
+      isStudentScopedTemplate ||
+      sections.some((s) => /student_(signature|accord)_block/.test(s.html_template ?? ""));
+    if (!beneficiarySignatureDataUrl && resolvedBeneficiaryId && showsStudentSignature) {
+      const traced = (await getAttendanceSignatures(session.id))
+        .filter((s) => s.beneficiary_id === resolvedBeneficiaryId && s.signature_data_url)
+        .sort((a, b) => (a.signed_at < b.signed_at ? -1 : 1))[0];
+      if (traced) {
+        beneficiarySignatureDataUrl = traced.signature_data_url;
+        beneficiarySignatureName = beneficiarySignatureName || traced.signer_name || beneficiaryName;
+        beneficiarySignatureDate = beneficiarySignatureDate || traced.signed_at.slice(0, 10);
+      }
+    }
   }
 
   // Grille d'émargement (feuille_emargement, section "attendance_grid",
