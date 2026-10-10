@@ -64,10 +64,15 @@ function Select({
 export function OnboardingSessionForm() {
   const [state, formAction, pending] = useActionState(createSession, initialState);
   const [isFree, setIsFree] = useState(false);
+  const [trainerIsManager, setTrainerIsManager] = useState(false);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
-      <Field label="Nom du formateur" name="trainer_name" required />
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" name="trainer_is_manager" checked={trainerIsManager} onChange={(e) => setTrainerIsManager(e.target.checked)} />
+        Le dirigeant est aussi le formateur (sa signature enregistrée sera reprise sur les documents)
+      </label>
+      {!trainerIsManager && <Field label="Nom du formateur" name="trainer_name" required />}
 
       <div className="grid grid-cols-2 gap-4">
         <Field label="Date de début" name="start_date" type="date" required />

@@ -93,6 +93,12 @@ export function getMissingRequiredFields(
   push("qualite", "Région", org.region);
 
   if (session) {
+    if (isEmpty(session.trainer_name) && !session.trainer_is_manager) {
+      missing.push({ label: "Formateur de la session", group: "session", href: GROUP_HREF.session });
+    }
+    if (session.trainer_is_manager && isEmpty(org.signature_url)) {
+      missing.push({ label: "Signature du dirigeant (formateur)", group: "qualite", href: "/parametres/identite-visuelle" });
+    }
     if (session.price_unit !== "gratuit" && session.price_amount == null) {
       missing.push({ label: "Tarif de la formation", group: "session", href: GROUP_HREF.session });
     }
@@ -111,6 +117,11 @@ export function getMissingRequiredFields(
     push("session", "Modalité préférée du bénéficiaire", beneficiary.preferred_modality);
     push("session", "Rythme souhaité du bénéficiaire", beneficiary.preferred_rhythm);
     push("session", "Contraintes d'emploi du temps du bénéficiaire", beneficiary.schedule_constraints);
+    push("session", "Diplômes et qualifications du bénéficiaire", beneficiary.diplomas_qualifications);
+    push("session", "Expérience professionnelle en lien avec la formation", beneficiary.related_experience);
+    if (beneficiary.has_disability === true) {
+      push("session", "Nature des aménagements demandés", beneficiary.accommodation_details);
+    }
     if (beneficiary.has_disability == null) {
       missing.push({
         label: "Situation de handicap du bénéficiaire",

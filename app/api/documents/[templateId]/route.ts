@@ -120,6 +120,12 @@ export async function GET(
 
   const built = await buildDocumentHtml(templateId, customDate, requestedBeneficiaryId);
   if ("error" in built) {
+    if (built.missing && built.missing.length > 0) {
+      return NextResponse.json(
+        { error: built.error, kind: "missing", missing: built.missing },
+        { status: 422 }
+      );
+    }
     return NextResponse.json({ error: built.error }, { status: 400 });
   }
 

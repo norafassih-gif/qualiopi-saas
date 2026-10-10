@@ -199,6 +199,11 @@ export function resolveDocumentVariables(input: {
   beneficiaryPreferredRhythm?: string | null;
   beneficiaryScheduleConstraints?: string | null;
   beneficiaryHasDisability?: boolean | null;
+  // Dossier d'admission : diplômes, expérience en lien avec la formation et
+  // nature des aménagements demandés (saisis sur /parametres/session).
+  beneficiaryDiplomas?: string | null;
+  beneficiaryRelatedExperience?: string | null;
+  beneficiaryAccommodationDetails?: string | null;
   beneficiarySignatureName?: string | null;
   beneficiarySignatureAccepted?: boolean;
   beneficiarySignatureDate?: string | null;
@@ -236,6 +241,9 @@ export function resolveDocumentVariables(input: {
     beneficiaryPreferredRhythm = null,
     beneficiaryScheduleConstraints = null,
     beneficiaryHasDisability = null,
+    beneficiaryDiplomas = null,
+    beneficiaryRelatedExperience = null,
+    beneficiaryAccommodationDetails = null,
     beneficiarySignatureName = null,
     beneficiarySignatureAccepted = false,
     beneficiarySignatureDate = null,
@@ -341,7 +349,16 @@ export function resolveDocumentVariables(input: {
         ? `Cette formation s'adresse à : ${training.target_audience.join(", ")}.`
         : "Cette formation s'adresse à tout public concerné par la thématique traitée.",
 
-    trainer_name: session?.trainer_name ?? "",
+    // Si le dirigeant est aussi le formateur (case cochée sur la session), son
+    // nom est repris automatiquement : un seul endroit à renseigner.
+    trainer_name: session?.trainer_is_manager ? (org.manager_name ?? "") : (session?.trainer_name ?? ""),
+    // Signature du formateur : celle du dirigeant quand il est aussi le
+    // formateur (déjà enregistrée dans Identité visuelle) ; sinon un cadre
+    // laissé vide pour une signature manuscrite.
+    trainer_signature_block:
+      session?.trainer_is_manager && org.signature_url
+        ? `<img src="${org.signature_url}" alt="Signature du formateur" style="max-height:18mm; max-width:50mm; display:block; margin:2px 0" />`
+        : "<br/><br/>",
     training_start_date: formatDate(session?.start_date ?? null),
     training_end_date: formatDate(session?.end_date ?? null),
     // Horaires de la session (cf. migration 0046, retour de Nora suite au
@@ -374,7 +391,10 @@ export function resolveDocumentVariables(input: {
     // identifié (entreprise, OPCO...) — contrairement au contrat de formation
     // particulier, document distinct prévu pour les bénéficiaires individuels.
     student_company_required: required(beneficiaryCompany, "Entreprise du bénéficiaire (cocontractant)"),
-    student_company_representative: beneficiaryCompanyRepresentative || "……………………………",
+    // Obligatoire : une convention ne sort pas avec "représenté par" vide
+    // (AKADEMOS EVO / Alizé Taxi, 10/10/2026). Le contrôle de complétude
+    // (document-completeness.ts) bloque la génération tant qu'il manque.
+    student_company_representative: required(beneficiaryCompanyRepresentative, "Représentant de l'entreprise cliente"),
     student_email: beneficiaryEmail ?? "",
     student_role: beneficiaryRole ?? "",
     // Signature electronique simple du beneficiaire (cf. migration
@@ -425,6 +445,17 @@ export function resolveDocumentVariables(input: {
     needs_preferred_modality: required(beneficiaryPreferredModality, "Modalité préférée à préciser"),
     needs_preferred_rhythm: required(beneficiaryPreferredRhythm, "Rythme souhaité à préciser"),
     needs_schedule_constraints: required(beneficiaryScheduleConstraints, "Contraintes à préciser"),
+    // Dossier d'admission : informations réellement demandées au bénéficiaire
+    // (plus de pointillés à remplir à la main).
+    admission_diplomas: required(beneficiaryDiplomas, "Diplômes et qualifications"),
+    admission_related_experience: required(
+      beneficiaryRelatedExperience,
+      "Expérience professionnelle en lien avec la formation"
+    ),
+    admission_accommodation_details:
+      beneficiaryHasDisability === true
+        ? required(beneficiaryAccommodationDetails, "Nature des aménagements souhaités")
+        : "Sans objet (aucun besoin d'aménagement déclaré).",
     needs_disability_status:
       beneficiaryHasDisability == null
         ? "[Situation de handicap à préciser]"

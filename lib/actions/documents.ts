@@ -128,7 +128,11 @@ export async function getGeneratedDocumentsForZip(): Promise<GeneratedDocumentFo
     .select("document_template_id, pdf_url, beneficiary_id")
     .eq("organization_id", org.id)
     .eq("status", "generated")
-    .not("pdf_url", "is", null);
+    .not("pdf_url", "is", null)
+    // Les PDF générés avant le 10/10/2026 (contrôle de complétude, vraies
+    // cases à cocher) peuvent contenir des champs vides ou des "?" : on ne
+    // les remet jamais dans le dossier, il faut les régénérer.
+    .gte("generated_at", "2026-10-10T00:00:00Z");
 
   if (docsError) {
     return { error: "Erreur lors du chargement des documents générés : " + docsError.message };

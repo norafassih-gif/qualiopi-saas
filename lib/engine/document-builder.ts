@@ -1,6 +1,15 @@
 "use server";
 
 import { TRAINER_SATISFACTION_CRITERIA } from "@/lib/engine/trainer-satisfaction-criteria";
+import {
+  dedupeMissing,
+  findEmptyVariables,
+  findPlaceholderMarkers,
+  formatMissingMessage,
+  templateKeys,
+  type MissingItem,
+} from "@/lib/engine/document-completeness";
+import { CHECKBOX_CSS, makePdfSafe } from "@/lib/engine/pdf-safe";
 import { ndaVariables, ndaCalendarRows } from "@/lib/engine/nda-documents";
 import { CUSTOM_CATEGORY_ID, customBlocksByType, customModuleRows, parseCustomProgram } from "@/lib/engine/custom-program";
 import { createClient } from "@/lib/supabase/server";
@@ -118,7 +127,9 @@ export type BuildDocumentResult =
        */
       beneficiaryId: string | null;
     }
-  | { error: string };
+  // `missing` : liste des informations manquantes quand la génération est
+  // bloquée par le contrôle de complétude (cf. document-completeness.ts).
+  | { error: string; missing?: MissingItem[] };
 
 function interpolate(template: string, vars: Record<string, string>): string {
   return template.replace(/\{\{(\w+)\}\}/g, (_match, key: string) => vars[key] ?? "");
@@ -227,6 +238,9 @@ export async function buildDocumentHtml(
   let beneficiaryPreferredRhythm: string | null = null;
   let beneficiaryScheduleConstraints: string | null = null;
   let beneficiaryHasDisability: boolean | null = null;
+  let beneficiaryDiplomas: string | null = null;
+  let beneficiaryRelatedExperience: string | null = null;
+  let beneficiaryAccommodationDetails: string | null = null;
   // Toutes les lignes bénéficiaires de la session (hors doublons) — utilisé
   // par la grille d'émargement dynamique (content_type "attendance_grid",
   // cf. plus bas) qui doit lister TOUS les apprenants, pas un seul.
@@ -286,6 +300,9 @@ export async function buildDocumentHtml(
       beneficiaryPreferredRhythm = beneficiary.preferred_rhythm;
       beneficiaryScheduleConstraints = beneficiary.schedule_constraints;
       beneficiaryHasDisability = beneficiary.has_disability;
+      beneficiaryDiplomas = beneficiary.diplomas_qualifications;
+      beneficiaryRelatedExperience = beneficiary.related_experience;
+      beneficiaryAccommodationDetails = beneficiary.accommodation_details;
     }
     beneficiaryCount = countDistinctBeneficiaries(allBeneficiaries);
     sessionBeneficiaries = allBeneficiaries;
@@ -414,6 +431,9 @@ export async function buildDocumentHtml(
     beneficiaryPreferredRhythm,
     beneficiaryScheduleConstraints,
     beneficiaryHasDisability,
+    beneficiaryDiplomas,
+    beneficiaryRelatedExperience,
+    beneficiaryAccommodationDetails,
     partner,
     generatedDate: customDate ?? null,
     evaluationResult:
@@ -552,7 +572,22 @@ export async function buildDocumentHtml(
     }
   }
 
-  const sectionsHtml = sections
+  // Contrôle de complétude (filet 1) : toute variable utilisée par le modèle
+  // doit avoir une valeur, sauf celles déclarées facultatives. Fait ici, une
+  // fois toutes les variables assemblées (y compris celles du parcours NDA).
+  const usedKeys = templateKeys(sections);
+  const missingItems: MissingItem[] = findEmptyVariables(usedKeys, vars);
+  // Le dirigeant est coché comme formateur mais n'a pas enregistré sa
+  // signature : le document sortirait sans signature (retour auditeur,
+  // questionnaire de satisfaction formateur, indicateur 30).
+  if (session?.trainer_is_manager && usedKeys.includes("trainer_signature_block") && !rawOrg.signature_url) {
+    missingItems.push({
+      label: "Signature du dirigeant (formateur) : à ajouter dans Identité visuelle",
+      href: "/parametres/identite-visuelle",
+    });
+  }
+
+  const renderedSections = sections
     .map((section) =>
       renderSection(
         section,
@@ -574,6 +609,17 @@ export async function buildDocumentHtml(
       )
     )
     .join("\n");
+
+  // Filets 2 et 3 : marqueurs "[... à compléter]" ou signataire en pointillés
+  // restés dans le texte rendu. Un document incomplet ne sort jamais.
+  missingItems.push(...findPlaceholderMarkers(renderedSections));
+  const missing = dedupeMissing(missingItems);
+  if (missing.length > 0) {
+    return { error: formatMissingMessage(templateResponse.data.label, missing), missing };
+  }
+
+  // Cases à cocher dessinées et caractères rares neutralisés (cf. pdf-safe.ts).
+  const sectionsHtml = makePdfSafe(renderedSections);
 
   const html = wrapDocument({ org, templateLabel: templateResponse.data.label, sectionsHtml, vars });
 
@@ -1098,6 +1144,7 @@ ${fontLinkTag}
   .attendance-period + .attendance-period { page-break-before: always; }
   .attendance-period-label { font-weight: 600; color: ${primary}; margin-bottom: 4pt; }
 
+${CHECKBOX_CSS}
     /* Case a cocher dessinee en CSS : le glyphe unicode sortait en carre vide
        selon la police choisie par le client (audit du 23/09/2026). */
     li.checkline { list-style: none; margin-left: 0; }

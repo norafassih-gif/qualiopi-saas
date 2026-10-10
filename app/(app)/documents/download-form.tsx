@@ -16,10 +16,12 @@ export function DocumentDownloadForm({
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [missing, setMissing] = useState<Array<{ label: string; href: string }>>([]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    setMissing([]);
     setPending(true);
 
     const formData = new FormData(e.currentTarget);
@@ -45,6 +47,7 @@ export function DocumentDownloadForm({
         }
         const body = await response.json().catch(() => null);
         setError(body?.error ?? "La génération du document a échoué.");
+        setMissing(Array.isArray(body?.missing) ? body.missing.filter((m: unknown) => typeof m === "object" && m !== null) : []);
         return;
       }
 
@@ -107,6 +110,15 @@ export function DocumentDownloadForm({
         <p className="text-xs text-red-600" role="alert">
           {error}
         </p>
+      )}
+      {missing.length > 0 && (
+        <ul className="list-disc pl-5 text-xs text-red-700">
+          {missing.map((m) => (
+            <li key={m.label}>
+              <a href={m.href} className="underline">{m.label}</a>
+            </li>
+          ))}
+        </ul>
       )}
     </form>
   );

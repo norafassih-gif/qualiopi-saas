@@ -5,14 +5,14 @@ import { EditSessionForm } from "./form";
 export default async function ModifierSessionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ saved?: string }>;
+  searchParams: Promise<{ saved?: string; completer?: string }>;
 }) {
   const session = await getMyFirstSession();
   if (!session) {
     redirect("/onboarding/session");
   }
   const beneficiary = await getMyFirstBeneficiary(session.id);
-  const { saved } = await searchParams;
+  const { saved, completer } = await searchParams;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -25,6 +25,11 @@ export default async function ModifierSessionPage({
       {saved === "1" && (
         <div className="mb-6 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
           Enregistré.
+        </div>
+      )}
+      {completer === "1" && (
+        <div className="mb-6 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          Pour que vos documents puissent être générés, complétez les champs ci-dessous (recueil des besoins, dossier d&apos;admission, représentant de l&apos;entreprise, lieu). Un document dont il manque une information est bloqué.
         </div>
       )}
       <EditSessionForm session={session} beneficiary={beneficiary} />

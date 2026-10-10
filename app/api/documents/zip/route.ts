@@ -60,7 +60,7 @@ export async function GET() {
   }
   if (docs.length === 0) {
     return NextResponse.json(
-      { error: "Aucun document généré pour l'instant — téléchargez au moins un PDF avant de créer le ZIP." },
+      { error: "Aucun document à jour pour l'instant. Les documents générés avant le 10/10/2026 ne sont plus inclus : régénérez-les (bouton « Tout générer ») puis relancez le ZIP." },
       { status: 400 }
     );
   }

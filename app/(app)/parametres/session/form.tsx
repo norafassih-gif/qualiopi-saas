@@ -31,6 +31,7 @@ function Field({
   type = "text",
   defaultValue,
   help,
+  onChange,
 }: {
   label: string;
   name: string;
@@ -38,6 +39,7 @@ function Field({
   type?: string;
   defaultValue?: string;
   help?: string;
+  onChange?: (value: string) => void;
 }) {
   return (
     <label className="flex flex-col gap-1 text-sm">
@@ -47,6 +49,7 @@ function Field({
         name={name}
         required={required}
         defaultValue={defaultValue}
+        onChange={onChange ? (e) => onChange(e.target.value) : undefined}
         className="rounded-md border border-gray-300 px-3 py-2"
       />
       {help && <span className="text-xs text-gray-500">{help}</span>}
@@ -58,16 +61,22 @@ function Textarea({
   label,
   name,
   defaultValue,
+  help,
 }: {
   label: string;
   name: string;
   defaultValue?: string;
+  help?: string;
 }) {
+  // Tous les champs du recueil des besoins sont obligatoires : les documents
+  // en ont besoin et un document incomplet ne peut pas être généré.
   return (
     <label className="flex flex-col gap-1 text-sm">
       {label}
+      {help && <span className="text-xs text-gray-500">{help}</span>}
       <textarea
         name={name}
+        required
         defaultValue={defaultValue}
         rows={2}
         className="rounded-md border border-gray-300 px-3 py-2"
@@ -81,11 +90,13 @@ function RadioGroup({
   name,
   options,
   defaultValue,
+  onChange,
 }: {
   label: string;
   name: string;
   options: { value: string; label: string }[];
   defaultValue?: string;
+  onChange?: (value: string) => void;
 }) {
   return (
     <div className="flex flex-col gap-1 text-sm">
@@ -93,7 +104,14 @@ function RadioGroup({
       <div className="flex flex-wrap gap-x-4 gap-y-1">
         {options.map((o) => (
           <label key={o.value} className="flex items-center gap-1.5">
-            <input type="radio" name={name} value={o.value} defaultChecked={defaultValue === o.value} />
+            <input
+              type="radio"
+              name={name}
+              value={o.value}
+              required
+              defaultChecked={defaultValue === o.value}
+              onChange={onChange ? () => onChange(o.value) : undefined}
+            />
             {o.label}
           </label>
         ))}
@@ -140,13 +158,32 @@ export function EditSessionForm({
 }) {
   const [state, formAction, pending] = useActionState(updateSession, initialState);
   const [isFree, setIsFree] = useState(session.price_unit === "gratuit");
+  const [trainerIsManager, setTrainerIsManager] = useState(Boolean(session.trainer_is_manager));
+  const [hasCompany, setHasCompany] = useState(Boolean(beneficiary?.company));
+  const [hasDisability, setHasDisability] = useState(beneficiary?.has_disability === true);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <fieldset className="flex flex-col gap-3 border-t border-gray-200 pt-4">
         <legend className="mb-1 text-sm font-semibold text-gray-900">Session</legend>
 
-        <Field label="Nom du formateur" name="trainer_name" required defaultValue={session.trainer_name ?? ""} />
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="trainer_is_manager"
+            checked={trainerIsManager}
+            onChange={(e) => setTrainerIsManager(e.target.checked)}
+          />
+          Le dirigeant est aussi le formateur
+        </label>
+        {trainerIsManager ? (
+          <p className="text-xs text-gray-500">
+            Le nom et la signature du dirigeant (enregistrée dans Identité visuelle) sont repris automatiquement
+            partout où la signature du formateur est demandée.
+          </p>
+        ) : (
+          <Field label="Nom du formateur" name="trainer_name" required defaultValue={session.trainer_name ?? ""} />
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <Field label="Date de début" name="start_date" type="date" required defaultValue={session.start_date ?? ""} />
@@ -154,11 +191,16 @@ export function EditSessionForm({
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Horaire de début (optionnel — ex. 9h00)" name="start_time" defaultValue={session.start_time ?? ""} />
-          <Field label="Horaire de fin (optionnel — ex. 17h00)" name="end_time" defaultValue={session.end_time ?? ""} />
+          <Field label="Horaire de début (ex. 9h00)" name="start_time" required defaultValue={session.start_time ?? ""} />
+          <Field label="Horaire de fin (ex. 17h00)" name="end_time" required defaultValue={session.end_time ?? ""} />
         </div>
 
-        <Field label="Lieu (adresse ou 'À distance')" name="location" defaultValue={session.location ?? ""} />
+        <Field
+          label="Lieu (adresse ou 'À distance')"
+          name="location"
+          required
+          defaultValue={session.location ?? ""}
+        />
 
         <Select label="Statut de la session" name="status" defaultValue={session.status} options={STATUS_OPTIONS} />
       </fieldset>
@@ -176,16 +218,18 @@ export function EditSessionForm({
           defaultValue={beneficiary?.full_name ?? ""}
         />
         <Field
-          label="Entreprise du bénéficiaire (optionnel pour un particulier)"
+          label="Entreprise du bénéficiaire (laisser vide pour un particulier)"
           name="beneficiary_company"
           defaultValue={beneficiary?.company ?? ""}
+          onChange={(value) => setHasCompany(value.trim().length > 0)}
           help="À renseigner si la formation est prise en charge par une entreprise ou un OPCO : ce nom apparaît comme cocontractant sur la convention de formation."
         />
         <Field
           label="Représentant de l'entreprise (signataire de la convention)"
           name="beneficiary_company_representative"
+          required={hasCompany}
           defaultValue={(beneficiary as { company_representative?: string | null } | null)?.company_representative ?? ""}
-          help="Nom et fonction de la personne qui signe pour l'entreprise cliente. Apparaît dans la convention."
+          help="Obligatoire dès qu'une entreprise est renseignée : nom et fonction de la personne qui signe pour l'entreprise cliente. Apparaît dans la convention après « représenté par »."
         />
         <Field
           label="Email du bénéficiaire (optionnel)"
@@ -203,10 +247,30 @@ export function EditSessionForm({
       </fieldset>
 
       <fieldset className="flex flex-col gap-3 border-t border-gray-200 pt-4">
+        <legend className="mb-1 text-sm font-semibold text-gray-900">Dossier d&apos;admission du bénéficiaire</legend>
+        <p className="text-xs text-gray-500">
+          Ces informations apparaissent dans le dossier d&apos;admission. Tous les champs sont obligatoires : un
+          document ne peut pas être généré s&apos;il manque une information.
+        </p>
+        <Textarea
+          label="Diplômes et qualifications"
+          name="diplomas_qualifications"
+          defaultValue={beneficiary?.diplomas_qualifications ?? ""}
+          help="Écrivez « Aucun diplôme » si c'est le cas."
+        />
+        <Textarea
+          label="Expérience professionnelle en lien avec la formation"
+          name="related_experience"
+          defaultValue={beneficiary?.related_experience ?? ""}
+          help="Écrivez « Aucune expérience » si c'est le cas."
+        />
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-3 border-t border-gray-200 pt-4">
         <legend className="mb-1 text-sm font-semibold text-gray-900">Recueil des besoins du bénéficiaire</legend>
         <p className="text-xs text-gray-500">
-          Ces informations remplacent les lignes à remplir à la main dans le questionnaire de recueil des besoins :
-          le document PDF les affiche directement, plutôt que des pointillés à faire remplir sur papier.
+          Ces informations remplacent les lignes à remplir à la main dans le questionnaire de recueil des besoins.
+          Tous les champs sont obligatoires : un document ne peut pas être généré s&apos;il manque une information.
         </p>
 
         <RadioGroup
@@ -221,27 +285,32 @@ export function EditSessionForm({
           ]}
         />
         <Textarea
-          label="Difficultés rencontrées actuellement en lien avec ce domaine (optionnel)"
+          label="Difficultés rencontrées actuellement en lien avec ce domaine"
+          help="Obligatoire. Écrivez « Sans objet » si cela ne s'applique pas."
           name="current_difficulties"
           defaultValue={beneficiary?.current_difficulties ?? ""}
         />
         <Textarea
-          label="Qu'attend le bénéficiaire personnellement de cette formation ? (optionnel)"
+          label="Qu'attend le bénéficiaire personnellement de cette formation ?"
+          help="Obligatoire. Écrivez « Sans objet » si cela ne s'applique pas."
           name="personal_expectations"
           defaultValue={beneficiary?.personal_expectations ?? ""}
         />
         <Textarea
-          label="Compétences à acquérir ou renforcer en priorité (optionnel)"
+          label="Compétences à acquérir ou renforcer en priorité"
+          help="Obligatoire. Écrivez « Sans objet » si cela ne s'applique pas."
           name="priority_skills"
           defaultValue={beneficiary?.priority_skills ?? ""}
         />
         <Textarea
-          label="Contexte professionnel ayant motivé cette formation (optionnel)"
+          label="Contexte professionnel ayant motivé cette formation"
+          help="Obligatoire. Écrivez « Sans objet » si cela ne s'applique pas."
           name="professional_context"
           defaultValue={beneficiary?.professional_context ?? ""}
         />
         <Textarea
-          label="Résultats attendus par l'employeur ou le financeur (optionnel)"
+          label="Résultats attendus par l'employeur ou le financeur"
+          help="Obligatoire. Écrivez « Sans objet » si cela ne s'applique pas."
           name="expected_results"
           defaultValue={beneficiary?.expected_results ?? ""}
         />
@@ -266,7 +335,8 @@ export function EditSessionForm({
           ]}
         />
         <Textarea
-          label="Contraintes d'emploi du temps à prendre en compte (optionnel)"
+          label="Contraintes d'emploi du temps à prendre en compte"
+          help="Obligatoire. Écrivez « Sans objet » si cela ne s'applique pas."
           name="schedule_constraints"
           defaultValue={beneficiary?.schedule_constraints ?? ""}
         />
@@ -276,11 +346,19 @@ export function EditSessionForm({
           defaultValue={
             beneficiary?.has_disability === true ? "oui" : beneficiary?.has_disability === false ? "non" : ""
           }
+          onChange={(value) => setHasDisability(value === "oui")}
           options={[
             { value: "non", label: "Non" },
             { value: "oui", label: "Oui" },
           ]}
         />
+        {hasDisability && (
+          <Textarea
+            label="Nature des aménagements souhaités"
+            name="accommodation_details"
+            defaultValue={beneficiary?.accommodation_details ?? ""}
+          />
+        )}
       </fieldset>
 
       <fieldset className="flex flex-col gap-3 border-t border-gray-200 pt-4">

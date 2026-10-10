@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getMyFirstTraining } from "@/lib/actions/training";
+import { getMyOrganization } from "@/lib/actions/organization";
 
 export type TrainingSession = {
   id: string;
@@ -26,6 +27,9 @@ export type TrainingSession = {
   payment_terms: string | null;
   quote_reference: string | null;
   convention_reference: string | null;
+  // Le dirigeant est aussi le formateur (migration 0053) : son nom et sa
+  // signature sont repris automatiquement dans les documents.
+  trainer_is_manager: boolean;
 };
 
 export type Beneficiary = {
@@ -54,6 +58,10 @@ export type Beneficiary = {
   preferred_rhythm: string | null;
   schedule_constraints: string | null;
   has_disability: boolean | null;
+  // Dossier d'admission (migration 0053) : saisis sur /parametres/session.
+  diplomas_qualifications: string | null;
+  related_experience: string | null;
+  accommodation_details: string | null;
 };
 
 /**
@@ -138,6 +146,8 @@ export async function getSessionBeneficiaries(sessionId: string): Promise<Benefi
 function beneficiaryCompleteness(b: Beneficiary): number {
   const textFields = [
     b.experience_level,
+    b.diplomas_qualifications,
+    b.related_experience,
     b.current_difficulties,
     b.personal_expectations,
     b.priority_skills,
@@ -321,7 +331,12 @@ export async function createSession(
     redirect("/dashboard");
   }
 
-  const trainer_name = String(formData.get("trainer_name") || "").trim();
+  // Le dirigeant est aussi le formateur : son nom est repris automatiquement.
+  const trainer_is_manager = formData.get("trainer_is_manager") === "on";
+  const organization = trainer_is_manager ? await getMyOrganization() : null;
+  const trainer_name = trainer_is_manager
+    ? String(organization?.manager_name ?? "").trim()
+    : String(formData.get("trainer_name") || "").trim();
   const start_date = String(formData.get("start_date") || "");
   const end_date = String(formData.get("end_date") || "");
   const start_time = String(formData.get("start_time") || "").trim();
@@ -343,7 +358,11 @@ export async function createSession(
   const payment_terms = String(formData.get("payment_terms") || "").trim();
 
   if (!trainer_name) {
-    return { error: "Le nom du formateur est requis." };
+    return {
+      error: trainer_is_manager
+        ? "Renseignez d'abord le nom du dirigeant dans Mon entreprise : il est repris comme formateur."
+        : "Le nom du formateur est requis.",
+    };
   }
   if (!start_date || !end_date) {
     return { error: "Les dates de début et de fin sont requises." };
@@ -362,6 +381,7 @@ export async function createSession(
     .insert({
       training_id: training.id,
       trainer_name,
+      trainer_is_manager,
       start_date,
       end_date,
       start_time: start_time || null,
@@ -395,7 +415,10 @@ export async function createSession(
   }
 
   revalidatePath("/", "layout");
-  redirect("/dashboard");
+  // Le recueil des besoins est obligatoire pour générer les documents : on
+  // l'ouvre tout de suite plutôt que de laisser l'utilisateur le découvrir
+  // plus tard (retour de Nora, 10/10/2026 : "à aucun moment tu me l'as demandé").
+  redirect("/parametres/session?completer=1");
 }
 
 /**
@@ -424,7 +447,11 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
 
   const beneficiary = await getMyFirstBeneficiary(session.id);
 
-  const trainer_name = String(formData.get("trainer_name") || "").trim();
+  const trainer_is_manager = formData.get("trainer_is_manager") === "on";
+  const organization = trainer_is_manager ? await getMyOrganization() : null;
+  const trainer_name = trainer_is_manager
+    ? String(organization?.manager_name ?? "").trim()
+    : String(formData.get("trainer_name") || "").trim();
   const start_date = String(formData.get("start_date") || "");
   const end_date = String(formData.get("end_date") || "");
   const start_time = String(formData.get("start_time") || "").trim();
@@ -452,6 +479,12 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
   const schedule_constraints = String(formData.get("schedule_constraints") || "").trim();
   const has_disability_raw = String(formData.get("has_disability") || "").trim();
   const has_disability = has_disability_raw === "" ? null : has_disability_raw === "oui";
+  // Dossier d'admission : diplômes, expérience en lien, aménagements demandés.
+  const diplomas_qualifications = String(formData.get("diplomas_qualifications") || "").trim();
+  const related_experience = String(formData.get("related_experience") || "").trim();
+  const accommodation_details = has_disability
+    ? String(formData.get("accommodation_details") || "").trim()
+    : "";
 
   const price_unit = String(formData.get("price_unit") || "total_ttc").trim();
   const price_amount_raw = String(formData.get("price_amount") || "").trim();
@@ -463,7 +496,11 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
   const signature_accepted = formData.get("signature_accepted") === "on";
 
   if (!trainer_name) {
-    return { error: "Le nom du formateur est requis." };
+    return {
+      error: trainer_is_manager
+        ? "Renseignez d'abord le nom du dirigeant dans Mon entreprise : il est repris comme formateur."
+        : "Le nom du formateur est requis.",
+    };
   }
   if (!start_date || !end_date) {
     return { error: "Les dates de début et de fin sont requises." };
@@ -504,6 +541,7 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
     .from("sessions")
     .update({
       trainer_name,
+      trainer_is_manager,
       start_date,
       end_date,
       start_time: start_time || null,
@@ -546,6 +584,9 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
         preferred_rhythm: preferred_rhythm || null,
         schedule_constraints: schedule_constraints || null,
         has_disability,
+        diplomas_qualifications: diplomas_qualifications || null,
+        related_experience: related_experience || null,
+        accommodation_details: accommodation_details || null,
       })
       .eq("id", beneficiary.id);
 
@@ -575,6 +616,9 @@ export async function updateSession(_prevState: SessionFormState, formData: Form
       preferred_rhythm: preferred_rhythm || null,
       schedule_constraints: schedule_constraints || null,
       has_disability,
+      diplomas_qualifications: diplomas_qualifications || null,
+      related_experience: related_experience || null,
+      accommodation_details: accommodation_details || null,
     });
 
     if (beneficiaryError) {

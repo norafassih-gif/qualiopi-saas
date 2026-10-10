@@ -58,6 +58,8 @@ export function countDistinctBeneficiaries(list: Beneficiary[]): number {
 function beneficiaryScore(b: Beneficiary): number {
   const fields = [
     b.experience_level,
+    b.diplomas_qualifications,
+    b.related_experience,
     b.current_difficulties,
     b.personal_expectations,
     b.priority_skills,
