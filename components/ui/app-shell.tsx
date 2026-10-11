@@ -107,6 +107,11 @@ function AppSidebar({ data, pathname }: { data: SidebarData; pathname: string })
       label: "Satisfaction formateur",
     },
     {
+      icon: MessageSquare,
+      href: "/conformite/satisfaction-parties-prenantes",
+      label: "Satisfaction financeur / entreprise",
+    },
+    {
       href: data.hasSession ? "/emargement" : "/onboarding/session",
       label: "Émargements",
       icon: PenLine,

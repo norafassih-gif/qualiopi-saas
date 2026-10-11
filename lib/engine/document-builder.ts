@@ -1,5 +1,10 @@
 "use server";
 
+import {
+  STAKEHOLDER_CRITERIA,
+  STAKEHOLDER_QUESTIONS,
+  isStakeholderKind,
+} from "@/lib/engine/stakeholder-satisfaction-criteria";
 import { TRAINER_SATISFACTION_CRITERIA } from "@/lib/engine/trainer-satisfaction-criteria";
 import {
   dedupeMissing,
@@ -105,7 +110,8 @@ type TemplateSection = {
     | "data_table"
     | "qcm_answers"
     | "satisfaction_results"
-    | "trainer_satisfaction_results";
+    | "trainer_satisfaction_results"
+    | "stakeholder_satisfaction_results";
   html_template: string | null;
   source_content_block_type: string | null;
   // "training" (défaut) : blocs réellement retenus pour cette formation via
@@ -114,6 +120,16 @@ type TemplateSection = {
   // (ex. fiches de poste, sources de veille) — cf. migration 0009.
   content_block_scope: "training" | "global";
   data_source: string | null;
+};
+
+type StakeholderRow = {
+  kind: string;
+  respondent_name: string | null;
+  scores: Record<string, number> | null;
+  recommande: string | null;
+  renouveler: string | null;
+  attentes: string | null;
+  commentaire_libre: string | null;
 };
 
 export type BuildDocumentResult =
@@ -543,6 +559,17 @@ export async function buildDocumentHtml(
     }
   }
 
+  // Reponses des financeurs et entreprises saisies dans /conformite/satisfaction-parties-prenantes.
+  const stakeholderRows: StakeholderRow[] = [];
+  if (sections.some((s) => s.content_type === "stakeholder_satisfaction_results")) {
+    const { data: stakeRows } = await supabase
+      .from("stakeholder_satisfaction_responses")
+      .select("*")
+      .eq("organization_id", org.id)
+      .order("answered_on", { ascending: false });
+    for (const row of stakeRows ?? []) stakeholderRows.push(row as StakeholderRow);
+  }
+
   const orgChartRows: Array<{ person_name: string; function_label: string; level: number }> = [];
   if (sections.some((s) => s.content_type === "org_chart")) {
     const { data: chartRows } = await supabase
@@ -615,7 +642,8 @@ export async function buildDocumentHtml(
         orgChartRows,
         qcmRows,
         satisfactionRows,
-        trainerSatisfactionRows
+        trainerSatisfactionRows,
+        stakeholderRows
       )
     )
     .join("\n");
@@ -648,7 +676,8 @@ function renderSection(
   orgChartRows: Array<{ person_name: string; function_label: string; level: number }> = [],
   qcmRows: Array<{ question: string; given: string; expected: string; ok: boolean }> = [],
   satisfactionRows: Array<Record<string, string | number | null>> = [],
-  trainerSatisfactionRows: Array<Record<string, string | number | null>> = []
+  trainerSatisfactionRows: Array<Record<string, string | number | null>> = [],
+  stakeholderRows: StakeholderRow[] = []
 ): string {
   let body: string;
 
@@ -879,6 +908,72 @@ function renderSection(
         lines + "</tbody></table>" + extra +
         (comments ? "<p><strong>Commentaires recueillis</strong></p><ul>" + comments + "</ul>" : "") +
         FREE_EXPRESSION_BOX;
+      break;
+    }
+    // Avis des financeurs et des entreprises (indicateur 30), saisi dans l'outil.
+    case "stakeholder_satisfaction_results": {
+      const kind = String(section.data_source ?? "");
+      if (!isStakeholderKind(kind)) {
+        body = "";
+        break;
+      }
+      const criteria = STAKEHOLDER_CRITERIA[kind];
+      const questions = STAKEHOLDER_QUESTIONS[kind];
+      const rows = stakeholderRows.filter((r) => r.kind === kind);
+      const who = kind === "financeur" ? "Organisme financeur" : "Entreprise";
+      if (rows.length === 0) {
+        let blank = "";
+        for (const c of criteria) {
+          blank += "<tr><td>" + escapeHtml(c.label) + "</td><td>☐ 1 &nbsp; ☐ 2 &nbsp; ☐ 3 &nbsp; ☐ 4 &nbsp; ☐ 5</td></tr>";
+        }
+        const blankQuestions = questions
+          .map((q) => "<p>" + escapeHtml(q.label) + " " + q.values.map((v) => "☐ " + v.charAt(0).toUpperCase() + v.slice(1)).join(" &nbsp; ") + "</p>")
+          .join("");
+        body =
+          "<p>" + who + " : ……………………………………………………</p>" +
+          "<p>Pour chaque critère, merci de noter de 1 (très insatisfait) à 5 (très satisfait).</p>" +
+          "<table class=\"register\"><thead><tr><th>Critère</th><th>Note</th></tr></thead><tbody>" +
+          blank + "</tbody></table>" + blankQuestions;
+        break;
+      }
+      const fmt = (n: number) => String(n).replace(".", ",");
+      const avgOf = (values: number[]) =>
+        values.length ? Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10 : null;
+      let lines = "";
+      const allValues: number[] = [];
+      for (const c of criteria) {
+        const value = avgOf(rows.map((r) => r.scores?.[c.key]).filter((v): v is number => typeof v === "number"));
+        if (value !== null) allValues.push(value);
+        lines += "<tr><td>" + escapeHtml(c.label) + "</td><td>" + (value !== null ? fmt(value) + " / 5" : "Non renseigné") + "</td></tr>";
+      }
+      const globalAvg = avgOf(allValues);
+      const names = Array.from(new Set(rows.map((r) => String(r.respondent_name ?? "").trim()).filter(Boolean)));
+      const answerFor = (field: "attentes" | "recommande" | "renouveler", values: string[]) => {
+        const given = rows.map((r) => r[field]).filter((v): v is string => Boolean(v));
+        if (given.length === 0) return "";
+        return values.map((v) => {
+          const n = given.filter((g) => g === v).length;
+          return (n > 0 ? "☑ " : "☐ ") + v.charAt(0).toUpperCase() + v.slice(1) + (n > 0 && given.length > 1 ? " (" + n + ")" : "");
+        }).join(" &nbsp; ");
+      };
+      const extra = questions
+        .map((q) => {
+          const answered = answerFor(q.field, q.values);
+          return answered ? "<p>" + escapeHtml(q.label) + " " + answered + "</p>" : "";
+        })
+        .join("");
+      const comments = rows
+        .filter((r) => r.commentaire_libre)
+        .map((r) => "<li>" + escapeHtml(String(r.commentaire_libre)) + "</li>")
+        .join("");
+      body =
+        "<p>" + who + " : <strong>" + (names.length ? escapeHtml(names.join(", ")) : "non précisé") + "</strong></p>" +
+        "<p>Nombre de questionnaires recueillis : <strong>" + rows.length + "</strong>" +
+        (globalAvg !== null ? " — satisfaction moyenne : <strong>" + fmt(globalAvg) + " / 5</strong>" : "") +
+        "</p>" +
+        "<table class=\"register\"><thead><tr><th>Critère</th><th>Moyenne</th></tr></thead><tbody>" +
+        lines + "</tbody></table>" + extra +
+        (comments ? "<p><strong>Commentaires recueillis</strong></p><ul>" + comments + "</ul>" : "");
       break;
     }
     case "qcm_answers": {
