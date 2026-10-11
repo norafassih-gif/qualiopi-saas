@@ -83,6 +83,12 @@ const EVALUATION_TEMPLATE_TO_PHASE: Record<string, EvaluationPhase> = Object.fro
   Object.entries(EVALUATION_PHASE_DOCUMENT_TEMPLATE).map(([phase, templateId]) => [templateId, phase as EvaluationPhase])
 );
 
+// Remarque de l'auditeur (11/10/2026) : les questionnaires de satisfaction
+// doivent comporter un espace de libre expression.
+const FREE_EXPRESSION_BOX =
+  '<p style="margin-top:10pt;"><strong>Libre expression</strong> (remarques, suggestions, points à améliorer)</p>' +
+  '<div class="freebox">&nbsp;</div>';
+
 type TemplateSection = {
   code: string;
   title: string;
@@ -350,7 +356,11 @@ export async function buildDocumentHtml(
   // filtre en plus sur le moment concerné (positionnement/en_cours/finale)
   // pour ne pas afficher, par exemple, le score du positionnement sur le
   // document d'évaluation finale.
-  const evaluationPhaseFilter = EVALUATION_TEMPLATE_TO_PHASE[documentTemplateId];
+  // L'attestation de fin de formation reprend le résultat de l'évaluation FINALE.
+  const evaluationPhaseFilter: EvaluationPhase | undefined =
+    documentTemplateId === "attestation_fin_formation"
+      ? ("finale" as EvaluationPhase)
+      : EVALUATION_TEMPLATE_TO_PHASE[documentTemplateId];
   let evaluationAttemptQuery = supabase
     .from("evaluation_attempts")
     .select("id, score_raw, score_max, score_percent, passed, completed_at")
@@ -740,8 +750,7 @@ function renderSection(
           "<p>Pensez-vous pouvoir appliquer rapidement ce que vous avez appris ? ☐ Oui ☐ Non ☐ Partiellement</p>" +
           "<p>Cette formation a-t-elle répondu à vos attentes ? ☐ Oui ☐ Non ☐ Partiellement</p>" +
           "<p>Recommanderiez-vous cette formation ? ☐ Oui ☐ Non</p>" +
-          "<p>Note globale sur 20 : …… / 20</p>" +
-          "<p>Remarques libres : ……………………………………………………………………</p>";
+          "<p>Note globale sur 20 : …… / 20</p>" + FREE_EXPRESSION_BOX;
         break;
       }
       const avg = (key: string) => {
@@ -802,7 +811,8 @@ function renderSection(
         "</p>" +
         "<table class=\"register\"><thead><tr><th>Critère</th><th>Moyenne</th></tr></thead><tbody>" +
         lines + "</tbody></table>" + extra +
-        (comments ? "<p><strong>Commentaires recueillis</strong></p><ul>" + comments + "</ul>" : "");
+        (comments ? "<p><strong>Commentaires recueillis</strong></p><ul>" + comments + "</ul>" : "") +
+        FREE_EXPRESSION_BOX;
       break;
     }
     // Avis du formateur (indicateur 30), saisi dans l'outil.
@@ -822,7 +832,7 @@ function renderSection(
           "<p>Les objectifs pédagogiques ont-ils été atteints ? ☐ Oui ☐ Non ☐ Partiellement</p>" +
           "<p>Souhaitez-vous intervenir à nouveau pour notre organisme ? ☐ Oui ☐ Non</p>" +
           "<p>Difficultés rencontrées : ……………………………………………………………………</p>" +
-          "<p>Suggestions d'amélioration : ……………………………………………………………………</p>";
+          "<p>Suggestions d'amélioration : ……………………………………………………………………</p>" + FREE_EXPRESSION_BOX;
         break;
       }
       const fmt = (n: number) => String(n).replace(".", ",");
@@ -867,7 +877,8 @@ function renderSection(
         "</p>" +
         "<table class=\"register\"><thead><tr><th>Critère</th><th>Moyenne</th></tr></thead><tbody>" +
         lines + "</tbody></table>" + extra +
-        (comments ? "<p><strong>Commentaires recueillis</strong></p><ul>" + comments + "</ul>" : "");
+        (comments ? "<p><strong>Commentaires recueillis</strong></p><ul>" + comments + "</ul>" : "") +
+        FREE_EXPRESSION_BOX;
       break;
     }
     case "qcm_answers": {
@@ -1145,6 +1156,7 @@ ${fontLinkTag}
   .attendance-period-label { font-weight: 600; color: ${primary}; margin-bottom: 4pt; }
 
 ${CHECKBOX_CSS}
+.freebox { border: 1px solid #888; border-radius: 3px; min-height: 100pt; padding: 6pt; }
     /* Case a cocher dessinee en CSS : le glyphe unicode sortait en carre vide
        selon la police choisie par le client (audit du 23/09/2026). */
     li.checkline { list-style: none; margin-left: 0; }

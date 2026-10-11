@@ -155,6 +155,19 @@ function renderCheckboxRow(
     .join(" &nbsp; ");
 }
 
+function renderAttestationResult(scorePercent: number): string {
+  const level = scorePercent >= 70 ? "atteints" : scorePercent >= 40 ? "partiels" : "non_atteints";
+  const row = (value: string, label: string) =>
+    value === level ? `<li>☑ <strong>${label}</strong></li>` : `<li>☐ ${label}</li>`;
+  return (
+    "<ul>" +
+    row("atteints", "Objectifs de la formation atteints") +
+    row("partiels", "Objectifs partiellement atteints") +
+    row("non_atteints", "Objectifs non atteints") +
+    "</ul>"
+  );
+}
+
 /**
  * Construit le contexte de variables "champs de fusion" ({{company_name}},
  * {{training_name}}, etc. — cf. point "SYSTÈME DE VARIABLES" de la
@@ -547,7 +560,17 @@ export function resolveDocumentVariables(input: {
         ? "Acquis (≥ 70 %)"
         : "Non acquis (< 70 %) — à retravailler"
       : "[Aucune évaluation complétée pour l'instant]",
-    evaluation_completed_date: evaluationResult ? formatDate(evaluationResult.completed_at) : "[à compléter]",
+    // Remarque de l'auditeur (11/10/2026) : la date affichée sur les documents
+    // d'évaluation doit rester cohérente avec la date du document et de la
+    // signature, pas avec le jour où le QCM a été passé dans le logiciel.
+    evaluation_completed_date: evaluationResult
+      ? formatDate(isValidIsoDate(generatedDate) ? generatedDate : evaluationResult.completed_at)
+      : "[à compléter]",
+    // Attestation de fin de formation : une case cochée selon le score final
+    // (>= 70 % atteints, 40 à 69 % partiellement, < 40 % non atteints).
+    attestation_results_checkboxes: evaluationResult
+      ? renderAttestationResult(evaluationResult.score_percent)
+      : "[Résultat de l'évaluation finale à compléter]",
 
     // Cachet et signature électronique de l'organisme (cf. migration
     // 0029_cachet_signature.sql) : des extraits HTML <img> prêts à l'emploi

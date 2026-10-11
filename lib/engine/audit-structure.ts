@@ -77,6 +77,8 @@ export const DOCUMENT_INDICATORS: Record<string, number[]> = {
   procedure_mobilisation_partenaires: [28],
   questionnaire_satisfaction: [30],
   questionnaire_satisfaction_formateur: [30],
+  questionnaire_satisfaction_financeur: [30],
+  questionnaire_satisfaction_entreprise: [30],
   procedure_recueil_appreciations: [30],
   formulaire_reclamation: [31],
   accuse_reception_reclamation: [31],
