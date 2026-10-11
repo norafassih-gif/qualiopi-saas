@@ -68,8 +68,10 @@ export async function addSatisfactionResponse(formData: FormData): Promise<void>
     attentes_reponse: choice("attentes_reponse", ["oui", "non", "partiellement"]),
     recommande: choice("recommande", ["oui", "non"]),
     note_globale: (() => {
-      const raw = Number(formData.get("note_globale") ?? NaN);
-      return Number.isFinite(raw) && raw >= 0 && raw <= 20 ? raw : null;
+      const rawText = String(formData.get("note_globale") ?? "").trim();
+      if (!rawText) return null;
+      const raw = Number(rawText.replace(",", "."));
+      return Number.isFinite(raw) && raw > 0 && raw <= 20 ? raw : null;
     })(),
   };
   if (answeredOn) payload.answered_on = answeredOn;

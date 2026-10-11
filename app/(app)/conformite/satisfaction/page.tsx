@@ -86,7 +86,7 @@ export default async function SatisfactionPage({
               <div className="mt-2 flex flex-wrap gap-4">
                 {SCALE.map((option) => (
                   <label key={option.value} className="flex items-center gap-1.5 text-sm text-gray-700">
-                    <input type="radio" name={criterion.key} value={option.value} />
+                    <input type="radio" name={criterion.key} value={option.value} required />
                     {option.label}
                   </label>
                 ))}
@@ -130,7 +130,7 @@ export default async function SatisfactionPage({
             </div>
           </fieldset>
           <label className="block text-sm">
-            <span className="text-gray-700">Note globale sur 20</span>
+            <span className="text-gray-700">Note globale sur 20 (facultatif, calculée automatiquement si vide)</span>
             <input
               type="number"
               name="note_globale"

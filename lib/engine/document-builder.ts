@@ -806,12 +806,17 @@ function renderSection(
         const hits = satisfactionRows.filter((r) => String(r[key]) === expected).length;
         return Math.round((hits / total) * 100);
       };
+      // Note sur 20 : celle saisie si elle existe (une note a 0 vient d'un champ
+      // laisse vide, pas d'un avis), sinon calculee depuis les notes par critere.
       const noteGlobale = (() => {
-        const values = satisfactionRows
-          .map((r) => (typeof r.note_globale === "number" ? (r.note_globale as number) : null))
+        const typed = satisfactionRows
+          .map((r) => (typeof r.note_globale === "number" && (r.note_globale as number) > 0 ? (r.note_globale as number) : null))
           .filter((v): v is number => v !== null);
-        if (values.length === 0) return null;
-        return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10;
+        if (typed.length > 0) {
+          return Math.round((typed.reduce((a, b) => a + b, 0) / typed.length) * 10) / 10;
+        }
+        if (globalAvg === null) return null;
+        return Math.round(globalAvg * 4 * 10) / 10;
       })();
       const extra =
         (share("application_rapide", "oui") !== null
