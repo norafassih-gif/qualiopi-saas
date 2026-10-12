@@ -3,12 +3,14 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { CheckCircle2, Circle, ExternalLink, ArrowRight, Info } from "lucide-react";
 import { getMyOrganization } from "@/lib/actions/organization";
+import { getMyBilling } from "@/lib/actions/billing";
 import { getMyFirstTraining } from "@/lib/actions/training";
 import { getMyFirstSession } from "@/lib/actions/session";
 import { toggleNdaStep, saveNdaInfo, chooseTrack } from "@/lib/actions/track";
 import {
   NDA_STEPS,
   NDA_LINKS,
+  NDA_PRICE_EUR,
   NDA_REVENUE_THRESHOLD,
   NSF_BY_CATEGORY,
   legalFormInfo,
@@ -138,12 +140,15 @@ function Step({
 export default async function NdaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ saved?: string; error?: string }>;
+  searchParams: Promise<{ saved?: string; error?: string; paid?: string }>;
 }) {
   const params = await searchParams;
   const org = await getMyOrganization();
   if (!org) redirect("/onboarding/parcours");
   if (!org.onboarding_company_completed) redirect("/onboarding/entreprise");
+
+  const billing = await getMyBilling();
+  const ndaUnlocked = Boolean(billing?.nda_paid || billing?.subscription_status === "active");
 
   const training = await getMyFirstTraining();
   const session = training ? await getMyFirstSession() : null;
@@ -183,6 +188,23 @@ export default async function NdaPage({
         </nav>
       </div>
 
+      {params.paid ? (
+        <p className="mt-4 rounded-md bg-green-50 px-4 py-3 text-sm text-green-800">
+          Merci, votre paiement est reçu. Si vos documents sont encore verrouillés, patientez quelques secondes
+          et actualisez la page.
+        </p>
+      ) : null}
+      {!ndaUnlocked ? (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+          <span>
+            Le guide est libre d&apos;accès. Les documents PDF de la déclaration se débloquent avec
+            l&apos;accompagnement NDA ({NDA_PRICE_EUR} €, paiement unique).
+          </span>
+          <Link href="/nda/paiement" className="rounded-md bg-blue-900 px-3 py-1.5 text-sm font-medium text-white">
+            Débloquer mes documents
+          </Link>
+        </div>
+      ) : null}
       {params.saved ? (
         <p className="mt-4 rounded-md bg-green-50 px-4 py-3 text-sm text-green-800">Enregistré.</p>
       ) : null}

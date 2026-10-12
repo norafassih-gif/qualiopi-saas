@@ -109,6 +109,23 @@ export const NSF_BY_CATEGORY: Record<string, string> = {
 /** Seuil de chiffre d'affaires affiché par Mon Activité Formation (2026). */
 export const NDA_REVENUE_THRESHOLD = "83 600 €";
 
+// Pièces du parcours NDA : le groupe de dossier dédié (migration 0050) et les
+// modèles Qualiopi également déposés dans le dossier NDA. Source unique
+// partagée par l'écran « Mes documents » (lib/actions/documents.ts) et par le
+// contrôle d'accès du paiement NDA (lib/actions/billing.ts) : un client qui a
+// payé le NDA peut générer exactement ces pièces, sans abonnement.
+export const NDA_FOLDER_GROUP = "00_Declaration_activite";
+export const NDA_SHARED_TEMPLATE_IDS: readonly string[] = [
+  "programme_formation",
+  "convention_formation",
+  "contrat_formation_particulier",
+  "devis",
+];
+
+// Prix de l'accompagnement NDA, en euros — affichage uniquement. Le montant
+// réellement débité est celui du prix Stripe (STRIPE_PRICE_NDA).
+export const NDA_PRICE_EUR = 200;
+
 export const NDA_LINKS = {
   maf: "https://www.monactiviteformation.emploi.gouv.fr",
   sirene: "https://avis-situation-sirene.insee.fr/",

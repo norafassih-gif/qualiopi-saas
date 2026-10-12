@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMyOrganization } from "@/lib/actions/organization";
-import { isSubscriptionActiveForOrg } from "@/lib/actions/billing";
+import { canDownloadZip, getPaywallPath } from "@/lib/actions/billing";
 import { getGeneratedDocumentsForZip } from "@/lib/actions/documents";
 import { getMyFirstTraining } from "@/lib/actions/training";
 import { getMyFirstPartner } from "@/lib/actions/partners";
@@ -50,8 +50,8 @@ export async function GET() {
   // generate-all-button.tsx), donc une redirection plutôt qu'un JSON 402 :
   // sinon le navigateur affiche le JSON brut à l'écran au lieu d'amener
   // l'utilisateur vers la page de paiement.
-  if (!(await isSubscriptionActiveForOrg(org.id))) {
-    redirect("/onboarding/abonnement");
+  if (!(await canDownloadZip(org.id, org.current_track ?? null))) {
+    redirect(await getPaywallPath(org.id, org.current_track ?? null));
   }
 
   const docs = await getGeneratedDocumentsForZip();

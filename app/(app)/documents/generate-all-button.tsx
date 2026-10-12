@@ -113,7 +113,12 @@ export function GenerateAllButton({
           // d'afficher un ZIP vide/en erreur.
           if (response.status === 402) {
             setPending(false);
-            router.push("/onboarding/abonnement");
+            const paywall = await response.json().catch(() => null);
+            router.push(
+              typeof paywall?.redirectTo === "string" && paywall.redirectTo.startsWith("/")
+                ? paywall.redirectTo
+                : "/onboarding/abonnement"
+            );
             return;
           }
           failed.push(templateId);

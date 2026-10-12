@@ -9,8 +9,10 @@ import {
   STRIPE_PRICE_BY_PLAN,
   STRIPE_PRICE_BRANDING_ADDON,
   STRIPE_PRICE_PERSONALIZATION_ADDON,
+  STRIPE_PRICE_NDA,
   isPlanPurchasable,
 } from "@/lib/stripe/client";
+import { NDA_FOLDER_GROUP, NDA_SHARED_TEMPLATE_IDS } from "@/lib/engine/tracks";
 
 export type BillingFormState = { error: string | null };
 
@@ -22,6 +24,8 @@ export type MyBilling = {
   stripe_customer_id: string | null;
   has_branding_addon: boolean;
   has_personalization_addon: boolean;
+  /** Accompagnement NDA payé (200 €, paiement unique, migration 0081). */
+  nda_paid: boolean;
 };
 
 /** Statut de facturation de l'organisme du client connecté. */
@@ -33,7 +37,7 @@ export async function getMyBilling(): Promise<MyBilling | null> {
   const { data, error } = await supabase
     .from("organization_billing")
     .select(
-      "plan, subscription_status, is_blocked, blocked_reason, stripe_customer_id, has_branding_addon, has_personalization_addon",
+      "plan, subscription_status, is_blocked, blocked_reason, stripe_customer_id, has_branding_addon, has_personalization_addon, nda_paid",
     )
     .eq("organization_id", org.id)
     .maybeSingle();
@@ -105,6 +109,119 @@ export async function isSubscriptionActiveForOrg(organizationId: string): Promis
     .eq("organization_id", organizationId)
     .maybeSingle();
   return billing?.subscription_status === "active";
+}
+
+/** Vrai si l'organisme a payé l'accompagnement NDA (200 €, paiement unique). */
+async function hasPaidNda(organizationId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data: billing } = await supabase
+    .from("organization_billing")
+    .select("nda_paid")
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+  return billing?.nda_paid === true;
+}
+
+/**
+ * Droit de générer UN document précis. Un abonnement actif ouvre tous les
+ * documents ; le paiement NDA (200 €, sans abonnement) n'ouvre que les pièces
+ * du parcours NDA : le groupe de dossier dédié et les modèles partagés
+ * (programme, convention, contrat, devis), cf. NDA_SHARED_TEMPLATE_IDS.
+ */
+export async function canGenerateDocument(organizationId: string, templateId: string): Promise<boolean> {
+  if (await isSubscriptionActiveForOrg(organizationId)) return true;
+  if (!(await hasPaidNda(organizationId))) return false;
+  if (NDA_SHARED_TEMPLATE_IDS.includes(templateId)) return true;
+
+  const supabase = await createClient();
+  const { data: template } = await supabase
+    .from("document_templates")
+    .select("folder_group")
+    .eq("id", templateId)
+    .maybeSingle();
+  return template?.folder_group === NDA_FOLDER_GROUP;
+}
+
+/**
+ * Droit de télécharger le dossier ZIP. Abonnement actif, ou accompagnement NDA
+ * payé tant que l'organisme est sur le parcours NDA (le ZIP ne contient alors
+ * que les pièces NDA, seules générables sans abonnement).
+ */
+export async function canDownloadZip(organizationId: string, currentTrack: string | null): Promise<boolean> {
+  if (await isSubscriptionActiveForOrg(organizationId)) return true;
+  return currentTrack === "nda" && (await hasPaidNda(organizationId));
+}
+
+/**
+ * Page de paiement vers laquelle envoyer un client bloqué par le paywall : le
+ * paiement NDA (200 €) s'il est sur le parcours NDA et ne l'a pas encore
+ * réglé, sinon le choix d'abonnement.
+ */
+export async function getPaywallPath(organizationId: string, currentTrack: string | null): Promise<string> {
+  if (currentTrack === "nda" && !(await hasPaidNda(organizationId))) {
+    return "/nda/paiement";
+  }
+  return "/onboarding/abonnement";
+}
+
+/**
+ * Démarre le paiement UNIQUE de l'accompagnement NDA (200 €) : redirige vers
+ * la page de paiement hébergée par Stripe (Checkout, mode "payment"), jamais
+ * de numéro de carte chez nous. L'accès n'est ouvert qu'à réception du
+ * webhook Stripe (app/api/stripe/webhook/route.ts), jamais depuis la page de
+ * retour : revenir sur /nda?paid=1 sans paiement réel ne débloque rien.
+ */
+export async function startNdaCheckout(): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const org = await getMyOrganization();
+  if (!org) redirect("/onboarding/parcours");
+
+  if (!STRIPE_PRICE_NDA) {
+    // Variable d'environnement STRIPE_PRICE_NDA absente côté serveur.
+    redirect("/nda/paiement?error=config");
+  }
+
+  const { data: billing } = await supabase
+    .from("organization_billing")
+    .select("stripe_customer_id, nda_paid")
+    .eq("organization_id", org.id)
+    .maybeSingle();
+
+  // Déjà payé : on n'encaisse jamais deux fois le même accompagnement.
+  if (billing?.nda_paid) redirect("/nda");
+
+  let sessionUrl: string | null;
+  try {
+    const stripe = getStripe();
+    const metadata = { organization_id: org.id, kind: "nda" };
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      customer: billing?.stripe_customer_id || undefined,
+      customer_email: billing?.stripe_customer_id ? undefined : org.email || user.email || undefined,
+      // Crée un client Stripe dès ce paiement (en mode "payment", Stripe n'en
+      // crée pas par défaut) pour retrouver l'acheteur et émettre un
+      // remboursement ou une facture depuis le tableau de bord.
+      customer_creation: billing?.stripe_customer_id ? undefined : "always",
+      client_reference_id: org.id,
+      line_items: [{ price: STRIPE_PRICE_NDA, quantity: 1 }],
+      payment_intent_data: { metadata },
+      metadata,
+      success_url: `${appUrl()}/nda?paid=1`,
+      cancel_url: `${appUrl()}/nda/paiement?canceled=1`,
+    });
+    sessionUrl = session.url;
+  } catch (err) {
+    console.error("startNdaCheckout", err);
+    redirect("/nda/paiement?error=stripe");
+  }
+
+  if (!sessionUrl) redirect("/nda/paiement?error=stripe");
+  redirect(sessionUrl);
 }
 
 /**

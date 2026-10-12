@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getMyOrganization } from "@/lib/actions/organization";
-import { isSubscriptionActiveForOrg } from "@/lib/actions/billing";
+import { canGenerateDocument, getPaywallPath } from "@/lib/actions/billing";
 import { getMyFirstTraining } from "@/lib/actions/training";
 import { getMyFirstSession } from "@/lib/actions/session";
 import { buildDocumentHtml } from "@/lib/engine/document-builder";
@@ -55,10 +55,16 @@ export async function GET(
   // 21/08/2026, paywall "à l'usage" révisé le 24/08/2026) — en 402 JSON
   // plutôt qu'une redirection, cette route étant appelée via fetch() par
   // download-form.tsx et generate-all-button.tsx, qui gèrent eux-mêmes la
-  // redirection vers /onboarding/abonnement sur ce statut.
-  if (!(await isSubscriptionActiveForOrg(org.id))) {
+  // redirection vers la page de paiement sur ce statut. Abonnement actif, ou
+  // paiement NDA (200 €) pour les seules pièces du parcours NDA. `redirectTo`
+  // indique la bonne page : /nda/paiement pour un client NDA qui n'a pas payé,
+  // /onboarding/abonnement sinon.
+  if (!(await canGenerateDocument(org.id, templateId))) {
     return NextResponse.json(
-      { error: "Un abonnement actif est requis pour générer ce document." },
+      {
+        error: "Un abonnement actif ou l'accompagnement NDA est requis pour générer ce document.",
+        redirectTo: await getPaywallPath(org.id, org.current_track ?? null),
+      },
       { status: 402 }
     );
   }

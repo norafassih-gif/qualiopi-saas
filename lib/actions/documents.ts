@@ -2,10 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getMyOrganization } from "@/lib/actions/organization";
-
-const NDA_FOLDER = "00_Declaration_activite";
-// Modèles Qualiopi également déposés dans le dossier NDA.
-const NDA_SHARED_TEMPLATE_IDS = ["programme_formation", "convention_formation", "contrat_formation_particulier", "devis"];
+import { NDA_FOLDER_GROUP as NDA_FOLDER, NDA_SHARED_TEMPLATE_IDS } from "@/lib/engine/tracks";
 
 export type DocumentTemplateStatus = {
   id: string;

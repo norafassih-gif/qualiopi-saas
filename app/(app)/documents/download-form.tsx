@@ -42,7 +42,12 @@ export function DocumentDownloadForm({
         // d'erreur inerte — c'est le moment "il clique quelque part, ça lui
         // fait payer" qu'elle a explicitement demandé.
         if (response.status === 402) {
-          router.push("/onboarding/abonnement");
+          const paywall = await response.json().catch(() => null);
+          router.push(
+            typeof paywall?.redirectTo === "string" && paywall.redirectTo.startsWith("/")
+              ? paywall.redirectTo
+              : "/onboarding/abonnement"
+          );
           return;
         }
         const body = await response.json().catch(() => null);

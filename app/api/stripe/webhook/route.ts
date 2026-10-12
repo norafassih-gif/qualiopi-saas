@@ -38,6 +38,40 @@ export async function POST(req: NextRequest) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
       const organizationId = session.client_reference_id || session.metadata?.organization_id;
+
+      // Paiement UNIQUE de l'accompagnement NDA (200 €, startNdaCheckout dans
+      // lib/actions/billing.ts) : il ne touche JAMAIS à l'abonnement. Cette
+      // branche doit rester avant le traitement d'abonnement ci-dessous, qui
+      // passerait sinon subscription_status à "active" pour un simple achat
+      // NDA et ouvrirait gratuitement tous les documents Qualiopi.
+      if (session.metadata?.kind === "nda") {
+        if (!organizationId) break;
+        // Un règlement différé (virement...) n'est pas encore encaissé :
+        // on n'ouvre l'accès qu'une fois le paiement confirmé.
+        if (session.payment_status !== "paid") break;
+
+        const { data: current } = await supabase
+          .from("organization_billing")
+          .select("stripe_customer_id")
+          .eq("organization_id", organizationId)
+          .maybeSingle();
+        const customerId =
+          typeof session.customer === "string" ? session.customer : (session.customer?.id ?? null);
+
+        const { error: ndaError } = await supabase
+          .from("organization_billing")
+          .update({
+            nda_paid: true,
+            nda_paid_at: new Date().toISOString(),
+            nda_stripe_session_id: session.id,
+            // Ne remplace jamais un client Stripe déjà rattaché (abonnement).
+            ...(!current?.stripe_customer_id && customerId ? { stripe_customer_id: customerId } : {}),
+          })
+          .eq("organization_id", organizationId);
+        if (ndaError) console.error("stripe webhook: paiement NDA", ndaError);
+        break;
+      }
+
       const plan = session.metadata?.plan;
       const brandingAddon = session.metadata?.branding_addon;
       const personalizationAddon = session.metadata?.personalization_addon;

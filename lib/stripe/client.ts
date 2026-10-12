@@ -53,3 +53,10 @@ export const STRIPE_PRICE_BRANDING_ADDON = process.env.STRIPE_PRICE_BRANDING_ADD
 // migration 0041) — proposé sur les 3 formules (contrairement à l'add-on
 // branding ci-dessus, réservé aux formules avec site), cumulable avec lui.
 export const STRIPE_PRICE_PERSONALIZATION_ADDON = process.env.STRIPE_PRICE_PERSONALIZATION_ADDON;
+
+// Accompagnement à la déclaration d'activité (NDA) : 200 € en PAIEMENT UNIQUE
+// (mode "payment" de Stripe Checkout, pas un abonnement), vendu séparément de
+// l'abonnement Qualiopi (décision de Nora, 12/10/2026). Le prix Stripe est
+// créé dans le compte Pivot Formation ; son identifiant est lu ici, côté
+// serveur uniquement, dans la variable d'environnement STRIPE_PRICE_NDA.
+export const STRIPE_PRICE_NDA = process.env.STRIPE_PRICE_NDA;
