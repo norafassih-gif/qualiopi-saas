@@ -111,7 +111,8 @@ type TemplateSection = {
     | "qcm_answers"
     | "satisfaction_results"
     | "trainer_satisfaction_results"
-    | "stakeholder_satisfaction_results";
+    | "stakeholder_satisfaction_results"
+    | "stakeholder_signature";
   html_template: string | null;
   source_content_block_type: string | null;
   // "training" (défaut) : blocs réellement retenus pour cette formation via
@@ -130,6 +131,8 @@ type StakeholderRow = {
   renouveler: string | null;
   attentes: string | null;
   commentaire_libre: string | null;
+  respondent_role: string | null;
+  signature_data_url: string | null;
 };
 
 export type BuildDocumentResult =
@@ -561,7 +564,7 @@ export async function buildDocumentHtml(
 
   // Reponses des financeurs et entreprises saisies dans /conformite/satisfaction-parties-prenantes.
   const stakeholderRows: StakeholderRow[] = [];
-  if (sections.some((s) => s.content_type === "stakeholder_satisfaction_results")) {
+  if (sections.some((s) => s.content_type === "stakeholder_satisfaction_results" || s.content_type === "stakeholder_signature")) {
     const { data: stakeRows } = await supabase
       .from("stakeholder_satisfaction_responses")
       .select("*")
@@ -979,6 +982,31 @@ function renderSection(
         "<table class=\"register\"><thead><tr><th>Critère</th><th>Moyenne</th></tr></thead><tbody>" +
         lines + "</tbody></table>" + extra +
         (comments ? "<p><strong>Commentaires recueillis</strong></p><ul>" + comments + "</ul>" : "");
+      break;
+    }
+    // Nom et signature du financeur ou de l'entreprise, saisis dans l'outil.
+    case "stakeholder_signature": {
+      const kind = String(section.data_source ?? "");
+      const rows = stakeholderRows.filter((r) => r.kind === kind);
+      const head = interpolate("<p>Fait à {{organization_city}}, le {{generated_date}}</p>", vars);
+      const cell = "border:1px solid #888; padding:6pt; vertical-align:top;";
+      if (rows.length === 0) {
+        body = head +
+          "<table style=\"width:100%; border-collapse:collapse;\"><tbody><tr>" +
+          "<td style=\"" + cell + " width:50%;\">Nom, prénom et fonction du signataire :<br/><br/><br/></td>" +
+          "<td style=\"" + cell + " width:50%;\">Signature :<br/><br/><br/><br/></td></tr></tbody></table>";
+        break;
+      }
+      const lines = rows.map((r) =>
+        "<tr><td style=\"" + cell + " width:50%;\">Nom, prénom et fonction du signataire :<br/><strong>" +
+        escapeHtml(String(r.respondent_role ?? "")) + "</strong></td>" +
+        "<td style=\"" + cell + " width:50%;\">Signature :<br/>" +
+        (r.signature_data_url
+          ? "<img src=\"" + r.signature_data_url + "\" alt=\"Signature\" style=\"max-height:70px;display:block;margin:2px 0\" />"
+          : "<br/><br/><br/>") +
+        "</td></tr>"
+      ).join("");
+      body = head + "<table style=\"width:100%; border-collapse:collapse;\"><tbody>" + lines + "</tbody></table>";
       break;
     }
     case "qcm_answers": {

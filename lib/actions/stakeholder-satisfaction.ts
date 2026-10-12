@@ -22,6 +22,7 @@ export type StakeholderResponse = {
   renouveler: string | null;
   attentes: string | null;
   commentaire_libre: string | null;
+  signature_data_url: string | null;
 };
 
 const PAGE = "/conformite/satisfaction-parties-prenantes";
@@ -66,6 +67,10 @@ export async function addStakeholderResponse(formData: FormData): Promise<void> 
     respondent_role: text("respondent_role"),
     scores,
     commentaire_libre: text("commentaire_libre"),
+    signature_data_url: (() => {
+      const raw = String(formData.get("signature_data_url") ?? "").trim();
+      return raw.startsWith("data:image/png;base64,") && raw.length < 500_000 ? raw : null;
+    })(),
   };
   for (const question of STAKEHOLDER_QUESTIONS[kind]) {
     const value = String(formData.get(question.field) ?? "").trim();

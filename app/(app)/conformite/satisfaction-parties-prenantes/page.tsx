@@ -6,6 +6,7 @@ import {
   isStakeholderKind,
   type StakeholderKind,
 } from "@/lib/engine/stakeholder-satisfaction-criteria";
+import { SignatureField } from "./signature-field";
 import {
   listStakeholderResponses,
   addStakeholderResponse,
@@ -94,10 +95,6 @@ export default async function StakeholderSatisfactionPage({
             <input type="text" name="respondent_name" className="mt-1 w-64 rounded-md border border-gray-300 px-3 py-2 text-sm" />
           </label>
           <label className="block text-sm">
-            <span className="text-gray-700">Nom et fonction du répondant</span>
-            <input type="text" name="respondent_role" className="mt-1 w-64 rounded-md border border-gray-300 px-3 py-2 text-sm" />
-          </label>
-          <label className="block text-sm">
             <span className="text-gray-700">Date de réponse</span>
             <input type="date" name="answered_on" className="mt-1 w-48 rounded-md border border-gray-300 px-3 py-2 text-sm" />
           </label>
@@ -139,6 +136,14 @@ export default async function StakeholderSatisfactionPage({
           <span className="text-gray-700">Libre expression (remarques, suggestions, points à améliorer)</span>
           <textarea name="commentaire_libre" rows={4} className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
         </label>
+
+        <div className="mt-6 grid gap-4 border-t border-gray-100 pt-4 sm:grid-cols-2">
+          <label className="block text-sm">
+            <span className="text-gray-700">Nom, prénom et fonction du signataire</span>
+            <input type="text" name="respondent_role" className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
+          </label>
+          <SignatureField />
+        </div>
 
         <button type="submit" className="mt-5 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800">
           Enregistrer les réponses
