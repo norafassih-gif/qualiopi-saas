@@ -374,6 +374,12 @@ export function resolveDocumentVariables(input: {
         : "<br/><br/>",
     training_start_date: formatDate(session?.start_date ?? null),
     training_end_date: formatDate(session?.end_date ?? null),
+    training_dates_label:
+      session?.start_date && session?.end_date
+        ? session.start_date === session.end_date
+          ? `le ${formatDate(session.start_date)}`
+          : `du ${formatDate(session.start_date)} au ${formatDate(session.end_date)}`
+        : "",
     // Horaires de la session (cf. migration 0046, retour de Nora suite au
     // test client ACP, 23/08/2026 : "il faut pouvoir mettre... les
     // horaires"). Chaîne vide tant que l'organisme n'a pas renseigné les

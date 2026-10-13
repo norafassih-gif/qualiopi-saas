@@ -17,6 +17,7 @@ import {
 import { CHECKBOX_CSS, makePdfSafe } from "@/lib/engine/pdf-safe";
 import { ndaVariables, ndaCalendarRows } from "@/lib/engine/nda-documents";
 import { CUSTOM_CATEGORY_ID, customBlocksByType, customModuleRows, parseCustomProgram } from "@/lib/engine/custom-program";
+import { buildDerouleHtml, type DerouleModule } from "@/lib/engine/deroule-pedagogique";
 import { createClient } from "@/lib/supabase/server";
 import { getMyOrganization, type Organization } from "@/lib/actions/organization";
 import { getMyBilling } from "@/lib/actions/billing";
@@ -165,6 +166,127 @@ function escapeHtml(text: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+function firstOf<T>(value: T | T[] | null | undefined): T | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
+}
+
+/**
+ * Charge les modules de la formation avec, pour chacun, ses objectifs
+ * retenus et les exercices qui s'y rattachent (déroulé pédagogique).
+ * Un exercice est rattaché au module dont un objectif retenu provient de la
+ * même règle (added_by_rule_id) ; à défaut, répartition circulaire.
+ */
+async function loadDerouleModules(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  trainingId: string,
+  isCustom: boolean,
+  customModules: { duration_hours: number | null; modules: { title: string } | { title: string }[] | null }[],
+  blocksByType: Map<string, string[]>,
+  globalBlocks: { type: string; code: string; text: string }[]
+): Promise<DerouleModule[]> {
+  if (isCustom) {
+    const exercises = blocksByType.get("exercise") ?? [];
+    const objectives = blocksByType.get("pedagogical_objective") ?? [];
+    const mods = customModules.map((row) => ({
+      title: firstOf(row.modules)?.title ?? "",
+      hours: row.duration_hours ?? null,
+    }));
+    return mods
+      .filter((m) => m.title)
+      .map((m, index, all) => ({
+        title: m.title,
+        hours: m.hours,
+        objectives: all.length === 1 ? objectives : [],
+        exercises: exercises.filter((_, i) => i % all.length === index),
+      }));
+  }
+
+  type TmRow = {
+    sort_order: number | null;
+    duration_hours: number | null;
+    modules:
+      | { title: string; code: string | null; linked_objective_codes: string[] | null }
+      | { title: string; code: string | null; linked_objective_codes: string[] | null }[]
+      | null;
+  };
+  type TcbRow = {
+    added_by_rule_id: string | null;
+    content_blocks:
+      | { type: string; code: string; text: string }
+      | { type: string; code: string; text: string }[]
+      | null;
+  };
+
+  const [tmResponse, tcbResponse] = await Promise.all([
+    supabase
+      .from("training_modules")
+      .select("sort_order, duration_hours, modules(title, code, linked_objective_codes)")
+      .eq("training_id", trainingId)
+      .order("sort_order"),
+    supabase
+      .from("training_content_blocks")
+      .select("added_by_rule_id, content_blocks(type, code, text)")
+      .eq("training_id", trainingId),
+  ]);
+
+  const tmRows = (tmResponse.data ?? []) as unknown as TmRow[];
+  const tcbRows = (tcbResponse.data ?? []) as unknown as TcbRow[];
+
+  const selected = tcbRows
+    .map((row) => ({ ruleId: row.added_by_rule_id, block: firstOf(row.content_blocks) }))
+    .filter((r): r is { ruleId: string | null; block: { type: string; code: string; text: string } } => Boolean(r.block));
+
+  const objectiveByCode = new Map<string, { text: string; ruleId: string | null }>();
+  for (const r of selected) {
+    if (r.block.type === "pedagogical_objective") {
+      objectiveByCode.set(r.block.code, { text: r.block.text, ruleId: r.ruleId });
+    }
+  }
+  const globalObjectiveByCode = new Map<string, string>();
+  for (const b of globalBlocks) {
+    if (b.type === "pedagogical_objective") globalObjectiveByCode.set(b.code, b.text);
+  }
+  const exercises = selected
+    .filter((r) => r.block.type === "exercise")
+    .sort((a, b) => a.block.code.localeCompare(b.block.code));
+
+  const result: DerouleModule[] = [];
+  for (const row of tmRows) {
+    const mod = firstOf(row.modules);
+    if (!mod?.title) continue;
+    const linked = mod.linked_objective_codes ?? [];
+    const objectives: string[] = [];
+    for (const code of linked) {
+      const text = objectiveByCode.get(code)?.text;
+      if (text) objectives.push(text);
+    }
+    if (objectives.length === 0) {
+      for (const code of linked) {
+        const text = globalObjectiveByCode.get(code);
+        if (text) objectives.push(text);
+      }
+    }
+    result.push({ title: mod.title, hours: row.duration_hours ?? null, objectives, exercises: [] });
+  }
+
+  // Rattachement des exercices aux modules.
+  const moduleRules = result.map((_, i) => {
+    const linked = firstOf(tmRows.filter((r) => firstOf(r.modules)?.title)[i]?.modules)?.linked_objective_codes ?? [];
+    return new Set(linked.map((code) => objectiveByCode.get(code)?.ruleId).filter((r): r is string => Boolean(r)));
+  });
+  let rr = 0;
+  for (const ex of exercises) {
+    let target = ex.ruleId ? moduleRules.findIndex((rules) => rules.has(ex.ruleId as string)) : -1;
+    if (target < 0 && result.length > 0) {
+      target = rr % result.length;
+      rr += 1;
+    }
+    if (target >= 0) result[target].exercises.push(ex.block.text);
+  }
+  return result;
 }
 
 /**
@@ -530,6 +652,30 @@ export async function buildDocumentHtml(
     const list = globalBlocksByType.get(block.type) ?? [];
     list.push(block.text);
     globalBlocksByType.set(block.type, list);
+  }
+
+  // Déroulé pédagogique (indicateur 6) : planning séquence par séquence
+  // calculé à partir de la session, des modules et des exercices retenus
+  // (lib/engine/deroule-pedagogique.ts) — aucune IA.
+  if (documentTemplateId === "deroule_pedagogique") {
+    const derouleModules = await loadDerouleModules(
+      supabase,
+      training.id,
+      training.category_id === CUSTOM_CATEGORY_ID,
+      moduleRows,
+      blocksByType,
+      (globalBlocksResponse.data ?? []) as { type: string; code: string; text: string }[]
+    );
+    vars.deroule_planning = buildDerouleHtml({
+      startDate: session?.start_date ?? null,
+      endDate: session?.end_date ?? null,
+      startTime: session?.start_time ?? null,
+      endTime: session?.end_time ?? null,
+      totalHours: training.duration_hours ?? null,
+      modality: training.modality ?? null,
+      trainingName: training.name ?? "",
+      modules: derouleModules,
+    });
   }
 
   // Registres de veille : les entrees saisies dans /conformite/veille sont
@@ -1329,6 +1475,17 @@ ${CHECKBOX_CSS}
     table.register td { line-height: 1.25; }
     .emptyregister { font-size: 8.5pt; color: #6b7280; font-style: italic; border: 1px dashed #d1d5db; padding: 6pt; }
   
+    /* Deroule pedagogique (indicateur 6) : horaire / sequences / methodes. */
+    table.deroule { font-size: 8.4pt; table-layout: fixed; }
+    table.deroule th { background: #f9fafb; }
+    table.deroule td { border: 1px solid #e5e7eb; vertical-align: top; line-height: 1.3; }
+    table.deroule td.dleft { width: 36mm; }
+    table.deroule th:last-child, table.deroule td:last-child { width: 42mm; }
+    table.deroule tr { break-inside: avoid; page-break-inside: avoid; }
+    table.deroule p.dseq { margin: 0 0 5pt; }
+    table.deroule .dmod { margin-top: 5pt; font-style: italic; color: ${secondary}; }
+    table.deroule ul.dtools { margin: 0; padding-left: 10pt; }
+
     /* Emargement sur une seule feuille : demi-journees en colonnes. */
     table.attendance { font-size: 8pt; table-layout: fixed; }
     table.attendance th { background: #f9fafb; text-align: center; font-size: 7.5pt; }

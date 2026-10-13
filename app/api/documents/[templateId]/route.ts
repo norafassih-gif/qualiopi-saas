@@ -101,7 +101,7 @@ export async function GET(
   const BEFORE_TRAINING_TEMPLATES = [
     "devis", "convention_formation", "contrat_formation_particulier", "convocation",
     "dossier_admission", "questionnaire_besoins", "livret_accueil", "reglement_interieur",
-    "charte_engagement_assiduite", "programme_formation", "resultat_positionnement",
+    "charte_engagement_assiduite", "programme_formation", "resultat_positionnement", "deroule_pedagogique",
   ];
   const sessionForDates = await getMyFirstSession();
   const startDate = sessionForDates?.start_date ?? null;

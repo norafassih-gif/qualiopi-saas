@@ -81,6 +81,7 @@ const VARIABLE_FIELDS: Record<string, MissingItem> = {
   training_start_date: { label: "Date de début de la session", href: HREF.session },
   training_end_date: { label: "Date de fin de la session", href: HREF.session },
   training_hours: { label: "Horaires de la session", href: HREF.session },
+  training_dates_label: { label: "Dates de la session", href: HREF.session },
   training_schedule_sentence: { label: "Dates de la session", href: HREF.session },
   schedule_table_row: { label: "Dates et horaires de la session", href: HREF.session },
   training_location: { label: "Lieu de la formation (ou « À distance »)", href: HREF.session },
@@ -94,6 +95,8 @@ const VARIABLE_FIELDS: Record<string, MissingItem> = {
 /** Page où renseigner une information, déduite de son libellé (pour les marqueurs "à compléter"). */
 export function hrefForLabel(label: string): string | null {
   const l = label.toLowerCase();
+  if (/(horaires|dates) de la session/.test(l)) return HREF.session;
+  if (/(durée|modules) de la formation/.test(l)) return HREF.formation;
   if (/(sous-traitant|taux horaire)/.test(l)) return HREF.sousTraitant;
   if (/(partenaire|tuteur|représentant légal)/.test(l)) return HREF.partenaire;
   if (/évaluation/.test(l)) return HREF.evaluation;

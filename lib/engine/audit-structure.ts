@@ -39,6 +39,7 @@ export const GROUPED_INDICATORS: number[][] = [[23, 24, 25]];
  */
 export const DOCUMENT_INDICATORS: Record<string, number[]> = {
   programme_formation: [1, 5, 6],
+  deroule_pedagogique: [6],
   devis: [1],
   convention_formation: [1],
   contrat_formation_particulier: [1],
@@ -124,7 +125,7 @@ export function notApplicableReason(indicator: number, ctx: AuditContext): strin
 /** Preuves que l'organisme doit ajouter lui-même (ce que l'auditeur a complété à la main). */
 export const TO_COMPLETE: Record<number, string> = {
   2: "Ajoutez vos chiffres clés à jour (nombre de stagiaires, taux de satisfaction, taux de réussite) et la capture de la page de votre site où ils sont publiés.",
-  6: "Ajoutez votre support de cours et le déroulé pédagogique détaillé (séquences, durées, méthodes, activités).",
+  6: "Ajoutez votre support de cours (le déroulé pédagogique détaillé est généré par le logiciel).",
   10: "Ajoutez une preuve d'adaptation de la formation au bénéficiaire : note d'adaptation suite au positionnement, aménagements réalisés, échanges avec le bénéficiaire.",
   19: "Ajoutez les ressources pédagogiques remises au bénéficiaire : supports, accès à la plateforme, captures d'écran de l'espace apprenant.",
   23: "Ajoutez vos preuves de veille : articles, newsletters, inscriptions à des webinaires, et le registre de veille rempli.",
