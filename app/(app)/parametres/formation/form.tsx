@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { updateTraining, type UpdateTrainingFormState, type Training } from "@/lib/actions/training";
+import { DEFAULT_ACCESS_DELAY } from "@/lib/constants/access-delay";
 
 const initialState: UpdateTrainingFormState = { error: null };
 
@@ -157,7 +158,7 @@ export function FormationSettingsForm({ training }: { training: Training }) {
         <textarea
           name="access_delay"
           rows={2}
-          defaultValue={(training as { access_delay?: string | null }).access_delay ?? ""}
+          defaultValue={(training as { access_delay?: string | null }).access_delay || DEFAULT_ACCESS_DELAY}
           placeholder="Inscription possible jusqu'à 1 jour avant le démarrage, sous réserve de places disponibles."
           className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
         />
