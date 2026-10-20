@@ -6,6 +6,20 @@
 
 export const CUSTOM_CATEGORY_ID = "sur_mesure";
 
+/**
+ * Domaine dont on utilise la banque de QCM pour l'évaluation. Une formation
+ * « sur mesure » n'a pas de banque propre : elle peut en emprunter une en
+ * renseignant qcm_category dans son programme (ex. "froid_climatisation").
+ * Pour tout autre domaine, c'est le domaine de la formation.
+ */
+export function evaluationCategoryId(training: { category_id: string; custom_program?: unknown }): string {
+  if (training.category_id === CUSTOM_CATEGORY_ID) {
+    const value = (training.custom_program as { qcm_category?: unknown } | null | undefined)?.qcm_category;
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return training.category_id;
+}
+
 export type CustomModule = { title: string; hours: number | null; content: string };
 
 export type CustomProgram = {

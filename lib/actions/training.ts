@@ -249,6 +249,11 @@ export async function saveCustomProgram(formData: FormData): Promise<void> {
     positioning: lines("positioning"),
     needs: lines("needs"),
     modules,
+    // Banque de QCM empruntée à un domaine (cf. evaluationCategoryId) :
+    // non saisie dans ce formulaire, donc conservée telle quelle.
+    ...((training.custom_program as { qcm_category?: string } | null)?.qcm_category
+      ? { qcm_category: (training.custom_program as { qcm_category: string }).qcm_category }
+      : {}),
   };
   const nsf_specialty = String(formData.get("nsf_specialty") ?? "").trim() || null;
   const total = modules.reduce((sum, m) => sum + (m.hours ?? 0), 0);

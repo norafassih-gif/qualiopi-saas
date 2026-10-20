@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getMyOrganization } from "@/lib/actions/organization";
 import { getMyFirstTraining } from "@/lib/actions/training";
 import { getMyFirstSession } from "@/lib/actions/session";
+import { evaluationCategoryId } from "@/lib/engine/custom-program";
 import { isEvaluationPhase, type EvaluationPhase } from "@/lib/engine/evaluation-phases";
 
 // Seuil de réussite du QCM — identique à ce qu'annonce déjà le contenu
@@ -45,11 +46,11 @@ export async function getEvaluationBankForMyTraining(): Promise<EvaluationBank |
   const supabase = await createClient();
 
   const [{ data: category }, { data: questions, error: qError }] = await Promise.all([
-    supabase.from("training_categories").select("label").eq("id", training.category_id).maybeSingle(),
+    supabase.from("training_categories").select("label").eq("id", evaluationCategoryId(training)).maybeSingle(),
     supabase
       .from("evaluation_questions")
       .select("id, topic, question_text, sort_order")
-      .eq("category_id", training.category_id)
+      .eq("category_id", evaluationCategoryId(training))
       .eq("is_active", true)
       .order("sort_order"),
   ]);
@@ -140,7 +141,7 @@ export async function submitEvaluationAttempt(
   const { data: questions, error: qError } = await supabase
     .from("evaluation_questions")
     .select("id, topic, question_text")
-    .eq("category_id", training.category_id)
+    .eq("category_id", evaluationCategoryId(training))
     .eq("is_active", true);
 
   if (qError || !questions || questions.length === 0) {
@@ -211,7 +212,7 @@ export async function submitEvaluationAttempt(
       training_id: training.id,
       session_id: session?.id ?? null,
       beneficiary_id: beneficiaryId,
-      category_id: training.category_id,
+      category_id: evaluationCategoryId(training),
       phase,
       completed_at: new Date().toISOString(),
       score_raw: scoreRaw,
