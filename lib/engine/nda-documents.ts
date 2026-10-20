@@ -208,6 +208,10 @@ export function ndaVariables(
     nda_contract_rows: contractRows,
     nda_contract_pieces: pieces.map((p) => `<li>${esc(p)}</li>`).join(""),
     nda_subcontracting_sentence: subSentence,
+    nda_trainers_rows: trainersRows,
+    nda_trainers_intro: trainersIntro,
+    nda_trainer_sheets: sheets,
+    nda_adequation_rows: adequationRows,
     nda_equipment_rows: rows(equipmentRows),
     nda_tools_rows: rows(toolRows),
     nda_tech_prereq:
