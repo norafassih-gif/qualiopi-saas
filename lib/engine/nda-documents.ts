@@ -86,6 +86,30 @@ export function ndaVariables(org: Organization, training: Training, session: Tra
     ["Messagerie électronique", "Convocations, transmission des supports, suivi post-formation", org.email ?? "Adresse de l'organisme"],
   ].filter(Boolean) as string[][];
 
+  // Liste des formateurs : dirigeant formateur, formateur de la session s'il
+  // est différent, formateur externe saisi dans les paramètres. Aucune
+  // qualification n'est inventée : les diplômes sont ceux du CV joint.
+  const specialty = NSF_BY_CATEGORY[training.category_id] ?? training.nsf_specialty ?? training.name;
+  const trainerList: string[][] = [
+    [manager, roles.join(", "), specialty, link.nature, "Curriculum vitae et copies des diplômes joints"],
+  ];
+  const known = new Set([manager.trim().toLowerCase()]);
+  const subLink = "Formateur(trice) indépendant(e), contrat de sous-traitance d'enseignement";
+  if (!sameAsManager && !known.has(trainer.trim().toLowerCase())) {
+    trainerList.push([trainer, "Formateur(trice)", specialty, subLink, "Curriculum vitae et copies des diplômes joints"]);
+    known.add(trainer.trim().toLowerCase());
+  }
+  const external = org.external_trainer_name?.trim();
+  if (external && !known.has(external.toLowerCase())) {
+    trainerList.push([
+      external,
+      "Formateur(trice)",
+      org.external_trainer_discipline?.trim() || specialty,
+      org.external_trainer_contract_type?.trim() || subLink,
+      "Curriculum vitae et copies des diplômes joints",
+    ]);
+  }
+
   const rows = (list: string[][]) => list.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join("");
 
   return {
@@ -98,6 +122,8 @@ export function ndaVariables(org: Organization, training: Training, session: Tra
     nda_subcontracting_sentence: sameAsManager
       ? `${org.company_name} n'emploie aucun salarié formateur et ne recourt à aucun formateur sous-traitant à la date du présent document.`
       : `${org.company_name} fait intervenir ${trainer} dans le cadre d'un contrat de sous-traitance d'enseignement.`,
+    nda_trainers_rows: trainerList.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join(""),
+    nda_trainers_count: String(trainerList.length),
     nda_equipment_rows: rows(equipmentRows),
     nda_tools_rows: rows(toolRows),
     nda_tech_prereq:
