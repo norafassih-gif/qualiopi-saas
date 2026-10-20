@@ -117,6 +117,7 @@ function AppSidebar({ data, pathname }: { data: SidebarData; pathname: string })
       icon: PenLine,
     },
     { href: "/evaluation", label: "Évaluation des acquis", icon: ClipboardList },
+    { href: "/parametres/formateurs", label: "Mes formateurs", icon: GraduationCap },
     { href: "/parametres/identite-visuelle", label: "Identité visuelle", icon: Palette },
     { href: "/parametres/abonnement", label: "Mon abonnement", icon: CreditCard },
   ];
