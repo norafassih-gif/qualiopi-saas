@@ -392,7 +392,11 @@ export default async function NdaPage({
 
           <p className="mt-4 text-sm font-medium text-gray-900">Pièces justificatives</p>
           <ul className="mt-2 space-y-2">
-            <Piece title="Liste des formateurs" status="soon" />
+            <Piece title="Liste des formateurs" status="generated">
+              Renseignez d&apos;abord vos formateurs (diplômes, expérience) dans{" "}
+              <Link href="/parametres/formateurs" className="underline">Mes formateurs</Link>, puis générez la liste dans{" "}
+              <Link href="/documents" className="underline">Mes documents</Link>.
+            </Piece>
             <Piece title="Documents justificatifs" status="user">
               CV à jour et copies des diplômes de chaque formateur.
             </Piece>

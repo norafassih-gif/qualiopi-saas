@@ -7,6 +7,7 @@
 import type { Organization } from "@/lib/actions/organization";
 import type { Training } from "@/lib/actions/training";
 import type { TrainingSession } from "@/lib/actions/session";
+import type { OrgTrainer } from "@/lib/actions/trainers";
 import { legalFormInfo, NSF_BY_CATEGORY } from "./tracks";
 
 function esc(text: string): string {
@@ -46,25 +47,136 @@ function managerLink(org: Organization): { nature: string; proof: string } {
   }
 }
 
-/** Variables texte/HTML des pièces NDA, ajoutées à celles du moteur. */
-export function ndaVariables(org: Organization, training: Training, session: TrainingSession | null): Record<string, string> {
-  const lf = legalFormInfo(org.legal_form);
-  const manager = org.manager_name || "[Dirigeant à compléter]";
-  const trainer = session?.trainer_name || manager;
+type Person = { name: string; roles: string; nature: string; proof: string; status: string; manager: boolean; sub: boolean; trainer: OrgTrainer | null };
+
+const TODO = "[À compléter]";
+
+function multiline(value: string | null | undefined): string {
+  const v = (value ?? "").trim();
+  return v ? esc(v).replace(/\n/g, "<br/>") : TODO;
+}
+
+/**
+ * Personnes qui interviennent comme formateurs : celles saisies dans « Mes
+ * formateurs » ; à défaut, le dirigeant, le formateur de la session et le
+ * formateur externe des paramètres. Le statut du dirigeant vient de la forme
+ * juridique, pour rester identique dans la liste des formateurs et dans les
+ * documents contractuels.
+ */
+function trainerPeople(org: Organization, session: TrainingSession | null, trainers: OrgTrainer[]): Person[] {
   const link = managerLink(org);
-  const sameAsManager = !session?.trainer_name || session.trainer_name.trim().toLowerCase() === (org.manager_name ?? "").trim().toLowerCase();
+  const manager = org.manager_name || "[Dirigeant à compléter]";
+  const managerRoles = ["Dirigeant(e)", "formateur(trice)"];
+  if (org.is_sole_practitioner) managerRoles.push("référent(e) pédagogique, qualité et handicap");
+  const subProof = "Contrat de sous-traitance signé, avis de situation Sirene ou Kbis de l'intervenant";
+  const subNature = "Formateur(trice) indépendant(e) intervenant dans le cadre d'un contrat de sous-traitance d'enseignement";
 
-  const roles = ["Dirigeant(e)", "formateur(trice)"];
-  if (org.is_sole_practitioner) roles.push("référent(e) pédagogique, qualité et handicap");
-
-  let contractRows =
-    `<tr><td>${esc(manager)}</td><td>${esc(roles.join(", "))}</td><td>${esc(link.nature)}</td><td>${esc(link.proof)}</td></tr>`;
-  if (!sameAsManager) {
-    contractRows += `<tr><td>${esc(trainer)}</td><td>Formateur(trice)</td><td>Formateur(trice) indépendant(e) intervenant dans le cadre d'un contrat de sous-traitance d'enseignement</td><td>Contrat de sous-traitance signé, avis de situation Sirene ou Kbis de l'intervenant</td></tr>`;
+  if (trainers.length > 0) {
+    return trainers.map((t) => {
+      const isManager = t.is_manager || t.full_name.trim().toLowerCase() === (org.manager_name ?? "").trim().toLowerCase();
+      if (isManager) {
+        return { name: t.full_name, roles: managerRoles.join(", "), nature: link.nature, proof: link.proof, status: link.nature, manager: true, sub: false, trainer: t };
+      }
+      const nature = t.link_type || (t.is_subcontracted ? subNature : `Salarié(e) de ${org.company_name}`);
+      return {
+        name: t.full_name,
+        roles: t.role || "Formateur(trice)",
+        nature,
+        proof: t.is_subcontracted ? subProof : "Contrat de travail signé",
+        status: nature,
+        manager: false,
+        sub: t.is_subcontracted,
+        trainer: t,
+      };
+    });
   }
 
-  const pieces = [link.proof, `Curriculum vitae de ${manager}`, `Copies des diplômes et attestations de formation de ${manager}`];
-  if (!sameAsManager) pieces.push(`Contrat de sous-traitance, CV et diplômes de ${trainer}`);
+  const people: Person[] = [{ name: manager, roles: managerRoles.join(", "), nature: link.nature, proof: link.proof, status: link.nature, manager: true, sub: false, trainer: null }];
+  const known = new Set([manager.trim().toLowerCase()]);
+  const extra = [session?.trainer_is_manager ? null : session?.trainer_name, org.external_trainer_name].map((n) => n?.trim()).filter(Boolean) as string[];
+  for (const name of extra) {
+    if (known.has(name.toLowerCase())) continue;
+    known.add(name.toLowerCase());
+    people.push({ name, roles: "Formateur(trice)", nature: subNature, proof: subProof, status: subNature, manager: false, sub: true, trainer: null });
+  }
+  return people;
+}
+
+/** Variables texte/HTML des pièces NDA, ajoutées à celles du moteur. */
+export function ndaVariables(
+  org: Organization,
+  training: Training,
+  session: TrainingSession | null,
+  trainers: OrgTrainer[] = [],
+  skillBlocks: string[] = []
+): Record<string, string> {
+  const lf = legalFormInfo(org.legal_form);
+  const manager = org.manager_name || "[Dirigeant à compléter]";
+  const people = trainerPeople(org, session, trainers);
+
+  const contractRows = people
+    .map((p) => `<tr><td>${esc(p.name)}</td><td>${esc(p.roles)}</td><td>${esc(p.nature)}</td><td>${esc(p.proof)}</td></tr>`)
+    .join("");
+
+  const pieces: string[] = [];
+  for (const p of people) {
+    if (!pieces.includes(p.proof)) pieces.push(p.proof);
+    pieces.push(`Curriculum vitae de ${p.name}`, `Copies des diplômes et attestations de formation de ${p.name}`);
+  }
+
+  const subCount = people.filter((p) => p.sub).length;
+  const salaried = people.filter((p) => !p.manager && !p.sub).length;
+  const specialty = NSF_BY_CATEGORY[training.category_id] ?? training.nsf_specialty ?? training.name;
+  const onlyManager = people.length === 1 && people[0].manager;
+
+  const subSentence =
+    subCount === 0 && salaried === 0
+      ? `${org.company_name} n'emploie aucun salarié formateur et ne recourt à aucun formateur sous-traitant à la date du présent document.`
+      : [
+          salaried ? `${org.company_name} emploie ${salaried} salarié(e)${salaried > 1 ? "s" : ""} formateur(trice)${salaried > 1 ? "s" : ""}.` : "",
+          subCount ? `${org.company_name} fait intervenir ${subCount} formateur${subCount > 1 ? "s" : ""} dans le cadre d'un contrat de sous-traitance d'enseignement.` : "",
+        ].filter(Boolean).join(" ");
+
+  const trainersIntro = onlyManager
+    ? `${org.company_name} mobilise à ce jour un seul formateur, qui est également le/la dirigeant(e) de la structure. Aucune action de formation n'est sous-traitée. Toute évolution de cette liste donnera lieu à une mise à jour du présent document.`
+    : `${org.company_name} mobilise à ce jour ${people.length} formateur${people.length > 1 ? "s" : ""}${subCount ? `, dont ${subCount} intervenant en sous-traitance` : ""}. Toute évolution de cette liste donnera lieu à une mise à jour du présent document.`;
+
+  const actionLine = `${training.name} (${training.duration_hours ?? "?"} heures, ${training.modality === "distanciel" ? "distanciel" : training.modality === "hybride" ? "hybride" : "présentiel"})`;
+
+  const sheetRow = (label: string, value: string) => `<tr><th>${esc(label)}</th><td>${value}</td></tr>`;
+  const sheets = people
+    .map((p) => {
+      const t = p.trainer;
+      const contact = [t?.email || (p.manager ? org.email : null), t?.phone || (p.manager ? org.phone : null)].filter(Boolean).join(" · ");
+      return (
+        `<h3>${esc(p.name)}</h3><table><tbody>` +
+        sheetRow("Nom et prénom", esc(p.name)) +
+        sheetRow("Fonction", esc(t?.role || p.roles)) +
+        sheetRow("Statut", esc(p.status)) +
+        sheetRow("Coordonnées professionnelles", contact ? esc(contact) : TODO) +
+        sheetRow("Actions animées", esc(actionLine)) +
+        sheetRow("Diplômes et titres", multiline(t?.diplomas)) +
+        sheetRow("Expérience professionnelle", multiline(t?.experience)) +
+        sheetRow("Compétences mobilisées", multiline(t?.skills)) +
+        sheetRow("Expérience de l'animation", multiline(t?.animation_experience)) +
+        sheetRow("Formation continue", multiline(t?.continuing_training)) +
+        sheetRow("Justificatifs joints", `Curriculum vitae à jour, copies des diplômes${p.sub ? ", contrat de sous-traitance" : ""}`) +
+        `</tbody></table>`
+      );
+    })
+    .join("");
+
+  const required = skillBlocks.slice(0, 6);
+  const adequationRows = people
+    .map((p) => {
+      const requiredHtml = required.length ? `<ul>${required.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>` : esc(training.name);
+      return `<tr><td>${esc(training.name)}</td><td>${requiredHtml}</td><td>${p.trainer?.skills ? multiline(p.trainer.skills) : TODO}</td><td>Diplômes, CV${p.sub ? ", contrat de sous-traitance" : ""}</td></tr>`;
+    })
+    .join("");
+
+  const trainersRows = people
+    .map((p) => `<tr><td>${esc(p.name)}</td><td>${esc(p.trainer?.role || p.roles)}</td><td>${esc(p.status)}</td><td>${p.trainer?.domains ? esc(p.trainer.domains) : esc(specialty)}</td></tr>`)
+    .join("");
 
   const modality = training.modality ?? "presentiel";
   const remote = modality !== "presentiel";
@@ -86,30 +198,6 @@ export function ndaVariables(org: Organization, training: Training, session: Tra
     ["Messagerie électronique", "Convocations, transmission des supports, suivi post-formation", org.email ?? "Adresse de l'organisme"],
   ].filter(Boolean) as string[][];
 
-  // Liste des formateurs : dirigeant formateur, formateur de la session s'il
-  // est différent, formateur externe saisi dans les paramètres. Aucune
-  // qualification n'est inventée : les diplômes sont ceux du CV joint.
-  const specialty = NSF_BY_CATEGORY[training.category_id] ?? training.nsf_specialty ?? training.name;
-  const trainerList: string[][] = [
-    [manager, roles.join(", "), specialty, link.nature, "Curriculum vitae et copies des diplômes joints"],
-  ];
-  const known = new Set([manager.trim().toLowerCase()]);
-  const subLink = "Formateur(trice) indépendant(e), contrat de sous-traitance d'enseignement";
-  if (!sameAsManager && !known.has(trainer.trim().toLowerCase())) {
-    trainerList.push([trainer, "Formateur(trice)", specialty, subLink, "Curriculum vitae et copies des diplômes joints"]);
-    known.add(trainer.trim().toLowerCase());
-  }
-  const external = org.external_trainer_name?.trim();
-  if (external && !known.has(external.toLowerCase())) {
-    trainerList.push([
-      external,
-      "Formateur(trice)",
-      org.external_trainer_discipline?.trim() || specialty,
-      org.external_trainer_contract_type?.trim() || subLink,
-      "Curriculum vitae et copies des diplômes joints",
-    ]);
-  }
-
   const rows = (list: string[][]) => list.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join("");
 
   return {
@@ -119,11 +207,7 @@ export function ndaVariables(org: Organization, training: Training, session: Tra
     nda_days_summary: daysSummary(training.duration_hours),
     nda_contract_rows: contractRows,
     nda_contract_pieces: pieces.map((p) => `<li>${esc(p)}</li>`).join(""),
-    nda_subcontracting_sentence: sameAsManager
-      ? `${org.company_name} n'emploie aucun salarié formateur et ne recourt à aucun formateur sous-traitant à la date du présent document.`
-      : `${org.company_name} fait intervenir ${trainer} dans le cadre d'un contrat de sous-traitance d'enseignement.`,
-    nda_trainers_rows: trainerList.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join(""),
-    nda_trainers_count: String(trainerList.length),
+    nda_subcontracting_sentence: subSentence,
     nda_equipment_rows: rows(equipmentRows),
     nda_tools_rows: rows(toolRows),
     nda_tech_prereq:

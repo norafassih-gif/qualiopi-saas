@@ -16,6 +16,7 @@ import {
 } from "@/lib/engine/document-completeness";
 import { CHECKBOX_CSS, makePdfSafe } from "@/lib/engine/pdf-safe";
 import { ndaVariables, ndaCalendarRows } from "@/lib/engine/nda-documents";
+import type { OrgTrainer } from "@/lib/actions/trainers";
 import { CUSTOM_CATEGORY_ID, customBlocksByType, customModuleRows, parseCustomProgram } from "@/lib/engine/custom-program";
 import { buildDerouleHtml, type DerouleModule } from "@/lib/engine/deroule-pedagogique";
 import { createClient } from "@/lib/supabase/server";
@@ -642,7 +643,13 @@ export async function buildDocumentHtml(
   // Pièces du dossier de déclaration d'activité (NDA) : variables
   // supplémentaires, calculées uniquement pour ces modèles.
   if (templateResponse.data.folder_group === "00_Declaration_activite") {
-    Object.assign(vars, ndaVariables(org, training, session), {
+    const { data: trainerRows } = await supabase
+      .from("organization_trainers")
+      .select("*")
+      .eq("organization_id", org.id)
+      .order("sort_order")
+      .order("created_at");
+    Object.assign(vars, ndaVariables(org, training, session, (trainerRows ?? []) as OrgTrainer[], blocksByType.get("skill") ?? blocksByType.get("pedagogical_objective") ?? []), {
       nda_calendar_rows: ndaCalendarRows(training, session, moduleRows),
     });
   }
